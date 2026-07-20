@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NexusPay | Modern Payment Command Center</title>
+    <!-- Font Awesome 6 (Free CDN) for crisp icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts: Inter + Space Grotesk for modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN for extraordinary analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 10% 20%, rgba(10, 12, 28, 0.96), rgba(2, 5, 18, 0.98));
+            font-family: 'Inter', sans-serif;
+            padding: 2rem 1.8rem;
+            color: #eef5ff;
+        }
+
+        /* modern glassmorphism container */
+        .dashboard-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* header with animated gradient */
+        .header-modern {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+            background: rgba(18, 25, 55, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.2rem 2rem;
+            border: 1px solid rgba(72, 187, 255, 0.2);
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 1.9rem;
+            background: linear-gradient(135deg, #FFF, #6ee7ff, #3b82f6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 i {
+            background: none;
+            color: #3b82f6;
+            font-size: 2rem;
+            background-clip: unset;
+            -webkit-background-clip: unset;
+            -webkit-text-fill-color: initial;
+        }
+
+        .stats-chip {
+            display: flex;
+            gap: 18px;
+        }
+
+        .stat-badge {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(8px);
+            padding: 0.6rem 1.3rem;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            border-left: 3px solid #3b82f6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .stat-badge i {
+            margin-right: 8px;
+            color: #60a5fa;
+        }
+
+        /* analytics grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.6rem;
+            margin-bottom: 2.2rem;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.2rem 1.4rem;
+            border: 1px solid rgba(59,130,246,0.25);
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 20px -8px rgba(0,0,0,0.4);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(59,130,246,0.6);
+            transform: translateY(-3px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            color: #bbd7fb;
+        }
+
+        .revenue-number {
+            font-size: 2.1rem;
+            font-weight: 700;
+            font-family: 'Space Grotesk', monospace;
+            color: #f0f9ff;
+        }
+
+        /* search + filters */
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1.5rem 0 1.8rem 0;
+            gap: 16px;
+        }
+
+        .search-container {
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 60px;
+            padding: 0.3rem 0.3rem 0.3rem 1.2rem;
+            display: flex;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            border: 1px solid #2d3a5e;
+        }
+
+        .search-container input {
+            background: transparent;
+            border: none;
+            padding: 0.6rem;
+            color: white;
+            font-size: 0.9rem;
+            width: 220px;
+            outline: none;
+        }
+
+        .search-container button {
+            background: #2563eb;
+            border: none;
+            padding: 0.5rem 1.1rem;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .filter-group select {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(95deg, #2563eb, #1e40af);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* payment cards grid — modern */
+        .payments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.8rem;
+            margin-top: 1rem;
+        }
+
+        .payment-card-modern {
+            background: linear-gradient(145deg, #10182f, #0b1120);
+            border-radius: 2rem;
+            padding: 1.4rem 1.6rem;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border: 1px solid rgba(66, 153, 225, 0.2);
+            box-shadow: 0 15px 35px -12px black;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .payment-card-modern:hover {
+            border-color: #3b82f6;
+            transform: scale(1.01);
+            background: linear-gradient(145deg, #131e3b, #0a0f22);
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(4px);
+        }
+
+        .status-paid {
+            background: #10b98120;
+            border-left: 3px solid #10b981;
+            color: #86efac;
+        }
+
+        .status-pending {
+            background: #f9731620;
+            border-left: 3px solid #f97316;
+            color: #fdba74;
+        }
+
+        .payment-details p {
+            margin: 0.7rem 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: #cdddf7;
+        }
+
+        .payment-details i {
+            width: 24px;
+            color: #60a5fa;
+        }
+
+        .transaction-id {
+            font-family: monospace;
+            background: #00000030;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .action-buttons {
+            margin-top: 1rem;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .small-btn {
+            background: #1e293b;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 30px;
+            color: #b9d0f0;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .small-btn:hover {
+            background: #2d3a5e;
+            color: white;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1f2937ee;
+            backdrop-filter: blur(16px);
+            padding: 0.8rem 1.3rem;
+            border-radius: 50px;
+            border-left: 5px solid #3b82f6;
+            font-weight: 500;
+            z-index: 999;
+            transition: 0.2s;
+            font-size: 0.85rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+
+        .chart-container {
+            max-height: 220px;
+            margin-top: 0.5rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 1rem; }
+            .payments-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-wrapper">
+    <!-- Modern header area -->
+    <div class="header-modern">
+        <h1><i class="fas fa-bolt"></i> NexusPay <span style="font-size: 1rem; background: none; -webkit-text-fill-color: #94a3b8;">| command center</span></h1>
+        <div class="stats-chip">
+            <div class="stat-badge"><i class="fas fa-check-circle"></i> <span id="totalPaidCount">0</span> settled</div>
+            <div class="stat-badge"><i class="fas fa-clock"></i> <span id="totalPendingCount">0</span> pending</div>
+            <div class="stat-badge"><i class="fas fa-rupee-sign"></i> ₹<span id="totalRevenue">0</span> volume</div>
+        </div>
+    </div>
+
+    <!-- analytics cards -->
+    <div class="analytics-grid">
+        <div class="glass-card">
+            <div class="card-header"><span><i class="fas fa-chart-line"></i> Revenue trend (last 6 txns)</span> <i class="fas fa-arrow-trend-up" style="color:#34d399;"></i></div>
+            <canvas id="revenueChart" width="400" height="160" style="max-height: 160px; width:100%"></canvas>
+        </div>
+        <div class="glass-card">
+            <div class="card-header"><span><i class="fas fa-wallet"></i> Method distribution</span> <i class="fas fa-chart-pie"></i></div>
+            <canvas id="methodChart" width="400" height="160" style="max-height: 160px; width:100%"></canvas>
+        </div>
+        <div class="glass-card">
+            <div class="card-header"><span><i class="fas fa-percent"></i> Success ratio</span></div>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 10px;"><span class="revenue-number" id="successRate">0</span><span>%</span>
+                <div style="height: 8px; flex:1; background:#1e293b; border-radius: 10px;"><div id="rateFill" style="width:0%; height:8px; background:#3b82f6; border-radius:10px;"></div></div>
+            </div>
+            <div style="margin-top: 14px;"><i class="fas fa-lightbulb"></i> Real-time updates with actions</div>
+        </div>
+    </div>
+
+    <!-- dynamic control bar : search, filter, add demo -->
+    <div class="action-bar">
+        <div class="search-container">
+            <i class="fas fa-search" style="color:#94a3b8;"></i>
+            <input type="text" id="searchInput" placeholder="Customer, Booking ID, TXN..." autocomplete="off">
+            <button id="searchBtn"><i class="fas fa-arrow-right"></i> Filter</button>
+        </div>
+        <div class="filter-group">
+            <select id="statusFilter">
+                <option value="all">All statuses</option>
+                <option value="paid">✅ Successful</option>
+                <option value="pending">⏳ Pending</option>
+            </select>
+            <select id="methodFilter">
+                <option value="all">All methods</option>
+                <option value="UPI">UPI</option>
+                <option value="Cash On Delivery">Cash On Delivery</option>
+                <option value="Card">Card</option>
+                <option value="NetBanking">NetBanking</option>
+            </select>
+        </div>
+        <button id="addSamplePayment" class="btn-primary"><i class="fas fa-plus-circle"></i> Simulate new payment</button>
+    </div>
+
+    <!-- dynamic payments grid injected via JS -->
+    <div id="paymentsContainer" class="payments-grid"></div>
+    <footer>
+        <i class="fas fa-shield-alt"></i> PCI-DSS compliant sandbox • real-time analytics & smart filtering
+    </footer>
+</div>
+<div id="toastRoot" class="toast-msg" style="display: none;"></div>
+
+<script>
+    // ------------------- EXTRAORDINARY MODERN PAYMENT SYSTEM -------------------
+    // Initial dataset based on given example but extended with modern fields + more entries (20+ payments for rich demo)
+    let paymentsData = [
+        { id: 1, bookingId: "#2045", customer: "Kruthik", amount: 2500, method: "UPI", transactionId: "TXN9837465", status: "paid", date: "2025-04-01" },
+        { id: 2, bookingId: "#2050", customer: "Akash", amount: 1800, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-02" },
+        { id: 3, bookingId: "#2067", customer: "Meera S.", amount: 4200, method: "Card", transactionId: "TXN93HG82D", status: "paid", date: "2025-04-03" },
+        { id: 4, bookingId: "#2072", customer: "Rohan Verma", amount: 750, method: "UPI", transactionId: "TXN89FJ293", status: "paid", date: "2025-04-04" },
+        { id: 5, bookingId: "#2089", customer: "Ishita Roy", amount: 3200, method: "NetBanking", transactionId: "TXN902HJK", status: "pending", date: "2025-04-05" },
+        { id: 6, bookingId: "#2095", customer: "Devansh Nair", amount: 5900, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-06" },
+        { id: 7, bookingId: "#2101", customer: "Sanya Kapoor", amount: 1120, method: "UPI", transactionId: "TXNQWE123", status: "paid", date: "2025-04-07" },
+        { id: 8, bookingId: "#2114", customer: "Arjun Menon", amount: 2700, method: "Card", transactionId: "TXN76FGT54", status: "paid", date: "2025-04-08" },
+        { id: 9, bookingId: "#2120", customer: "Tara Krish", amount: 499, method: "UPI", transactionId: "TXN45HJK89", status: "pending", date: "2025-04-09" },
+        { id: 10, bookingId: "#2133", customer: "Vikram Rathore", amount: 8350, method: "NetBanking", transactionId: "TXN83JKD40", status: "paid", date: "2025-04-10" },
+        { id: 11, bookingId: "#2147", customer: "Anjali B.", amount: 1550, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-11" },
+        { id: 12, bookingId: "#2158", customer: "Kavya S.", amount: 2780, method: "Card", transactionId: "TXN99LKJ22", status: "paid", date: "2025-04-12" },
+        { id: 13, bookingId: "#2169", customer: "Ritwik Das", amount: 4300, method: "UPI", transactionId: "TXN56MNB78", status: "paid", date: "2025-04-13" },
+        { id: 14, bookingId: "#2173", customer: "Priya G.", amount: 825, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-14" }
+    ];
+
+    // Helper: generate random TXN for demo new payment
+    function generateTxn() {
+        return "TXN" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    }
+
+    let nextId = 15;
+
+    // DOM references
+    const paymentsContainer = document.getElementById('paymentsContainer');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const statusFilter = document.getElementById('statusFilter');
+    const methodFilter = document.getElementById('methodFilter');
+    const addSampleBtn = document.getElementById('addSamplePayment');
+    const totalPaidSpan = document.getElementById('totalPaidCount');
+    const totalPendingSpan = document.getElementById('totalPendingCount');
+    const totalRevenueSpan = document.getElementById('totalRevenue');
+    const successRateSpan = document.getElementById('successRate');
+    const rateFillDiv = document.getElementById('rateFill');
+
+    let revenueChart, methodChart;
+
+    // Toast message system
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toastRoot');
+        toast.style.display = 'block';
+        toast.textContent = message;
+        toast.style.borderLeftColor = isError ? '#f97316' : '#3b82f6';
+        toast.style.background = '#111827ee';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 2600);
+    }
+
+    // Core functions: aggregate stats, update UI & charts
+    function computeStats(data) {
+        const paid = data.filter(p => p.status === 'paid').length;
+        const pending = data.filter(p => p.status === 'pending').length;
+        const totalRev = data.reduce((acc, cur) => cur.status === 'paid' ? acc + cur.amount : acc, 0);
+        const successRateVal = data.length === 0 ? 0 : (paid / data.length) * 100;
+        return { paid, pending, totalRev, successRateVal };
+    }
+
+    function updateHeaderStats(data) {
+        const { paid, pending, totalRev, successRateVal } = computeStats(data);
+        totalPaidSpan.innerText = paid;
+        totalPendingSpan.innerText = pending;
+        totalRevenueSpan.innerText = totalRev.toLocaleString('en-IN');
+        successRateSpan.innerText = Math.floor(successRateVal);
+        rateFillDiv.style.width = `${successRateVal}%`;
+    }
+
+    // Update revenue chart based on last 6 PAID transactions (sorted by id desc)
+    function updateRevenueChart(data) {
+        const paidSorted = [...data].filter(p => p.status === 'paid').sort((a,b) => b.id - a.id).slice(0,6).reverse();
+        const labels = paidSorted.map(p => `#${p.bookingId}`);
+        const amounts = paidSorted.map(p => p.amount);
+        if (revenueChart) revenueChart.destroy();
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: '₹ Amount', data: amounts, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, fill: true, pointBackgroundColor: '#60a5fa' }] },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#cbd5e1' } } }, scales: { y: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e6' } }, x: { ticks: { color: '#94a3b8' } } } }
+        });
+    }
+
+    function updateMethodChart(data) {
+        const methodsCount = {};
+        data.forEach(p => { methodsCount[p.method] = (methodsCount[p.method] || 0) + 1; });
+        const labels = Object.keys(methodsCount);
+        const counts = Object.values(methodsCount);
+        if (methodChart) methodChart.destroy();
+        const ctx = document.getElementById('methodChart').getContext('2d');
+        methodChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: counts, backgroundColor: ['#3b82f6', '#f97316', '#10b981', '#a855f7', '#ec489a'], borderWidth: 0 }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e6', font: { size: 10 } } } } }
+        });
+    }
+
+    // filter & render logic
+    function filterAndRender() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const statusVal = statusFilter.value;
+        const methodVal = methodFilter.value;
+
+        let filtered = [...paymentsData];
+        if (searchTerm !== "") {
+            filtered = filtered.filter(p => p.customer.toLowerCase().includes(searchTerm) || p.bookingId.toLowerCase().includes(searchTerm) || p.transactionId.toLowerCase().includes(searchTerm));
+        }
+        if (statusVal !== "all") {
+            filtered = filtered.filter(p => p.status === statusVal);
+        }
+        if (methodVal !== "all") {
+            filtered = filtered.filter(p => p.method === methodVal);
+        }
+
+        renderPaymentCards(filtered);
+        updateHeaderStats(paymentsData); // global stats based on original (not filtered)
+        updateRevenueChart(paymentsData);
+        updateMethodChart(paymentsData);
+    }
+
+    // Render dynamic card grid with actions (Mark as paid / pending, delete)
+    function renderPaymentCards(items) {
+        if (!paymentsContainer) return;
+        if (items.length === 0) {
+            paymentsContainer.innerHTML = `<div class="glass-card" style="grid-column:1/-1; text-align:center; padding:3rem;"><i class="fas fa-inbox fa-2x"></i><p>No matching payments found</p></div>`;
+            return;
+        }
+        paymentsContainer.innerHTML = items.map(payment => {
+            const statusClass = payment.status === 'paid' ? 'status-paid' : 'status-pending';
+            const statusIcon = payment.status === 'paid' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-hourglass-half"></i>';
+            const statusText = payment.status === 'paid' ? 'Payment Successful' : 'Payment Pending';
+            const txnDisplay = payment.transactionId === "Pending" ? '<span class="transaction-id"><i class="fas fa-spinner"></i> Pending</span>' : `<span class="transaction-id"><i class="fas fa-receipt"></i> ${payment.transactionId}</span>`;
+            return `
+                <div class="payment-card-modern" data-payment-id="${payment.id}">
+                    <div style="display:flex; justify-content: space-between; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+                        <h3 style="font-family:'Space Grotesk'; letter-spacing:-0.3px;"><i class="fas fa-ticket-alt"></i> ${payment.bookingId}</h3>
+                        <span class="badge-status ${statusClass}">${statusIcon} ${statusText}</span>
+                    </div>
+                    <div class="payment-details">
+                        <p><i class="fas fa-user-astronaut"></i> Customer : ${payment.customer}</p>
+                        <p><i class="fas fa-rupee-sign"></i> Amount : ₹${payment.amount.toLocaleString('en-IN')}</p>
+                        <p><i class="fas fa-credit-card"></i> Payment Method : ${payment.method}</p>
+                        <p><i class="fas fa-fingerprint"></i> Transaction ID : ${txnDisplay}</p>
+                        <p><i class="far fa-calendar-alt"></i> Date : ${payment.date}</p>
+                    </div>
+                    <div class="action-buttons">
+                        ${payment.status === 'pending' ? `<button class="small-btn mark-paid-btn" data-id="${payment.id}"><i class="fas fa-thumbs-up"></i> Mark Success</button>` : `<button class="small-btn mark-pending-btn" data-id="${payment.id}"><i class="fas fa-undo-alt"></i> Mark Pending</button>`}
+                        <button class="small-btn delete-btn" data-id="${payment.id}"><i class="fas fa-trash-alt"></i> Delete</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // attach event listeners to dynamically generated buttons
+        document.querySelectorAll('.mark-paid-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                changePaymentStatus(id, 'paid');
+            });
+        });
+        document.querySelectorAll('.mark-pending-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                changePaymentStatus(id, 'pending');
+            });
+        });
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                deletePaymentById(id);
+            });
+        });
+    }
+
+    function changePaymentStatus(paymentId, newStatus) {
+        const index = paymentsData.findIndex(p => p.id === paymentId);
+        if (index !== -1) {
+            const old = paymentsData[index].status;
+            if (old === newStatus) {
+                showToast(`⚠️ Payment already ${newStatus === 'paid' ? 'successful' : 'pending'}`, false);
+                return;
+            }
+            paymentsData[index].status = newStatus;
+            if (newStatus === 'paid' && paymentsData[index].transactionId === "Pending") {
+                paymentsData[index].transactionId = generateTxn();
+                showToast(`✅ ${paymentsData[index].customer} : payment completed! TXN: ${paymentsData[index].transactionId}`, false);
+            } else if(newStatus === 'pending') {
+                paymentsData[index].transactionId = "Pending";
+                showToast(`⏳ ${paymentsData[index].customer} moved to pending`, false);
+            } else {
+                showToast(`💰 ${paymentsData[index].customer} status updated to ${newStatus}`, false);
+            }
+            filterAndRender(); // full refresh sync
+        }
+    }
+
+    function deletePaymentById(paymentId) {
+        const exists = paymentsData.some(p => p.id === paymentId);
+        if(exists) {
+            paymentsData = paymentsData.filter(p => p.id !== paymentId);
+            showToast(`🗑️ Payment record #${paymentId} removed`, true);
+            filterAndRender();
+        }
+    }
+
+    // Add new random payment (extraordinary feature)
+    function addRandomPayment() {
+        const names = ["Diya Mehta", "Reyansh Chopra", "Sai Krishna", "Neha Jadhav", "Aadhya Nair", "Ibrahim Ali"];
+        const methodsList = ["UPI", "Card", "Cash On Delivery", "NetBanking"];
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        const randomMethod = methodsList[Math.floor(Math.random() * methodsList.length)];
+        const randomAmount = Math.floor(Math.random() * (8200 - 300 + 1) + 300);
+        const randomStatus = Math.random() > 0.6 ? "pending" : "paid";
+        const newBooking = "#" + (2100 + nextId);
+        const newId = nextId++;
+        const newTxn = randomStatus === 'paid' ? generateTxn() : "Pending";
+        const newPayment = {
+            id: newId,
+            bookingId: newBooking,
+            customer: randomName,
+            amount: randomAmount,
+            method: randomMethod,
+            transactionId: newTxn,
+            status: randomStatus,
+            date: new Date().toISOString().slice(0,10)
+        };
+        paymentsData.unshift(newPayment); // newest on top
+        showToast(`✨ New payment from ${randomName} | ${randomMethod} | ₹${randomAmount}`, false);
+        filterAndRender();
+    }
+
+    // reset filters/search via button
+    function resetFilterVisual() {
+        filterAndRender();
+    }
+
+    // Event listeners
+    searchBtn.addEventListener('click', () => filterAndRender());
+    statusFilter.addEventListener('change', () => filterAndRender());
+    methodFilter.addEventListener('change', () => filterAndRender());
+    addSampleBtn.addEventListener('click', () => addRandomPayment());
+    searchInput.addEventListener('keyup', (e) => { if(e.key === 'Enter') filterAndRender(); });
+
+    // initial load
+    function init() {
+        filterAndRender();
+    }
+    init();
+</script>
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+<script>
+(function () {
+    var HOME_URL = "/dashboard";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

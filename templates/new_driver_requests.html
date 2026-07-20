@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        New Driver Requests
+    </title>
+
+    <!-- GOOGLE FONT -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- FONT AWESOME -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:'Poppins',sans-serif;
+        }
+
+        body{
+
+            background:#f4f7fb;
+            min-height:100vh;
+            padding:30px;
+            color:#1e293b;
+        }
+
+        .container{
+
+            width:100%;
+        }
+
+        .top-header{
+
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:35px;
+            flex-wrap:wrap;
+            gap:20px;
+        }
+
+        .page-title{
+
+            font-size:38px;
+            font-weight:700;
+            color:#0f172a;
+        }
+
+        .page-subtitle{
+
+            color:#64748b;
+            margin-top:8px;
+            font-size:15px;
+        }
+
+        .request-badge{
+
+            background:#dbeafe;
+            color:#2563eb;
+            padding:14px 24px;
+            border-radius:18px;
+            font-weight:600;
+            font-size:16px;
+        }
+
+        .table-wrapper{
+
+            background:white;
+            border-radius:30px;
+            padding:25px;
+            border:1px solid #e2e8f0;
+            box-shadow:0 10px 30px rgba(0,0,0,0.05);
+            overflow-x:auto;
+        }
+
+        table{
+
+            width:100%;
+            border-collapse:collapse;
+            min-width:1400px;
+        }
+
+        thead{
+
+            background:#eff6ff;
+        }
+
+        th{
+
+            padding:18px;
+            text-align:left;
+            color:#1e3a8a;
+            font-size:14px;
+            font-weight:600;
+        }
+
+        td{
+
+            padding:18px;
+            border-bottom:1px solid #e2e8f0;
+            color:#334155;
+            font-size:14px;
+            vertical-align:middle;
+        }
+
+        tr:hover{
+
+            background:#f8fafc;
+        }
+
+        .driver-box{
+
+            display:flex;
+            align-items:center;
+            gap:14px;
+        }
+
+        .driver-photo{
+
+            width:70px;
+            height:70px;
+            border-radius:50%;
+            object-fit:cover;
+            border:3px solid #dbeafe;
+        }
+
+        .driver-name{
+
+            font-weight:700;
+            color:#0f172a;
+            font-size:15px;
+        }
+
+        .driver-email{
+
+            color:#64748b;
+            font-size:13px;
+            margin-top:4px;
+        }
+
+        .truck-badge{
+
+            background:#eff6ff;
+            color:#2563eb;
+            padding:8px 14px;
+            border-radius:12px;
+            font-weight:600;
+            display:inline-block;
+        }
+
+        .capacity-badge{
+
+            background:#ecfeff;
+            color:#0891b2;
+            padding:8px 14px;
+            border-radius:12px;
+            font-weight:600;
+            display:inline-block;
+        }
+
+        .address{
+
+            max-width:250px;
+            line-height:1.5;
+            color:#475569;
+        }
+
+        .action-buttons{
+
+            display:flex;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+
+        .approve-btn{
+
+            background:#22c55e;
+            color:white;
+            padding:12px 18px;
+            border-radius:14px;
+            text-decoration:none;
+            font-size:14px;
+            font-weight:600;
+            transition:0.3s;
+        }
+
+        .approve-btn:hover{
+
+            background:#16a34a;
+            transform:translateY(-2px);
+        }
+
+        .reject-btn{
+
+            background:#ef4444;
+            color:white;
+            padding:12px 18px;
+            border-radius:14px;
+            text-decoration:none;
+            font-size:14px;
+            font-weight:600;
+            transition:0.3s;
+        }
+
+        .reject-btn:hover{
+
+            background:#dc2626;
+            transform:translateY(-2px);
+        }
+
+        .pending-badge{
+
+            background:#fef3c7;
+            color:#d97706;
+            padding:8px 16px;
+            border-radius:30px;
+            font-size:13px;
+            font-weight:600;
+            display:inline-block;
+        }
+
+        .empty-box{
+
+            background:white;
+            padding:90px 30px;
+            border-radius:30px;
+            text-align:center;
+            border:1px solid #e2e8f0;
+        }
+
+        .empty-box i{
+
+            font-size:80px;
+            color:#cbd5e1;
+            margin-bottom:20px;
+        }
+
+        .empty-title{
+
+            font-size:28px;
+            font-weight:700;
+            color:#0f172a;
+            margin-bottom:10px;
+        }
+
+        .empty-subtitle{
+
+            color:#64748b;
+            font-size:15px;
+        }
+
+        @media(max-width:768px){
+
+            body{
+
+                padding:16px;
+            }
+
+            .page-title{
+
+                font-size:28px;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+
+        <div class="top-header">
+
+            <div>
+
+                <h1 class="page-title">
+
+                    New Driver Requests
+
+                </h1>
+
+                <p class="page-subtitle">
+
+                    Review and approve newly registered AquaFlow drivers
+
+                </p>
+
+            </div>
+
+            <div class="request-badge">
+
+                {{ total_requests }} Pending Requests
+
+            </div>
+
+        </div>
+
+        <!-- TABLE -->
+
+        {% if pending_drivers %}
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Driver
+                        </th>
+
+                        <th>
+                            Phone
+                        </th>
+
+                        <th>
+                            Address
+                        </th>
+
+                        <th>
+                            Truck Number
+                        </th>
+
+                        <th>
+                            Capacity
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for driver in pending_drivers %}
+
+                    <tr>
+
+                        <!-- DRIVER -->
+
+                        <td>
+
+                            <div class="driver-box">
+
+                                <img
+
+                                    src="{{ url_for('static', filename=driver.photo) }}"
+
+                                    class="driver-photo"
+                                >
+
+                                <div>
+
+                                    <div class="driver-name">
+
+                                        {{ driver.full_name }}
+
+                                    </div>
+
+                                    <div class="driver-email">
+
+                                        {{ driver.email }}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                        <!-- PHONE -->
+
+                        <td>
+
+                            {{ driver.phone }}
+
+                        </td>
+
+                        <!-- ADDRESS -->
+
+                        <td>
+
+                            <div class="address">
+
+                                {{ driver.address }}
+
+                            </div>
+
+                        </td>
+
+                        <!-- TRUCK -->
+
+                        <td>
+
+                            <span class="truck-badge">
+
+                                {{ driver.truck_number }}
+
+                            </span>
+
+                        </td>
+
+                        <!-- CAPACITY -->
+
+                        <td>
+
+                            <span class="capacity-badge">
+
+                                {{ driver.truck_capacity }} L
+
+                            </span>
+
+                        </td>
+
+                        <!-- STATUS -->
+
+                        <td>
+
+                            <span class="pending-badge">
+
+                                Pending Approval
+
+                            </span>
+
+                        </td>
+
+                        <!-- ACTIONS -->
+
+                        <td>
+
+                            <div class="action-buttons">
+
+                                <a
+
+                                    href="/approve-driver-request/{{ driver._id }}"
+
+                                    class="approve-btn"
+                                >
+
+                                    <i class="fas fa-check"></i>
+
+                                    Approve
+
+                                </a>
+
+                                <a
+
+                                    href="/reject-driver-request/{{ driver._id }}"
+
+                                    class="reject-btn"
+                                >
+
+                                    <i class="fas fa-xmark"></i>
+
+                                    Reject
+
+                                </a>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <i class="fas fa-user-check"></i>
+
+            <div class="empty-title">
+
+                No New Driver Requests
+
+            </div>
+
+            <div class="empty-subtitle">
+
+                All driver requests have been reviewed
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>

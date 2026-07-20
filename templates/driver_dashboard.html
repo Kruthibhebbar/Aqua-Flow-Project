@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AquaFlow | Driver Command Center</title>
+    
+    <!-- Fonts + Bootstrap + Font Awesome + Leaflet + Chart.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: #f0f2f5; overflow-x: hidden; }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 270px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a1c2f 0%, #0e2538 100%);
+            color: #eef4ff;
+            z-index: 1050;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-track { background: #1e3a5f; }
+        .sidebar::-webkit-scrollbar-thumb { background: #2d7aff; border-radius: 10px; }
+        
+        .sidebar-header { padding: 28px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.3px; }
+        .sidebar-header h1 i { color: #2d7aff; margin-right: 6px; }
+        
+        .driver-mini-profile {
+            background: rgba(255,255,255,0.05);
+            margin: 20px;
+            padding: 20px;
+            border-radius: 24px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .driver-mini-profile:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .driver-mini-profile img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #2d7aff;
+            cursor: pointer;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .driver-mini-profile img:hover { transform: scale(1.05); }
+        
+        .nav-links { padding: 0 14px; }
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin: 6px 0;
+            border-radius: 16px;
+            color: #cdd9f4;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-links a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .nav-links a:hover::before { left: 100%; }
+        .nav-links a:hover, .nav-links a.active { background: #2d7aff; color: white; transform: translateX(5px); }
+        
+        /* Main content */
+        .main-content { margin-left: 270px; padding: 24px 28px; }
+        
+        /* Top bar */
+        .top-bar {
+            background: white;
+            border-radius: 24px;
+            padding: 16px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .top-bar:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        
+        .welcome-text h3 { 
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            background: linear-gradient(135deg, #0a1c2f, #1e3a5f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+        
+        /* Stat cards */
+        .stat-card {
+            background: white;
+            border-radius: 28px;
+            padding: 24px 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #eef2fa;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            cursor: pointer;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #2d7aff;
+            box-shadow: 0 12px 28px rgba(45,122,255,0.15);
+        }
+        
+        .stat-card i { transition: transform 0.3s ease; }
+        .stat-card:hover i { transform: scale(1.1); }
+        
+        /* Glass card effect */
+        .glass-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        #deliveryMap { 
+            height: 350px; 
+            width: 100%; 
+            border-radius: 20px; 
+            background: #e9edf2;
+            overflow: hidden;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: 0.3s;
+            border-radius: 30px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        input:checked + .slider { background-color: #10b981; }
+        input:checked + .slider:before { transform: translateX(30px); }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #2d7aff, #1a5fcc);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(45,122,255,0.3);
+        }
+        
+        /* Loading spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2d7aff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Progress bar animation */
+        .progress-bar {
+            transition: width 0.6s ease;
+        }
+        
+        /* Profile card */
+        .profile-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            height: 100%;
+        }
+        
+        .profile-stats {
+            border-top: 1px solid #eef2fa;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        
+        /* Centered deliveries table */
+        .deliveries-center {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); z-index: 1060; }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .mobile-menu-btn { display: block; position: fixed; bottom: 20px; right: 20px; z-index: 1070; }
+        }
+        
+        .mobile-menu-btn { 
+            display: none; 
+            background: linear-gradient(135deg, #2d7aff, #1a5fcc);
+            border: none;
+            border-radius: 50px;
+            padding: 14px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        footer { 
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 32px;
+            font-size: 13px;
+            color: #5b6e8c;
+        }
+        
+        /* Toast notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1080;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #2d7aff; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #1a5fcc; }
+        
+        /* Table styles */
+        .table-deliveries th {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .action-buttons .btn {
+            white-space: nowrap;
+        }
+
+        /* New incoming order alert */
+        .new-order-pulse { animation: pulseBadge 1.6s infinite; }
+        @keyframes pulseBadge {
+            0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.5); }
+            70% { box-shadow: 0 0 0 8px rgba(220,53,69,0); }
+            100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); }
+        }
+
+        .new-order-banner {
+            background: linear-gradient(135deg, #fff4f4, #ffe9e9);
+            border: 1px solid #ffc9c9;
+            border-radius: 20px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            animation: pulseBadge 2s infinite;
+        }
+
+        .no-active-delivery {
+            height: 350px;
+            border-radius: 20px;
+            background: #f3f6fb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #7c8aa5;
+            text-align: center;
+            gap: 8px;
+        }
+
+        .cash-remit-card {
+            border: 1px solid #ffe3b3;
+            background: #fff9ef;
+            border-radius: 18px;
+            padding: 16px 18px;
+        }
+    </style>
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="flashContainer" style="position:fixed; top:16px; right:16px; z-index:9999; max-width:380px; display:flex; flex-direction:column; gap:10px;">
+        {% for category, message in messages %}
+        <div class="flash-toast" style="background:#fff; border-left:4px solid {{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; box-shadow:0 6px 20px rgba(0,0,0,.12); border-radius:8px; padding:12px 16px; font-size:14px; display:flex; align-items:flex-start; gap:10px;">
+            <i class="fas {{ 'fa-check-circle' if category=='success' else 'fa-triangle-exclamation' if category=='danger' else 'fa-circle-info' }}" style="color:{{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; margin-top:2px;"></i>
+            <span style="flex:1;">{{ message }}</span>
+            <button onclick="this.closest('.flash-toast').remove()" style="background:none; border:none; cursor:pointer; color:#9aa5b1; font-size:14px;">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(function () {
+            document.querySelectorAll('.flash-toast').forEach(function (el) {
+                el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+                setTimeout(function () { el.remove(); }, 400);
+            });
+        }, 5000);
+    </script>
+    {% endif %}
+{% endwith %}
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<button class="mobile-menu-btn btn btn-primary" id="mobileMenuToggle">
+    <i class="fa-solid fa-bars"></i> Menu
+</button>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h1><i class="fa-solid fa-droplet"></i> AquaFlow</h1>
+        <p class="small opacity-75 mt-1">Driver Suite v2.0</p>
+    </div>
+    <div class="driver-mini-profile">
+        <img src="{{ driver.photo if driver.photo else 'https://ui-avatars.com/api/?background=2d7aff&color=fff&name=' + driver.name|urlencode }}" id="driverPhoto" alt="photo">
+        <h5 class="mt-2 mb-0">{{ driver.name }}</h5>
+        <p class="small text-white-50">{{ driver.truck_number if driver.truck_number else 'Truck Not Assigned' }}</p>
+        <span class="badge {% if driver.online_status == 'Online' %}bg-success{% else %}bg-secondary{% endif %} px-3 py-1" id="onlineStatusBadge">
+            <i class="fa-regular fa-circle"></i> {{ driver.online_status if driver.online_status else 'Offline' }}
+        </span>
+    </div>
+    <div class="nav-links">
+        <a href="/driver-dashboard" class="active"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+        <a href="/driver-profile"><i class="fa-regular fa-id-card"></i> My Profile</a>
+        <a href="/driver-earnings"><i class="fa-solid fa-wallet"></i> Earnings</a>
+        <a href="/driver-analytics"><i class="fa-solid fa-chart-simple"></i> Analytics</a>
+        <a href="/driver-documents"><i class="fa-regular fa-folder-open"></i> Documents</a>
+        <a href="/driver-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="top-bar">
+        <div class="welcome-text">
+            <h3>Welcome back, {{ driver.name if driver.name else 'Driver' }}</h3>
+            <p class="text-secondary mb-0">
+                <i class="fa-regular fa-calendar-alt"></i> {{ current_time.strftime('%A, %B %d, %Y') }} | 
+                <i class="fa-regular fa-clock"></i> {{ current_time.strftime('%I:%M %p') }}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <small class="text-secondary">Delivery Status</small>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="availabilityToggle" {% if driver.online_status == 'Online' %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="fw-semibold" id="statusText">{{ driver.online_status if driver.online_status else 'Offline' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="row g-4 mb-5" data-aos="fade-up">
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <i class="fa-solid fa-truck fa-2x text-primary mb-2"></i>
+                <h2 class="fw-bold mt-2 mb-0">{{ total_orders }}</h2>
+                <p class="text-secondary mb-0">Total Trips</p>
+                <small class="text-muted">All time</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <i class="fa-regular fa-clock fa-2x text-warning mb-2"></i>
+                <h2 class="fw-bold mt-2 mb-0">{{ active_orders_count }}</h2>
+                <p class="text-secondary mb-0">Active Trips</p>
+                <small class="text-muted">In progress</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <i class="fa-solid fa-circle-check fa-2x text-success mb-2"></i>
+                <h2 class="fw-bold mt-2 mb-0">{{ completed_orders_count }}</h2>
+                <p class="text-secondary mb-0">Completed</p>
+                <small class="text-muted">Successful deliveries</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <i class="fa-solid fa-indian-rupee-sign fa-2x text-info mb-2"></i>
+                <h2 class="fw-bold mt-2 mb-0">₹{{ "{:,.0f}".format(total_earnings) }}</h2>
+                <p class="text-secondary mb-0">Total Earnings</p>
+                <small class="text-muted">Lifetime</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- GPS Tracking and Driver Profile Side by Side -->
+    <div class="row g-4 mb-5" data-aos="fade-up">
+        <!-- GPS Tracking (Left) -->
+        <div class="col-lg-7">
+            <div class="glass-card p-0 overflow-hidden">
+                {% if current_delivery_order %}
+                <div class="bg-dark px-4 py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-white"><i class="fa-solid fa-location-dot me-1"></i> Live GPS Tracking</span>
+                    <span id="etaTracker" class="text-light small bg-white bg-opacity-20 px-3 py-1 rounded">
+                        <i class="fa-regular fa-hourglass-half"></i> ETA: -- min
+                    </span>
+                </div>
+                <div id="deliveryMap"></div>
+                <div class="px-4 py-3 bg-white border-top d-flex justify-content-between small">
+                    <span><i class="fa-regular fa-compass text-danger"></i> Current: Real-time position</span>
+                    <span><i class="fa-regular fa-flag-checkered"></i> Destination: {{ current_delivery_order.address }}</span>
+                </div>
+                {% else %}
+                <div class="bg-dark px-4 py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-white"><i class="fa-solid fa-location-dot me-1"></i> Live GPS Tracking</span>
+                </div>
+                <div class="no-active-delivery">
+                    <i class="fa-solid fa-map-location-dot fa-3x mb-2"></i>
+                    <h6 class="mb-0">No accepted delivery yet</h6>
+                    <p class="small mb-0">{% if pending_decision_orders %}Accept the new order above to unlock the live map and route.{% else %}The map will appear here once you accept an order.{% endif %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Driver Profile (Right) -->
+        <div class="col-lg-5">
+            <div class="glass-card">
+                <div class="d-flex align-items-start gap-3">
+                    <img src="{{ driver.photo if driver.photo else 'https://ui-avatars.com/api/?background=2d7aff&color=fff&name=' + driver.name|urlencode }}" class="rounded-circle" width="90" height="90" style="object-fit: cover; border: 3px solid #2d7aff;">
+                    <div class="flex-grow-1">
+                        <h4 class="mb-1">{{ driver.name }}</h4>
+                        <p class="text-muted mb-2">
+                            <i class="fa-regular fa-envelope"></i> {{ driver.email }}<br>
+                            <i class="fa-regular fa-phone"></i> {{ driver.phone if driver.phone else 'Not set' }}
+                        </p>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-primary"><i class="fa-regular fa-id-card"></i> {{ driver.license_number if driver.license_number else 'License Pending' }}</span>
+                            <span class="badge bg-info"><i class="fa-regular fa-calendar"></i> {{ driver.experience_years if driver.experience_years else '6' }} yrs exp</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-stats">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-light rounded-3">
+                                <small class="text-muted d-block">Completion Rate</small>
+                                <h5 class="mb-0 fw-bold">{{ "%.0f"|format((completed_orders_count / total_orders * 100) if total_orders > 0 else 0) }}%</h5>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-light rounded-3">
+                                <small class="text-muted d-block">Rating</small>
+                                <h5 class="mb-0 fw-bold text-warning">
+                                    <i class="fa-solid fa-star"></i> {{ "%.1f"|format(driver.get('average_rating', 4.8)) }}
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Truck Number</span>
+                            <span class="fw-bold">{{ driver.truck_number if driver.truck_number else 'Not Assigned' }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Member Since</span>
+                            <span class="fw-bold">{{ driver.created_at if driver.created_at else 'Jan 2024' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pending_decision_orders %}
+    <div class="new-order-banner" data-aos="fade-up">
+        <div>
+            <h5 class="mb-1 text-danger"><i class="fa-solid fa-bell me-2"></i> {{ pending_decision_orders|length }} New Order{{ 's' if pending_decision_orders|length > 1 else '' }} Awaiting Your Response</h5>
+            <p class="mb-0 text-secondary small">Accept to start this delivery, or reject to send it back for reassignment. The map and Start button unlock only after you accept.</p>
+        </div>
+        <span class="badge bg-danger rounded-pill px-3 py-2">Action Required</span>
+    </div>
+    {% endif %}
+
+    <!-- Active Deliveries Table - Centered -->
+    <div class="deliveries-center" data-aos="fade-up">
+        <!-- Step 3: Debug count display -->
+        <h3 class="text-muted small mb-2">Active Orders Count: {{ active_orders|length }}</h3>
+        <div class="glass-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+                <h4 class="fw-bold mb-0"><i class="fa-solid fa-truck-fast me-2"></i> Active Deliveries</h4>
+                <span class="badge bg-primary rounded-pill px-3 py-2">{{ active_orders|length }} Active Loads</span>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle table-deliveries">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fa-regular fa-user"></i> Customer</th>
+                            <th><i class="fa-solid fa-location-dot"></i> Pickup</th>
+                            <th><i class="fa-regular fa-flag"></i> Destination</th>
+                            <th><i class="fa-solid fa-indian-rupee-sign"></i> Amount</th>
+                            <th><i class="fa-regular fa-chart-line"></i> Status</th>
+                            <th><i class="fa-regular fa-clock"></i> Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if active_orders %}
+                            {% for order in active_orders %}
+                            <tr>
+                                <td class="fw-semibold">
+                                    <div>{{ order.name if order.name else 'Customer' }}</div>
+                                    <small class="text-muted">{{ order.phone if order.phone else '' }}</small>
+                                </td>
+                                <td class="small">{{ order.pickup_location if order.pickup_location else 'Water Depot' }}</td>
+                                <td class="small">{{ order.address|truncate(30) if order.address else '-' }}</td>
+                                <td class="fw-semibold">₹{{ order.get('delivery_fee', 500) }}</td>
+                                <td>
+                                    <!-- FIX Step 1: Replaced delivery_status with status -->
+                                    <span class="status-badge badge {% if order.status == 'Delivered' %}bg-success{% elif order.status == 'On The Way' %}bg-warning text-dark{% elif order.status == 'Arrived' %}bg-info text-dark{% elif order.status == 'Accepted' %}bg-primary{% elif order.status == 'Assigned' %}bg-danger new-order-pulse{% else %}bg-secondary{% endif %}">
+                                        <i class="fa-regular fa-circle me-1"></i>
+                                        {{ order.status if order.status else 'Pending' }}
+                                    </span>
+                                </td>
+                                <td class="action-buttons">
+                                    {% if order.status == 'Assigned' %}
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-success rounded-4 px-3 accept-order-btn" data-id="{{ order._id }}">
+                                            <i class="fa-solid fa-check"></i> Accept
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger rounded-4 px-3 reject-order-btn" data-id="{{ order._id }}">
+                                            <i class="fa-solid fa-xmark"></i> Reject
+                                        </button>
+                                    </div>
+                                    {% elif order.status == 'Accepted' %}
+                                    <button class="btn btn-sm btn-primary rounded-4 px-3 start-delivery-btn" data-id="{{ order._id }}">
+                                        <i class="fa-solid fa-play"></i> Start
+                                    </button>
+                                    {% elif order.status == 'On The Way' %}
+                                    <a href="/arrived-location/{{ order._id }}" class="btn btn-sm btn-outline-warning rounded-4 px-3" onclick="showLoading()">
+                                        <i class="fa-solid fa-location-dot"></i> Arrived
+                                    </a>
+                                    {% elif order.status == 'Arrived' %}
+                                    <button class="btn btn-sm btn-outline-success rounded-4 generate-otp-btn px-3" data-id="{{ order._id }}">
+                                        <i class="fa-solid fa-key"></i> Complete
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <i class="fa-solid fa-truck-fast fa-3x text-muted mb-3 d-block"></i>
+                                    <h5 class="text-secondary">No Active Deliveries</h5>
+                                    <p class="text-muted mb-0">Stay online to receive new assignments</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <hr class="my-3">
+            <div class="d-flex justify-content-between small text-secondary">
+                <span><i class="fa-regular fa-calendar-check"></i> Today's deliveries: {{ today_deliveries }}</span>
+                <span><i class="fa-regular fa-chart-line"></i> Pending payments: ₹{{ pending_payments }}</span>
+                <span><i class="fa-regular fa-check-circle"></i> Approved payments: ₹{{ approved_payments }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings Preview & OTP Section -->
+    <div class="row g-4 mt-3" data-aos="zoom-in">
+        <div class="col-md-6">
+            <div class="glass-card">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-line me-2"></i> Weekly Earnings Preview</h5>
+                <canvas id="earningsChart" height="200" style="max-height: 200px;"></canvas>
+                <div class="mt-3 pt-2 border-top">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <small class="text-secondary">Total Earned</small>
+                            <h6 class="mb-0 text-success">₹{{ "{:,.0f}".format(total_earnings) }}</h6>
+                        </div>
+                        <div>
+                            <small class="text-secondary">This Week</small>
+                            <h6 class="mb-0 text-primary">₹{{ "{:,.0f}".format(weekly_earnings.get('Mon', 0) + weekly_earnings.get('Tue', 0) + weekly_earnings.get('Wed', 0) + weekly_earnings.get('Thu', 0) + weekly_earnings.get('Fri', 0) + weekly_earnings.get('Sat', 0) + weekly_earnings.get('Sun', 0)) }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-shield-haltered me-2"></i> Delivery OTP Verification</h5>
+                <p class="small text-secondary">The OTP was emailed to the customer when the booking was approved. Ask the customer for it before completing the delivery.</p>
+                
+                <div class="mb-3">
+                    <label class="small fw-semibold mb-2">Select Active Booking</label>
+                    <select id="activeBookingSelect" class="form-select rounded-4">
+                        {% set arrived_orders = active_orders|selectattr('status', 'equalto', 'Arrived')|list %}
+                        {% if arrived_orders %}
+                            {% for order in arrived_orders %}
+                            <option value="{{ order._id }}">{{ order.name }} - {{ order.address|truncate(35) }}</option>
+                            {% endfor %}
+                        {% else %}
+                        <option disabled>No deliveries ready for OTP yet</option>
+                        {% endif %}
+                    </select>
+                </div>
+                
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <button class="btn btn-gradient w-100 rounded-4" id="generateOtpBtn" {% if not arrived_orders %}disabled{% endif %}>
+                            <i class="fa-solid fa-key"></i> Check OTP Status
+                        </button>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <input type="text" id="otpInputField" class="form-control rounded-4" placeholder="Enter 6-digit OTP" maxlength="6">
+                            <button class="btn btn-success rounded-4" id="verifyOtpBtn" {% if not arrived_orders %}disabled{% endif %}>
+                                <i class="fa-solid fa-check"></i> Verify & Complete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 p-3 bg-light rounded-4">
+                    <div id="otpStatusMessage" class="small"></div>
+                </div>
+                
+                <div class="mt-3 alert alert-info alert-sm mb-0">
+                    <i class="fa-solid fa-info-circle"></i>
+                    <small>OTP must be provided by customer to verify successful delivery.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- REAL-MONEY WALLET: cash collected vs. still owed to     -->
+    <!-- the company, plus exactly where to send it              -->
+    <!-- ===================================================== -->
+    <div class="row g-4 mt-3" data-aos="fade-up">
+        <div class="col-12">
+            <div class="glass-card p-0 overflow-hidden">
+                <div class="px-4 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:linear-gradient(135deg,#0a1c2f,#1e3a5f);">
+                    <span class="text-white fw-semibold"><i class="fa-solid fa-building-columns me-2"></i> Company Cash Reconciliation</span>
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> You owe the company ₹{{ "{:,.0f}".format(wallet.pending_deposit) }}
+                    </span>
+                </div>
+                <div class="p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 bg-light rounded-4">
+                                <small class="text-muted d-block mb-1">Cash Collected</small>
+                                <h5 class="mb-0 fw-bold">₹{{ "{:,.0f}".format(wallet.collected_total) }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 bg-light rounded-4">
+                                <small class="text-muted d-block mb-1">Awaiting Verification</small>
+                                <h5 class="mb-0 fw-bold text-warning">₹{{ "{:,.0f}".format(wallet.pending_verification_total) }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 bg-light rounded-4">
+                                <small class="text-muted d-block mb-1">Verified by Admin</small>
+                                <h5 class="mb-0 fw-bold text-success">₹{{ "{:,.0f}".format(wallet.approved_total) }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 rounded-4" style="background:#fff3cd;">
+                                <small class="text-muted d-block mb-1">Still to Deposit</small>
+                                <h5 class="mb-0 fw-bold text-danger">₹{{ "{:,.0f}".format(wallet.pending_deposit) }}</h5>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold mb-2"><i class="fa-solid fa-landmark me-2"></i> Send Collected Cash Here</h6>
+                            <div class="p-3 bg-light rounded-4 small">
+                                <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">Bank Name</span><span class="fw-semibold">{{ bank_details.bank_name }}</span></div>
+                                <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">Account Holder</span><span class="fw-semibold">{{ bank_details.account_holder }}</span></div>
+                                <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">Account Number</span><span class="fw-semibold">{{ bank_details.account_number if bank_details.account_number else 'Not set up yet' }}</span></div>
+                                <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">IFSC</span><span class="fw-semibold">{{ bank_details.ifsc if bank_details.ifsc else '-' }}</span></div>
+                                <div class="d-flex justify-content-between py-1"><span class="text-muted">UPI ID</span><span class="fw-semibold">{{ bank_details.upi_id if bank_details.upi_id else '-' }}</span></div>
+                            </div>
+                            {% if not bank_details.account_number %}
+                            <p class="small text-danger mt-2 mb-0"><i class="fa-solid fa-circle-exclamation"></i> Admin hasn't added company bank details yet. Contact admin before sending any money.</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-3 col-6 text-center">
+                            <h6 class="fw-bold mb-2"><i class="fa-solid fa-qrcode me-2"></i> Scan to Pay</h6>
+                            {% if bank_details.qr_image %}
+                            <img src="{{ url_for('static', filename=bank_details.qr_image) }}" class="img-fluid rounded-4 border" style="max-height:180px;" alt="Company payment QR">
+                            {% else %}
+                            <div class="p-4 bg-light rounded-4 text-muted small">No QR code uploaded yet</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if cash_pending_orders %}
+                    <hr class="my-4">
+                    <h6 class="fw-bold mb-1"><i class="fa-solid fa-hand-holding-dollar me-2"></i> Submit a Payment You Already Sent</h6>
+                    <p class="small text-secondary mb-3">After transferring money to the account above, submit the transaction reference (and a screenshot if you have one) so admin can match it to their bank statement.</p>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Delivered</th>
+                                    <th>Amount Due</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in cash_pending_orders %}
+                                <tr>
+                                    <td class="fw-semibold">{{ order.name if order.name else 'Customer' }}</td>
+                                    <td class="small">{{ order.delivered_at.strftime('%d %b, %I:%M %p') if order.delivered_at else '-' }}</td>
+                                    <td class="fw-semibold">₹{{ order.get('delivery_fee', 500) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-gradient rounded-4 px-3 submit-payment-btn"
+                                                data-id="{{ order._id }}"
+                                                data-amount="{{ order.get('delivery_fee', 500) }}">
+                                            <i class="fa-solid fa-money-bill-wave"></i> Submit Payment
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    {% if payment_submissions %}
+                    <hr class="my-4">
+                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left me-2"></i> Your Submission History</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Reference</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in payment_submissions %}
+                                <tr>
+                                    <td class="fw-semibold">₹{{ "{:,.0f}".format(order.get('cash_submitted_amount', order.get('delivery_fee', 500))) }}</td>
+                                    <td class="small">{{ order.get('payment_submission_method', 'UPI') }}</td>
+                                    <td class="small">{{ order.get('payment_transaction_ref', '-') }}</td>
+                                    <td class="small">{{ order.payment_submitted_at.strftime('%d %b, %I:%M %p') if order.get('payment_submitted_at') else '-' }}</td>
+                                    <td>
+                                        {% set pstatus = order.get('payment_submission_status', 'Pending Verification') %}
+                                        <span class="badge {% if pstatus == 'Approved' %}bg-success{% elif pstatus == 'Rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill px-3">{{ pstatus }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p class="mb-0">
+            <i class="fa-regular fa-copyright me-1"></i> AquaFlow Fleet Logistics — Driver Command Center v2.0
+            <br>
+            <small class="text-muted">Real-time telematics & secure OTP delivery system</small>
+        </p>
+    </footer>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+// Initialize AOS
+console.log("SCRIPT START");
+AOS.init({ duration: 600, once: true, offset: 20 });
+
+// Show/Hide Loading Overlay
+window.showLoading = function() {
+    $('#loadingOverlay').fadeIn(300);
+}
+window.hideLoading = function() {
+    $('#loadingOverlay').fadeOut(300);
+}
+
+// Show Toast Notification
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'check-circle' : (type === 'danger' ? 'exclamation-circle' : 'info-circle');
+    const toastHtml = `
+        <div class="toast-notification alert alert-${type} alert-dismissible fade show" role="alert" style="z-index: 9999;">
+            <i class="fa-solid fa-${icon} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    $('body').append(toastHtml);
+    setTimeout(() => {
+        $('.toast-notification').fadeOut(500, function() { $(this).remove(); });
+    }, 3000);
+}
+
+// Mobile sidebar toggle
+$('#mobileMenuToggle').click(function() {
+    $('#sidebar').toggleClass('active');
+});
+
+// Availability toggle with AJAX
+let availabilityToggle = $('#availabilityToggle');
+let statusText = $('#statusText');
+let onlineStatusBadge = $('#onlineStatusBadge');
+
+availabilityToggle.change(function() {
+    const newStatus = this.checked ? 'Online' : 'Offline';
+    showLoading();
+    
+    $.ajax({
+        url: '/api/driver-status',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ status: newStatus }),
+        success: function(response) {
+            if (response.success) {
+                statusText.text(newStatus);
+                onlineStatusBadge.removeClass('bg-success bg-secondary').addClass(newStatus === 'Online' ? 'bg-success' : 'bg-secondary');
+                onlineStatusBadge.html(`<i class="fa-regular fa-circle"></i> ${newStatus}`);
+                showToast(`You are now ${newStatus.toLowerCase()}`, 'success');
+            }
+        },
+        error: function(xhr) {
+            availabilityToggle.prop('checked', !availabilityToggle.prop('checked'));
+            const errorMsg = xhr.responseJSON?.message || 'Error updating status';
+            showToast(errorMsg, 'danger');
+        },
+        complete: function() {
+            hideLoading();
+        }
+    });
+});
+
+// Leaflet Map with REAL-TIME GPS tracking - only for an ACCEPTED / in-progress
+// delivery. If the driver hasn't accepted an order yet, #deliveryMap is not
+// rendered at all, so we skip map setup entirely.
+var updateInterval = null;
+var geoWatchId = null;
+{% if current_delivery_order %}
+var CURRENT_BOOKING_ID = "{{ current_delivery_order._id }}";
+
+// Destination marker — uses the REAL location the customer pinned on the
+// map when booking (booking.latitude / booking.longitude). Falls back to
+// a rough city-center estimate only for older bookings made before the
+// map picker existed and have no coordinates saved.
+{% if current_delivery_order.latitude and current_delivery_order.longitude %}
+var destLat = {{ current_delivery_order.latitude }};
+var destLng = {{ current_delivery_order.longitude }};
+{% else %}
+var destLat = 12.9352;
+var destLng = 77.6245;
+{% endif %}
+
+// Start the map centered on the destination until we get a real GPS fix,
+// so it never opens on a random/wrong city.
+var map = L.map('deliveryMap').setView([destLat, destLng], 13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
+}).addTo(map);
+
+var destMarker = L.marker([destLat, destLng]).addTo(map)
+    .bindPopup("<strong>📍 Delivery Point</strong><br>{{ current_delivery_order.address|truncate(60)|e }}");
+
+var driverMarker = null;
+var routeLine = null;
+var lastPushedAt = 0;
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function handleDriverPosition(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    if (!driverMarker) {
+        driverMarker = L.marker([lat, lng]).addTo(map)
+            .bindPopup('<strong>📍 Your Live Location</strong>').openPopup();
+        routeLine = L.polyline([[lat, lng], [destLat, destLng]], {
+            color: '#2d7aff', weight: 4, dashArray: '8,8', opacity: 0.75
+        }).addTo(map);
+        map.fitBounds([[lat, lng], [destLat, destLng]], { padding: [50, 50] });
+    } else {
+        driverMarker.setLatLng([lat, lng]);
+        routeLine.setLatLngs([[lat, lng], [destLat, destLng]]);
+    }
+
+    const distanceKm = haversineKm(lat, lng, destLat, destLng);
+    const etaMin = Math.max(1, Math.round((distanceKm / 30) * 60)); // ~30 km/h avg city speed
+    $('#etaTracker').html(`<i class="fa-regular fa-hourglass-half"></i> ETA: ${etaMin} min (${distanceKm.toFixed(1)} km)`);
+
+    // Push the real position to the server (throttled) so the customer's
+    // tracking page can plot the same live location.
+    const now = Date.now();
+    if (now - lastPushedAt > 8000) {
+        lastPushedAt = now;
+        fetch(`/api/update-driver-location/${CURRENT_BOOKING_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lng })
+        }).catch(err => console.log('Location push failed', err));
+    }
+}
+
+function handleDriverPositionError(err) {
+    console.warn('Geolocation error:', err);
+    $('#etaTracker').html('<i class="fa-solid fa-triangle-exclamation"></i> Enable location');
+    if (!driverMarker && typeof showToast === 'function') {
+        showToast('Please allow location access in your browser so the map can show your real position.', 'warning');
+    }
+}
+
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(handleDriverPosition, handleDriverPositionError, {
+        enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+    });
+    geoWatchId = navigator.geolocation.watchPosition(handleDriverPosition, handleDriverPositionError, {
+        enableHighAccuracy: true, timeout: 15000, maximumAge: 5000
+    });
+} else {
+    handleDriverPositionError({ message: 'Geolocation not supported by this browser' });
+}
+{% endif %}
+
+// Earnings Chart
+const ctx = document.getElementById('earningsChart')?.getContext('2d');
+if(ctx) {
+    const weeklyData = [
+        {{ weekly_earnings.get('Mon', 0) }},
+        {{ weekly_earnings.get('Tue', 0) }},
+        {{ weekly_earnings.get('Wed', 0) }},
+        {{ weekly_earnings.get('Thu', 0) }},
+        {{ weekly_earnings.get('Fri', 0) }},
+        {{ weekly_earnings.get('Sat', 0) }},
+        {{ weekly_earnings.get('Sun', 0) }}
+    ];
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Earnings (₹)',
+                data: weeklyData,
+                borderColor: '#2d7aff',
+                backgroundColor: 'rgba(45,122,255,0.05)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#2d7aff',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#e9ecef' }, title: { display: true, text: 'Amount (₹)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// Shared helper: POSTs to `url` and always resolves to {success, message}.
+// Unlike a bare fetch().then(r => r.json()), this surfaces WHY a request
+// failed (session expired / redirected to login, server returned HTML,
+// non-2xx status, etc.) instead of collapsing everything into a generic
+// "Network error" - which is what was hiding the real cause before.
+function postJSON(url, body) {
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined
+    }).then(async (response) => {
+        if (response.redirected || response.url.includes('/driver-login')) {
+            return { success: false, message: 'Your session expired. Please log in again.', sessionExpired: true };
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error(`Unexpected non-JSON response from ${url} (status ${response.status}):`, text.slice(0, 300));
+            return { success: false, message: `Server error (HTTP ${response.status}). Check the browser console for details.` };
+        }
+        const data = await response.json();
+        if (!response.ok && data.message === undefined) {
+            return { success: false, message: `Request failed (HTTP ${response.status})` };
+        }
+        return data;
+    }).catch((error) => {
+        console.error(`Network error calling ${url}:`, error);
+        return { success: false, message: 'Could not reach the server. Check your connection and try again.' };
+    });
+}
+
+// Accept a newly assigned order
+$(document).on('click', '.accept-order-btn', function() {
+    const btn = $(this);
+    const orderId = btn.attr('data-id');
+    if (!orderId) return;
+    showLoading();
+
+    postJSON(`/api/accept-booking/${orderId}`).then((data) => {
+        if (data.success) {
+            showToast('Order accepted! Map and Start button are now unlocked.', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showToast(data.message || 'Failed to accept order', 'danger');
+            hideLoading();
+            if (data.sessionExpired) setTimeout(() => window.location.href = '/driver-login', 1500);
+        }
+    });
+});
+
+// Reject a newly assigned order
+$(document).on('click', '.reject-order-btn', function() {
+    const orderId = $(this).attr('data-id');
+    if (!orderId) return;
+
+    Swal.fire({
+        title: 'Reject this order?',
+        text: 'It will be sent back to admin for reassignment to another driver.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, reject it',
+        confirmButtonColor: '#dc3545',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+        showLoading();
+
+        postJSON(`/api/reject-booking/${orderId}`).then((data) => {
+            if (data.success) {
+                showToast('Order rejected and sent for reassignment', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showToast(data.message || 'Failed to reject order', 'danger');
+                hideLoading();
+                if (data.sessionExpired) setTimeout(() => window.location.href = '/driver-login', 1500);
+            }
+        });
+    });
+});
+
+// Step 2: Start delivery using POST fetch (fix for GET vs POST)
+$(document).on('click', '.start-delivery-btn', function() {
+    const orderId = $(this).attr('data-id');
+    if (!orderId) return;
+    showLoading();
+
+    postJSON(`/start-delivery/${orderId}`).then((data) => {
+        if (data.success) {
+            showToast('Delivery started! Status updated to On The Way', 'success');
+            setTimeout(() => window.location.reload(), 1200);
+        } else {
+            showToast(data.message || 'Failed to start delivery', 'danger');
+            hideLoading();
+            if (data.sessionExpired) setTimeout(() => window.location.href = '/driver-login', 1500);
+        }
+    });
+});
+
+// Submit collected cash payment to the company/admin - a REAL bank/UPI
+// transfer, so we collect the transaction reference (and optionally a
+// screenshot) that admin can check against their bank statement.
+$(document).on('click', '.submit-payment-btn', async function() {
+    const orderId = $(this).attr('data-id');
+    const suggestedAmount = $(this).data('amount');
+    if (!orderId) return;
+
+    const { value: formValues } = await Swal.fire({
+        title: 'Submit Payment to Company',
+        html: `
+            <div class="text-start small">
+                <label class="fw-semibold mb-1">Amount Sent (₹)</label>
+                <input id="swalAmount" type="number" min="0" step="1" class="swal2-input" style="margin:0 0 10px;" value="${suggestedAmount}">
+                <label class="fw-semibold mb-1">Payment Method</label>
+                <select id="swalMethod" class="swal2-select" style="margin:0 0 10px; width:100%;">
+                    <option value="UPI">UPI</option>
+                    <option value="IMPS">IMPS</option>
+                    <option value="NEFT">NEFT</option>
+                    <option value="RTGS">RTGS</option>
+                    <option value="Cash Deposit">Cash Deposit at Bank</option>
+                </select>
+                <label class="fw-semibold mb-1">Transaction / UTR Reference No.</label>
+                <input id="swalRef" type="text" class="swal2-input" style="margin:0 0 10px;" placeholder="e.g. UPI987654321">
+                <label class="fw-semibold mb-1">Payment Screenshot (optional)</label>
+                <input id="swalScreenshot" type="file" accept="image/*,.pdf" class="form-control" style="margin:0 0 10px;">
+                <label class="fw-semibold mb-1">Note (optional)</label>
+                <textarea id="swalNote" class="swal2-textarea" style="margin:0;" placeholder="Anything admin should know"></textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Submit to Admin',
+        confirmButtonColor: '#2d7aff',
+        focusConfirm: false,
+        preConfirm: () => {
+            const amount = document.getElementById('swalAmount').value;
+            const method = document.getElementById('swalMethod').value;
+            const ref = document.getElementById('swalRef').value.trim();
+            const note = document.getElementById('swalNote').value.trim();
+            const screenshotInput = document.getElementById('swalScreenshot');
+            const screenshot = screenshotInput.files.length ? screenshotInput.files[0] : null;
+
+            if (!amount || Number(amount) < 0) {
+                Swal.showValidationMessage('Please enter a valid amount');
+                return false;
+            }
+            if (!ref) {
+                Swal.showValidationMessage('Please enter the transaction / UTR reference number');
+                return false;
+            }
+            return { amount, method, ref, note, screenshot };
+        }
+    });
+
+    if (!formValues) return;
+
+    showLoading();
+    const body = new FormData();
+    body.append('amount', formValues.amount);
+    body.append('method', formValues.method);
+    body.append('transaction_ref', formValues.ref);
+    body.append('note', formValues.note);
+    if (formValues.screenshot) body.append('screenshot', formValues.screenshot);
+
+    fetch(`/api/submit-collected-payment/${orderId}`, {
+        method: 'POST',
+        body: body
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message || 'Payment submitted for verification', 'success');
+            setTimeout(() => window.location.reload(), 1200);
+        } else {
+            showToast(data.message || 'Failed to submit payment', 'danger');
+            hideLoading();
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting payment:', error);
+        showToast('Network error. Please try again.', 'danger');
+        hideLoading();
+    });
+});
+
+// OTP Functionality
+let currentBookingId = null;
+const selectEl = document.getElementById('activeBookingSelect');
+
+if(selectEl && selectEl.options.length > 0) {
+    currentBookingId = selectEl.value;
+    selectEl.addEventListener('change', (e) => {
+        currentBookingId = e.target.value;
+        $('#otpStatusMessage').html('');
+    });
+}
+
+// Generate OTP
+$('#generateOtpBtn').click(async function() {
+    if(!currentBookingId) {
+        showToast('Please select an active booking', 'warning');
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`/generate-delivery-otp/${currentBookingId}`);
+        const data = await response.json();
+        
+        if(data.success) {
+            $('#otpStatusMessage').html('<span class="text-success"><i class="fa-solid fa-check-circle"></i> ' + data.message + '</span>');
+            showToast('Ask the customer for their OTP', 'success');
+        } else {
+            showToast(data.message || 'Failed to generate OTP', 'danger');
+        }
+    } catch(e) {
+        console.error('OTP generation error:', e);
+        showToast('Error generating OTP', 'danger');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Verify OTP
+$('#verifyOtpBtn').click(async function() {
+    const otp = $('#otpInputField').val().trim();
+    
+    if(!currentBookingId) {
+        showToast('Please select a booking', 'warning');
+        return;
+    }
+    
+    if(!otp || otp.length !== 6) {
+        showToast('Please enter a valid 6-digit OTP', 'warning');
+        return;
+    }
+    
+    showLoading();
+    
+    const formData = new FormData();
+    formData.append('otp', otp);
+    
+    try {
+        const response = await fetch(`/verify-delivery-otp/${currentBookingId}`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if(data.success) {
+            $('#otpStatusMessage').html('<span class="text-success"><i class="fa-solid fa-check-circle"></i> ' + data.message + ' Refreshing...</span>');
+            showToast(data.message, 'success');
+            setTimeout(() => { window.location.href = "/driver-dashboard"; }, 1500);
+        } else {
+            showToast(data.message || 'Invalid OTP. Please try again.', 'danger');
+            $('#otpStatusMessage').html('<span class="text-danger"><i class="fa-solid fa-times-circle"></i> ' + (data.message || 'Invalid OTP') + '</span>');
+        }
+    } catch(e) {
+        console.error('OTP verification error:', e);
+        showToast('Error verifying OTP', 'danger');
+    } finally {
+        hideLoading();
+    }
+});
+
+// OTP buttons in table
+$('.generate-otp-btn').click(async function() {
+    const bookingId = $(this).attr('data-id');
+    if(!bookingId) return;
+    
+    currentBookingId = bookingId;
+    if(selectEl && selectEl.querySelector(`option[value="${bookingId}"]`)) {
+        selectEl.value = bookingId;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`/generate-delivery-otp/${bookingId}`);
+        const data = await response.json();
+        
+        if(data.success) {
+            $('#otpStatusMessage').html('<span class="text-success"><i class="fa-solid fa-check-circle"></i> ' + data.message + '</span>');
+            showToast('Ask the customer for their OTP', 'success');
+            $('html, body').animate({ scrollTop: $('#otpStatusMessage').offset().top - 100 }, 500);
+        } else {
+            showToast('Failed to generate OTP', 'danger');
+        }
+    } catch(e) {
+        console.error('OTP generation error:', e);
+        showToast('Error generating OTP', 'danger');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Auto-refresh dashboard data every 30 seconds
+let refreshInterval = setInterval(function() {
+    if(window.location.pathname === '/driver-dashboard') {
+        $.ajax({
+            url: '/api/driver/dashboard-data',
+            method: 'GET',
+            success: function(data) {
+                if(data.total_orders !== undefined) $('.stat-card').first().find('h2').text(data.total_orders);
+                if(data.active_orders !== undefined) $('.stat-card').eq(1).find('h2').text(data.active_orders);
+                if(data.total_earnings !== undefined) $('.stat-card').eq(3).find('h2').text('₹' + data.total_earnings.toLocaleString());
+            },
+            error: function(xhr) { console.log('Auto-refresh failed:', xhr.status); }
+        });
+    }
+}, 30000);
+
+// Photo zoom modal
+$('#driverPhoto').click(function() {
+    let zoom = 1;
+    const modalHtml = `
+        <div class="modal fade" id="photoModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content bg-transparent border-0">
+                    <div class="modal-body text-center p-0">
+                        <img src="${$(this).attr('src')}" id="fullPhoto" class="rounded-4 shadow" style="max-width:100%; max-height:85vh; cursor:zoom-in; transition:transform 0.1s ease;">
+                        <div class="mt-2 text-white small bg-dark bg-opacity-50 d-inline-block px-3 py-1 rounded-pill">
+                            <i class="fa-regular fa-mouse"></i> Scroll to zoom • Double-click reset
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    $('body').append(modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('photoModal'));
+    modal.show();
+    
+    $('#fullPhoto').on('wheel', function(e) {
+        e.preventDefault();
+        zoom += e.originalEvent.deltaY < 0 ? 0.1 : -0.1;
+        zoom = Math.min(4, Math.max(0.6, zoom));
+        $(this).css('transform', `scale(${zoom})`);
+    }).on('dblclick', function() {
+        zoom = 1;
+        $(this).css('transform', 'scale(1)');
+    });
+    
+    $('#photoModal').on('hidden.bs.modal', function() { $(this).remove(); });
+});
+
+// Cleanup interval on page unload
+$(window).on('beforeunload', function() {
+    if(updateInterval) clearInterval(updateInterval);
+    if(refreshInterval) clearInterval(refreshInterval);
+    if(geoWatchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(geoWatchId);
+});
+
+console.log('Driver dashboard initialized with fixed delivery_status -> status mapping and POST start delivery');
+console.log("SCRIPT END");
+</script>
+
+<script>
+(function () {
+    var HOME_URL = "/";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

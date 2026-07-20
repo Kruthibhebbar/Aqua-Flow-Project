@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AquaTrack | Live Booking History</title>
+    <style>
+        /* ========== GLOBAL RESET & BASE ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(145deg, #f0f4f8 0%, #e6edf4 100%);
+            padding: 30px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ========== HEADER SECTION ========== */
+        .header-section {
+            margin-bottom: 35px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(8px);
+            padding: 18px 28px;
+            border-radius: 60px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1E5A7A, #FF8C42);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1::before {
+            content: "💧";
+            font-size: 36px;
+            background: none;
+            -webkit-background-clip: unset;
+            color: #FF8C42;
+        }
+
+        .stats-badge {
+            background: #ffffffcc;
+            backdrop-filter: blur(4px);
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #1e4a6e;
+            font-size: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid #ffffff;
+        }
+
+        .stats-badge i {
+            margin-right: 8px;
+            color: #FF8C42;
+        }
+
+        /* ========== FILTER & SEARCH BAR (DYNAMIC) ========== */
+        .action-bar {
+            background: white;
+            border-radius: 56px;
+            padding: 12px 24px;
+            margin-bottom: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.05);
+            border: 1px solid #eef2f9;
+        }
+
+        .search-wrapper {
+            display: flex;
+            align-items: center;
+            background: #f8fafd;
+            border-radius: 48px;
+            padding: 5px 18px;
+            gap: 12px;
+            border: 1px solid #e2eaf1;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-wrapper i {
+            color: #ff9142;
+            font-size: 18px;
+        }
+
+        #searchInput {
+            border: none;
+            background: transparent;
+            padding: 12px 0;
+            font-size: 15px;
+            width: 100%;
+            outline: none;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            background: #f8fafd;
+            border: 1px solid #e2eaf1;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-family: inherit;
+            font-weight: 500;
+            color: #1e4663;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .record-counter {
+            background: #FFF2E6;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 700;
+            color: #c96f0e;
+            font-size: 14px;
+        }
+
+        /* ========== BOOKING CARDS (PROFESSIONAL) ========== */
+        .booking-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 28px;
+            padding: 0;
+            transition: all 0.25s ease;
+            box-shadow: 0 12px 24px -12px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        .booking-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 22px 32px -14px rgba(0,0,0,0.12);
+        }
+
+        .card-header {
+            background: #fef9f2;
+            padding: 18px 28px;
+            border-bottom: 2px solid #ffeedd;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .booking-card h2 {
+            color: #FF8C42;
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .booking-card h2 i {
+            font-size: 26px;
+            color: #ffb347;
+        }
+
+        .status-badge {
+            background: #eef2fa;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #2c6280;
+        }
+
+        .card-body {
+            padding: 24px 28px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 22px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 700;
+            color: #6f8eaa;
+        }
+
+        .info-value {
+            font-weight: 600;
+            font-size: 18px;
+            color: #1e2f3c;
+            word-break: break-word;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-value i {
+            color: #ff9142;
+            font-size: 18px;
+            width: 24px;
+        }
+
+        .quantity-badge {
+            background: #eef6fc;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 700;
+            color: #1a6b8f;
+            display: inline-block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 70px 30px;
+            background: white;
+            border-radius: 48px;
+            color: #8ba0b5;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.02);
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        footer {
+            margin-top: 55px;
+            text-align: center;
+            font-size: 13px;
+            color: #6a8aaa;
+            border-top: 1px solid #dce5ef;
+            padding-top: 24px;
+        }
+
+        @media (max-width: 700px) {
+            .card-body {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+                border-radius: 32px;
+            }
+            .header-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    <!-- Font Awesome Icons (professional look) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+<div class="container">
+    <!-- Header with dynamic stats (JS will calculate from backend data) -->
+    <div class="header-section">
+        <h1>Live Booking History</h1>
+        <div class="stats-badge">
+            <i class="fas fa-charging-station"></i> Real-time logistics · Auto refresh
+        </div>
+    </div>
+
+    <!-- Dynamic search & filter bar (client-side filtering works perfectly with Jinja variables) -->
+    <div class="action-bar">
+        <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search by ID, customer, phone, address...">
+        </div>
+        <div class="filter-group">
+            <select id="quantityFilter" class="filter-select">
+                <option value="all">💧 All quantities</option>
+                <option value="high">📈 High (> 5000L)</option>
+                <option value="medium">📊 Medium (2000L - 5000L)</option>
+                <option value="low">📉 Low (< 2000L)</option>
+            </select>
+            <select id="sortSelect" class="filter-select">
+                <option value="dateDesc">🕒 Latest booking first</option>
+                <option value="dateAsc">📆 Oldest first</option>
+                <option value="quantityDesc">💧 Highest quantity</option>
+                <option value="customerAsc">👤 Customer A-Z</option>
+            </select>
+        </div>
+        <div class="record-counter" id="recordCounter">
+            <i class="fas fa-clipboard-list"></i> <span id="bookingCount">0</span> bookings
+        </div>
+    </div>
+
+    <!-- BOOKING CARDS GRID - DYNAMIC JINJA2 LOOP (BACKEND RENDERED) 
+         The following block is the core server-side template. 
+         All booking data is injected from Flask backend. 
+         Fields expected: _id, name, phone, address, water_quantity, delivery_time, booking_time
+    -->
+    <div id="bookingsContainer" class="booking-grid">
+        {% for booking in bookings %}
+        <div class="booking-card" data-id="{{ booking._id }}" 
+             data-customer="{{ booking.name }}" 
+             data-phone="{{ booking.phone }}" 
+             data-address="{{ booking.address }}" 
+             data-quantity="{{ booking.water_quantity }}" 
+             data-delivery="{{ booking.delivery_time }}" 
+             data-booking="{{ booking.booking_time }}"
+             data-quantity-value="{{ booking.water_quantity }}">
+            <div class="card-header">
+                <h2>
+                    <i class="fas fa-tint"></i> 
+                    Booking ID : {{ booking._id }}
+                </h2>
+                <div class="status-badge">
+                    <i class="fas fa-clock"></i> Active order
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-item">
+                    <span class="info-label"><i class="fas fa-user"></i> CUSTOMER</span>
+                    <span class="info-value"><i class="fas fa-user-circle"></i> {{ booking.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><i class="fas fa-phone-alt"></i> PHONE</span>
+                    <span class="info-value"><i class="fas fa-mobile-alt"></i> {{ booking.phone }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><i class="fas fa-map-marker-alt"></i> ADDRESS</span>
+                    <span class="info-value"><i class="fas fa-location-dot"></i> {{ booking.address }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><i class="fas fa-water"></i> WATER QUANTITY</span>
+                    <span class="info-value"><i class="fas fa-droplet"></i> <span class="quantity-badge">{{ booking.water_quantity }} Liters</span></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><i class="fas fa-truck-fast"></i> DELIVERY TIME</span>
+                    <span class="info-value"><i class="fas fa-hourglass-half"></i> {{ booking.delivery_time }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><i class="fas fa-calendar-alt"></i> BOOKING DATE</span>
+                    <span class="info-value"><i class="fas fa-calendar-check"></i> {{ booking.booking_time }}</span>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- If no bookings exist from backend, show friendly empty state -->
+        <div class="empty-state">
+            <i class="fas fa-tint-slash"></i>
+            <h3>No bookings available yet</h3>
+            <p>Your booking history will appear here once customers place orders.</p>
+            <p style="margin-top: 12px;">✅ Make sure your booking form saves: <strong>name, phone, address, water_quantity, delivery_time, booking_time</strong></p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <footer>
+        <i class="fas fa-database"></i> Powered by dynamic backend • All fields: name, phone, address, water_quantity, delivery_time, booking_time • <span id="liveTimestamp"></span>
+    </footer>
+</div>
+
+<!-- CLIENT-SIDE DYNAMIC FILTERING & SORTING (enhances UX without breaking Jinja) -->
+<script>
+    (function() {
+        // Get all booking card elements after DOM is fully loaded
+        const bookingsContainer = document.getElementById('bookingsContainer');
+        let allCards = [];
+
+        // Helper: parse quantity from data attribute (integer)
+        function getQuantityFromCard(card) {
+            const qtyAttr = card.getAttribute('data-quantity');
+            if (!qtyAttr) return 0;
+            return parseInt(qtyAttr, 10) || 0;
+        }
+
+        // Helper: parse date from booking_time (string like "2025-05-14" or any format, we'll create comparable timestamp)
+        function getBookingTimestamp(card) {
+            const dateStr = card.getAttribute('data-booking');
+            if (!dateStr) return new Date(0).getTime();
+            let parsed = new Date(dateStr);
+            if (isNaN(parsed.getTime())) {
+                // fallback: try to extract if it's a readable format
+                return new Date().getTime() - Math.random() * 100000;
+            }
+            return parsed.getTime();
+        }
+
+        // Refresh the visible cards based on search + filter + sort
+        function refreshDisplay() {
+            if (!allCards.length) {
+                // rebuild card list from current DOM
+                allCards = Array.from(document.querySelectorAll('.booking-card'));
+            }
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const quantityFilter = document.getElementById('quantityFilter').value;
+            const sortType = document.getElementById('sortSelect').value;
+
+            // Step 1: filter based on search (id, customer, phone, address)
+            let filtered = allCards.filter(card => {
+                if (searchTerm === "") return true;
+                const id = (card.getAttribute('data-id') || "").toLowerCase();
+                const customer = (card.getAttribute('data-customer') || "").toLowerCase();
+                const phone = (card.getAttribute('data-phone') || "").toLowerCase();
+                const address = (card.getAttribute('data-address') || "").toLowerCase();
+                return id.includes(searchTerm) || customer.includes(searchTerm) || phone.includes(searchTerm) || address.includes(searchTerm);
+            });
+
+            // Step 2: filter by quantity range
+            filtered = filtered.filter(card => {
+                const qty = getQuantityFromCard(card);
+                if (quantityFilter === 'high') return qty > 5000;
+                if (quantityFilter === 'medium') return qty >= 2000 && qty <= 5000;
+                if (quantityFilter === 'low') return qty < 2000;
+                return true; // 'all' case
+            });
+
+            // Step 3: sorting
+            if (sortType === 'quantityDesc') {
+                filtered.sort((a, b) => getQuantityFromCard(b) - getQuantityFromCard(a));
+            } else if (sortType === 'customerAsc') {
+                filtered.sort((a, b) => (a.getAttribute('data-customer') || "").localeCompare(b.getAttribute('data-customer') || ""));
+            } else if (sortType === 'dateDesc') {
+                filtered.sort((a, b) => getBookingTimestamp(b) - getBookingTimestamp(a));
+            } else if (sortType === 'dateAsc') {
+                filtered.sort((a, b) => getBookingTimestamp(a) - getBookingTimestamp(b));
+            }
+
+            // Step 4: reorder DOM elements
+            filtered.forEach(card => bookingsContainer.appendChild(card));
+            
+            // Step 5: hide non-filtered? Actually we moved all filtered to top order, 
+            // but we need to show only filtered ones and hide the rest? 
+            // better to hide cards that are not in filtered set:
+            allCards.forEach(card => {
+                if (filtered.includes(card)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // update counter (visible bookings count)
+            const visibleCount = filtered.length;
+            document.getElementById('bookingCount').innerText = visibleCount;
+            
+            // also show empty state message if needed (if zero visible and originally there were bookings)
+            const anyExisting = allCards.length > 0;
+            const emptyStateDiv = document.querySelector('.empty-state');
+            if (visibleCount === 0 && anyExisting) {
+                // if there is no visible but there are cards hidden, maybe show temporary hint?
+                if (!document.getElementById('dynamicEmptyMsg')) {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.id = 'dynamicEmptyMsg';
+                    msgDiv.className = 'empty-state';
+                    msgDiv.style.marginTop = '20px';
+                    msgDiv.innerHTML = '<i class="fas fa-filter"></i><h3>No matching bookings</h3><p>Try adjusting search or filters</p>';
+                    if (!bookingsContainer.querySelector('.empty-state-custom')) {
+                        bookingsContainer.appendChild(msgDiv);
+                    }
+                }
+            } else {
+                const existingMsg = document.getElementById('dynamicEmptyMsg');
+                if (existingMsg) existingMsg.remove();
+            }
+        }
+
+        // function to update stats & dynamic timestamp
+        function updateMetaInfo() {
+            const totalVisible = document.querySelectorAll('.booking-card:not([style*="display: none"])').length;
+            document.getElementById('bookingCount').innerText = totalVisible;
+            const now = new Date();
+            document.getElementById('liveTimestamp').innerHTML = `🕒 Last update: ${now.toLocaleTimeString()} · Live filter ready`;
+        }
+
+        // Event listeners for search, filter and sort
+        const searchInput = document.getElementById('searchInput');
+        const quantitySelect = document.getElementById('quantityFilter');
+        const sortSelect = document.getElementById('sortSelect');
+
+        function debounce(func, delay) {
+            let timer;
+            return function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => func.apply(this, arguments), delay);
+            };
+        }
+
+        const refreshFilter = () => {
+            refreshDisplay();
+            updateMetaInfo();
+        };
+        
+        if (searchInput) searchInput.addEventListener('input', debounce(refreshFilter, 200));
+        if (quantitySelect) quantitySelect.addEventListener('change', refreshFilter);
+        if (sortSelect) sortSelect.addEventListener('change', refreshFilter);
+        
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Capture all booking cards
+            allCards = Array.from(document.querySelectorAll('.booking-card'));
+            if (allCards.length === 0) {
+                // If empty from backend, keep skeleton but show friendly msg count
+                document.getElementById('bookingCount').innerText = "0";
+            } else {
+                refreshDisplay();
+            }
+            updateMetaInfo();
+            // also set last sync info
+            setInterval(() => {
+                document.getElementById('liveTimestamp').innerHTML = `🕒 Live at ${new Date().toLocaleTimeString()} · ${allCards.length} total bookings`;
+            }, 1000);
+        });
+        
+        // Add a small helper for backend developers: console log the required fields check
+        console.log("🔥 Dynamic Booking History Active — expecting fields: _id, name, phone, address, water_quantity, delivery_time, booking_time");
+    })();
+</script>
+
+<!-- 
+    ************** BACKEND INTEGRATION NOTES **************
+    This template expects a Flask (or similar Jinja2) context variable named 'bookings'.
+    Each booking dictionary/object MUST contain the following keys:
+        - _id                (Booking unique identifier)
+        - name               (Customer full name)
+        - phone              (Contact number)
+        - address            (Delivery address)
+        - water_quantity     (Number of liters, e.g., 3000)
+        - delivery_time      (Preferred or scheduled time slot)
+        - booking_time       (Timestamp or date of booking creation)
+    
+    ✅ Your booking form must save these exact fields into your database.
+    ✅ Example Flask route:
+        @app.route('/live-history')
+        def live_history():
+            bookings = db.bookings.find().sort('booking_time', -1)   # MongoDB example
+            return render_template('live_booking_history.html', bookings=bookings)
+    
+    ✅ If using SQL, ensure column names match the template variable names.
+    ✅ The page is fully responsive, includes client-side search/filter/sort without page reload.
+    ✅ All Jinja syntax is correctly escaped — no fake cards, completely dynamic.
+    
+    ************** END OF NOTES **************
+-->
+</body>
+</html>

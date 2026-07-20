@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AquaFlow | Book Water Tanker</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: -120px;
+            right: -120px;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(45,122,255,0.10) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            bottom: -150px;
+            left: -150px;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(45,122,255,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .page-wrap { max-width: 760px; margin: 0 auto; position: relative; z-index: 1; }
+
+        /* Header, matching driver dashboard's navy gradient style */
+        .booking-header {
+            background: linear-gradient(135deg, #0a1c2f 0%, #0e2538 100%);
+            border-radius: 28px 28px 0 0;
+            padding: 32px 36px;
+            color: #eef4ff;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .booking-header h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            margin-bottom: 6px;
+        }
+
+        .booking-header h1 i { color: #2d7aff; margin-right: 8px; }
+
+        .booking-header p { opacity: 0.75; font-size: 0.92rem; }
+
+        .service-badge {
+            background: rgba(45,122,255,0.18);
+            border: 1px solid rgba(45,122,255,0.4);
+            color: #cfe0ff;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Glass card body, matching driver dashboard */
+        .booking-body {
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: blur(10px);
+            border-radius: 0 0 28px 28px;
+            padding: 36px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-top: none;
+        }
+
+        .form-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #0a1c2f;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label i { color: #2d7aff; width: 1.2rem; }
+
+        .form-control, .form-select {
+            border-radius: 16px;
+            border: 1px solid #dde3ee;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            background-color: #fbfcfe;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #2d7aff;
+            box-shadow: 0 0 0 4px rgba(45,122,255,0.15);
+            outline: none;
+        }
+
+        .invalid-field {
+            border-color: #dc2626 !important;
+            background-color: #fff5f5 !important;
+        }
+
+        .alert-validation {
+            font-size: 0.78rem;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #dc2626;
+        }
+
+        .quantity-badge {
+            background: #eef4ff;
+            color: #1a5fcc;
+            border-radius: 40px;
+            padding: 4px 14px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 8px;
+        }
+
+        /* Price preview panel */
+        .price-preview {
+            background: linear-gradient(135deg, #eef4ff, #f5f9ff);
+            border-radius: 20px;
+            padding: 20px 24px;
+            margin: 24px 0;
+            border-left: 5px solid #2d7aff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .price-tag {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0a1c2f;
+            letter-spacing: -0.5px;
+        }
+
+        .price-info { font-size: 0.8rem; color: #5b6e8c; }
+
+        /* Next-steps note reflecting the real OTP-on-approval flow */
+        .next-steps {
+            background: #f7faff;
+            border: 1px solid #e3ecfc;
+            border-radius: 18px;
+            padding: 18px 20px;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+            color: #334155;
+        }
+
+        .next-steps .step-title {
+            font-weight: 700;
+            color: #0a1c2f;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .next-steps ol { margin: 0; padding-left: 20px; }
+        .next-steps li { margin-bottom: 6px; line-height: 1.5; }
+        .next-steps li:last-child { margin-bottom: 0; }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #2d7aff, #1a5fcc);
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+            border-radius: 40px;
+            padding: 14px;
+            font-weight: 700;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(45,122,255,0.35);
+            color: white;
+        }
+
+        .btn-gradient:disabled { opacity: 0.7; transform: none; }
+        .payment-method-options { display: flex; flex-direction: column; gap: 0.6rem; }
+        .payment-option {
+            display: flex; align-items: flex-start; gap: 0.7rem;
+            border: 1.5px solid #dee2e6; border-radius: 10px;
+            padding: 0.75rem 1rem; cursor: pointer; transition: border-color .15s, background .15s;
+        }
+        .payment-option:has(input:checked) { border-color: #2d7aff; background: #f0f6ff; }
+        .payment-option input[type="radio"] { margin-top: 0.25rem; }
+
+        .row-gap { row-gap: 4px; }
+
+        .toast-custom {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 1100;
+            min-width: 280px;
+            max-width: 360px;
+            background: #0a1c2f;
+            color: white;
+            border-radius: 18px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+        }
+
+        footer.page-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.8rem;
+            color: #5b6e8c;
+            font-weight: 500;
+        }
+
+        @media (max-width: 576px) {
+            .booking-header, .booking-body { padding: 24px; }
+            .price-tag { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="page-wrap" style="position:relative; z-index:2; margin-bottom:-8px;">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'danger' else 'info' }} rounded-4 shadow-sm flash-toast" role="alert" style="display:flex; align-items:flex-start; gap:8px;">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i> <span style="flex:1;">{{ message }}</span>
+          <button type="button" onclick="this.closest('.flash-toast').remove()" style="background:none;border:none;cursor:pointer;font-size:16px;line-height:1;">&times;</button>
+        </div>
+      {% endfor %}
+    </div>
+    <script>
+      setTimeout(function () {
+        document.querySelectorAll('.flash-toast').forEach(function (el) {
+          el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+          setTimeout(function () { el.remove(); }, 400);
+        });
+      }, 5000);
+    </script>
+  {% endif %}
+{% endwith %}
+
+
+<div class="page-wrap">
+    <div data-aos="fade-up">
+        <div class="booking-header">
+            <div>
+                <h1><i class="fa-solid fa-truck-fast"></i>Book Water Tanker</h1>
+                <p>Fresh &amp; hygienic water delivered to your doorstep</p>
+            </div>
+            <span class="service-badge"><i class="fa-regular fa-clock me-1"></i> 24/7 Service</span>
+        </div>
+
+        <div class="booking-body">
+
+            <div class="next-steps">
+                <div class="step-title"><i class="fa-solid fa-shield-halved"></i> How delivery verification works</div>
+                <ol>
+                    <li>Once you submit this booking, it goes to our team for approval.</li>
+                    <li>When approved, a one-time delivery OTP is emailed to <strong>your registered email</strong>.</li>
+                    <li>Keep it handy — you'll share it with the driver only once your delivery has arrived, to confirm the handoff.</li>
+                </ol>
+            </div>
+
+            <form id="tankerBookingForm" method="POST" novalidate>
+
+                <div class="mb-4">
+                    <label class="form-label"><i class="fa-regular fa-user"></i> Full Name</label>
+                    <input type="text" id="customerName" name="fullname" class="form-control"
+                           placeholder="Full name as per ID proof" value="">
+                    <div class="alert-validation" id="nameError"></div>
+                </div>
+
+                <div class="row row-gap mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label"><i class="fa-solid fa-phone"></i> Phone Number</label>
+                        <input type="tel" id="phoneNumber" name="phone" class="form-control"
+                               placeholder="10-digit mobile number" maxlength="10" inputmode="numeric">
+                        <div class="alert-validation" id="phoneError"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="fa-solid fa-droplet"></i> Water Type</label>
+                        <select id="waterType" name="water_type" class="form-select">
+                            <option value="Fresh Water" selected>Fresh Water</option>
+                            <option value="Mineral Water">Mineral Water</option>
+                            <option value="RO Purified">RO Purified</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label"><i class="fa-solid fa-location-dot"></i> Delivery Address</label>
+
+                    <div class="input-group mb-2" style="position: relative;">
+                        <input type="text" id="mapSearchBox" class="form-control" autocomplete="off"
+                               placeholder="Enter PIN code for best results (e.g., 577222, street, area, city)">
+                        <button type="button" id="useMyLocationBtn" class="btn btn-outline-secondary" title="Use my current location">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                        </button>
+                        <div id="mapSearchSuggestions" class="list-group" style="position:absolute; top:100%; left:0; right:56px; z-index:1200; max-height:220px; overflow-y:auto; display:none; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);"></div>
+                    </div>
+
+                    <div id="deliveryMapPicker" style="height: 280px; border-radius: 16px; border: 1px solid #dde3ee; overflow: hidden;"></div>
+                    <small class="text-muted d-block mt-1"><i class="fa-regular fa-circle-info"></i> For the most accurate search results, enter your PIN code — then fine-tune by dragging the pin or tapping "use my location".</small>
+
+                    <textarea id="address" name="address" class="form-control mt-2" rows="2"
+                              placeholder="House No., Street, City, PIN code (e.g., 560001)"></textarea>
+                    <div class="alert-validation" id="addressError"></div>
+
+                    <!-- Sent to the backend alongside the typed address so the driver
+                         gets the exact pinned coordinates, not just free-text -->
+                    <input type="hidden" id="latitude" name="latitude">
+                    <input type="hidden" id="longitude" name="longitude">
+                    <div class="alert-validation" id="locationError"></div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">
+                        <i class="fa-solid fa-gauge-high"></i> Water Quantity
+                        <span class="quantity-badge"><i class="fa-solid fa-droplet"></i> potable quality</span>
+                    </label>
+                    <select id="waterQty" name="quantity" class="form-select">
+                        <option value="1000">1000 Liters (1 kL)</option>
+                        <option value="2000" selected>2000 Liters (2 kL)</option>
+                        <option value="5000">5000 Liters (5 kL)</option>
+                        <option value="10000">10000 Liters (10 kL) — Bulk Saver</option>
+                    </select>
+                </div>
+
+                <div class="price-preview" id="pricePreviewBox">
+                    <div>
+                        <div class="fw-semibold"><i class="fa-solid fa-indian-rupee-sign me-1"></i> Estimated Total</div>
+                        <div class="price-info">incl. delivery &amp; GST</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="price-tag" id="dynamicPrice">₹ 1,200</div>
+                        <div class="price-info" id="perLiterRate">≈ ₹0.60 / liter</div>
+                    </div>
+                </div>
+
+                <div class="row row-gap mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label"><i class="fa-regular fa-calendar"></i> Delivery Date</label>
+                        <input type="date" id="deliveryDate" name="delivery_date" class="form-control">
+                        <div class="alert-validation" id="dateError"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="fa-regular fa-clock"></i> Preferred Time</label>
+                        <input type="time" id="deliveryTime" name="delivery_time" class="form-control">
+                        <div class="alert-validation" id="timeError"></div>
+                    </div>
+                </div>
+                <small class="text-muted d-block mb-4"><i class="fa-regular fa-circle-info"></i> Slots: 6:00 AM – 9:00 PM</small>
+
+                <div class="mb-4">
+                    <label class="form-label"><i class="fa-solid fa-wallet"></i> Payment Method</label>
+                    <div class="payment-method-options">
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="upi" checked>
+                            <div>
+                                <span class="fw-semibold"><i class="fa-solid fa-bolt me-1"></i> Pay Now (UPI)</span>
+                                <div class="price-info">Opens your UPI app with the amount pre-filled — nothing to type in.</div>
+                            </div>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="cod">
+                            <div>
+                                <span class="fw-semibold"><i class="fa-solid fa-money-bill-wave me-1"></i> Cash on Delivery</span>
+                                <div class="price-info">Pay the driver in cash when your tanker arrives.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-gradient">
+                    <i class="fa-solid fa-circle-check me-1"></i> Confirm Booking
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="page-footer">
+        <i class="fa-solid fa-droplet me-1"></i> Safe drinking water • ISO certified • Live tracking available
+    </footer>
+</div>
+
+<div id="liveToast" class="toast-custom" style="display: none;">
+    <div class="d-flex align-items-center p-3">
+        <div class="flex-shrink-0">
+            <i class="fa-solid fa-droplet fa-lg text-info me-2"></i>
+        </div>
+        <div class="flex-grow-1" id="toastMessage">Booking confirmed successfully!</div>
+        <button type="button" class="btn-close btn-close-white ms-2" id="closeToastBtn"></button>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+AOS.init({ duration: 500, once: true, offset: 20 });
+
+// ============================================================
+// LEAFLET + OPENSTREETMAP LOCATION PICKER (free, no API key)
+// ============================================================
+// FUTURE MIGRATION NOTE (read this if/when Google Cloud billing
+// eventually works and you want the official Google Maps look):
+//   1. Everything below writes to the SAME fields Google Maps used:
+//      #latitude, #longitude, #address (hidden/textarea) — so the
+//      backend (Backend/app.py, Backend/driver_dashboard.py) and
+//      templates/driver_dashboard.html need ZERO changes either way.
+//   2. To switch back to Google Maps, replace just this <script>
+//      block's map logic with google.maps.Map / Geocoder / Places
+//      Autocomplete (same structure as before), swap the Leaflet
+//      <link>/<script> tags near the top/bottom of this file for
+//      the Google Maps JS API <script src="https://maps.googleapis.com/maps/api/js?key=...&libraries=places">,
+//      and load the key from app.config (never hardcode it).
+//   3. Nothing else in this project depends on which map provider
+//      is used — this file is the only one that changes.
+// ============================================================
+let deliveryMap, deliveryMarker;
+
+// Default center: Bengaluru — change to your service city if different
+const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
+
+function initMap() {
+    deliveryMap = L.map('deliveryMapPicker', {
+        zoomControl: true
+    }).setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(deliveryMap);
+
+    deliveryMarker = L.marker([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], {
+        draggable: true,
+        title: "Drag to your exact delivery location"
+    }).addTo(deliveryMap);
+
+    // Update address + hidden lat/lng whenever the pin is dropped/dragged
+    deliveryMarker.on('dragend', () => {
+        const pos = deliveryMarker.getLatLng();
+        setLocation(pos.lat, pos.lng);
+    });
+
+    // Clicking anywhere on the map moves the pin there
+    deliveryMap.on('click', (e) => {
+        deliveryMarker.setLatLng(e.latlng);
+        setLocation(e.latlng.lat, e.latlng.lng);
+    });
+
+    // If the address textarea already has a value (e.g. browser autofill),
+    // try to drop the pin on it automatically
+    const existingAddress = document.getElementById('address').value.trim();
+    if (existingAddress) {
+        geocodeAddressText(existingAddress);
+    }
+}
+
+// Reverse geocode: coordinates -> human-readable address, fills the textarea
+// Uses Nominatim (OpenStreetMap's free geocoding API) — no key needed.
+function setLocation(lat, lng) {
+    document.getElementById('latitude').value = lat;
+    document.getElementById('longitude').value = lng;
+    document.getElementById('locationError').innerHTML = '';
+
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, {
+        headers: { 'Accept-Language': 'en' }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.display_name) {
+                document.getElementById('address').value = data.display_name;
+                document.getElementById('address').classList.remove('invalid-field');
+                document.getElementById('addressError').innerHTML = '';
+            }
+        })
+        .catch(() => { /* reverse geocoding is a nice-to-have; ignore failures silently */ });
+}
+
+// Forward geocode: typed address text -> coordinates (used for prefilled text on load)
+function geocodeAddressText(addressText) {
+    fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(addressText)}&limit=1`, {
+        headers: { 'Accept-Language': 'en' }
+    })
+        .then(res => res.json())
+        .then(results => {
+            if (results && results.length > 0) {
+                const lat = parseFloat(results[0].lat);
+                const lng = parseFloat(results[0].lon);
+                deliveryMap.setView([lat, lng], 16);
+                deliveryMarker.setLatLng([lat, lng]);
+                setLocation(lat, lng);
+            }
+        })
+        .catch(() => {});
+}
+
+// ------------------------------------------------------------
+// Search box with a live suggestions dropdown (Nominatim search)
+// ------------------------------------------------------------
+const searchInput = document.getElementById('mapSearchBox');
+const suggestionsBox = document.getElementById('mapSearchSuggestions');
+let searchDebounceTimer = null;
+
+function hideSuggestions() {
+    suggestionsBox.style.display = 'none';
+    suggestionsBox.innerHTML = '';
+}
+
+function renderSuggestions(results) {
+    if (!results || results.length === 0) {
+        hideSuggestions();
+        return;
+    }
+    suggestionsBox.innerHTML = '';
+    results.forEach(place => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'list-group-item list-group-item-action';
+        item.style.fontSize = '0.85rem';
+        item.textContent = place.display_name;
+        item.addEventListener('click', () => {
+            const lat = parseFloat(place.lat);
+            const lng = parseFloat(place.lon);
+            deliveryMap.setView([lat, lng], 16);
+            deliveryMarker.setLatLng([lat, lng]);
+            setLocation(lat, lng);
+            document.getElementById('address').value = place.display_name;
+            searchInput.value = place.display_name;
+            hideSuggestions();
+        });
+        suggestionsBox.appendChild(item);
+    });
+    suggestionsBox.style.display = 'block';
+}
+
+searchInput.addEventListener('input', function () {
+    const query = this.value.trim();
+    clearTimeout(searchDebounceTimer);
+
+    if (query.length < 3) {
+        hideSuggestions();
+        return;
+    }
+
+    // Debounce so we don't hammer Nominatim on every keystroke
+    // (Nominatim's usage policy asks for max ~1 request/second)
+    searchDebounceTimer = setTimeout(() => {
+        fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=5`, {
+            headers: { 'Accept-Language': 'en' }
+        })
+            .then(res => res.json())
+            .then(renderSuggestions)
+            .catch(() => hideSuggestions());
+    }, 500);
+});
+
+// Hide the dropdown when clicking elsewhere on the page
+document.addEventListener('click', (e) => {
+    if (e.target !== searchInput) hideSuggestions();
+});
+
+// "Use my current location" button — browser geolocation
+let accuracyCircle = null;
+
+document.getElementById('useMyLocationBtn').addEventListener('click', function () {
+    if (!navigator.geolocation) {
+        document.getElementById('locationError').innerHTML =
+            '<i class="fa-solid fa-circle-exclamation"></i> Your browser does not support location detection.';
+        return;
+    }
+
+    const btn = this;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy; // meters
+
+            deliveryMap.setView([lat, lng], 16);
+            deliveryMarker.setLatLng([lat, lng]);
+            setLocation(lat, lng);
+
+            // Draw/update a circle showing how precise this fix is.
+            // A large circle (poor Wi-Fi/IP-based fix, common on laptops)
+            // is a visual cue to the user to drag the pin to the exact spot.
+            if (accuracyCircle) {
+                deliveryMap.removeLayer(accuracyCircle);
+            }
+            accuracyCircle = L.circle([lat, lng], {
+                radius: accuracy,
+                color: '#2d7aff',
+                fillColor: '#2d7aff',
+                fillOpacity: 0.12,
+                weight: 1
+            }).addTo(deliveryMap);
+
+            const locationErrorDiv = document.getElementById('locationError');
+            if (accuracy > 500) {
+                locationErrorDiv.innerHTML =
+                    `<i class="fa-solid fa-circle-info"></i> Location found, but only accurate to about ${Math.round(accuracy)} m ` +
+                    `(common on laptops/desktops without GPS). Please drag the pin to your exact spot.`;
+                locationErrorDiv.style.color = '#b45309';
+            } else {
+                locationErrorDiv.innerHTML =
+                    `<i class="fa-solid fa-circle-check"></i> Location found, accurate to about ${Math.round(accuracy)} m.`;
+                locationErrorDiv.style.color = '#15803d';
+            }
+
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        },
+        (err) => {
+            document.getElementById('locationError').innerHTML =
+                '<i class="fa-solid fa-circle-exclamation"></i> Could not access your location. Please allow location access or search/drag the pin instead.';
+            document.getElementById('locationError').style.color = '#dc2626';
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        },
+        {
+            enableHighAccuracy: true,  // ask the device to use GPS if it has one, not just Wi-Fi/IP
+            timeout: 10000,
+            maximumAge: 0              // don't reuse an old cached fix
+        }
+    );
+});
+
+// Initialize the map once the DOM (and Leaflet) is ready
+initMap();
+
+// pricing map (kept identical to what the backend now calculates too)
+const pricingMap = {
+    1000: 750,
+    2000: 1200,
+    5000: 2600,
+    10000: 4800
+};
+
+function formatPrice(amount) {
+    return '₹ ' + amount.toLocaleString('en-IN');
+}
+
+function updatePriceDisplay() {
+    const qtySelect = document.getElementById('waterQty');
+    let selectedVal = parseInt(qtySelect.value);
+    let priceAmount = pricingMap[selectedVal] || 1200;
+    const priceSpan = document.getElementById('dynamicPrice');
+    if (priceSpan) priceSpan.innerText = formatPrice(priceAmount);
+
+    const rateSpan = document.getElementById('perLiterRate');
+    if (rateSpan && selectedVal > 0) {
+        const perLiter = (priceAmount / selectedVal).toFixed(2);
+        rateSpan.innerText = `≈ ₹${perLiter} / liter`;
+    }
+}
+
+function setMinDate() {
+    const dateInput = document.getElementById('deliveryDate');
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    dateInput.setAttribute('min', `${yyyy}-${mm}-${dd}`);
+    let tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+    if (!dateInput.value) dateInput.value = tomorrowStr;
+}
+
+function hideToast() {
+    document.getElementById('liveToast').style.display = 'none';
+}
+
+function showToast(message, isError = false) {
+    const toastEl = document.getElementById('liveToast');
+    document.getElementById('toastMessage').innerHTML = message;
+    toastEl.style.borderLeft = isError ? '5px solid #dc2626' : '5px solid #2d7aff';
+    toastEl.style.display = 'flex';
+    setTimeout(hideToast, 4000);
+}
+
+function clearFieldErrors() {
+    const errorDivs = ['nameError', 'phoneError', 'addressError', 'dateError', 'timeError'];
+    errorDivs.forEach(id => {
+        const div = document.getElementById(id);
+        if (div) div.innerHTML = '';
+    });
+    ['customerName', 'phoneNumber', 'address', 'deliveryDate', 'deliveryTime', 'waterQty'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('invalid-field');
+    });
+}
+
+function validateForm() {
+    let isValid = true;
+    clearFieldErrors();
+
+    const name = document.getElementById('customerName').value.trim();
+    if (name === '') {
+        document.getElementById('nameError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please enter your full name';
+        document.getElementById('customerName').classList.add('invalid-field');
+        isValid = false;
+    } else if (name.length < 2) {
+        document.getElementById('nameError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Name must be at least 2 characters';
+        document.getElementById('customerName').classList.add('invalid-field');
+        isValid = false;
+    }
+
+    const phone = document.getElementById('phoneNumber').value.trim();
+    if (phone === '') {
+        document.getElementById('phoneError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Phone number is required';
+        document.getElementById('phoneNumber').classList.add('invalid-field');
+        isValid = false;
+    } else if (!/^[6-9]\d{9}$/.test(phone)) {
+        document.getElementById('phoneError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Enter a valid 10-digit mobile number';
+        document.getElementById('phoneNumber').classList.add('invalid-field');
+        isValid = false;
+    }
+
+    const address = document.getElementById('address').value.trim();
+    if (address === '') {
+        document.getElementById('addressError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Delivery address is required';
+        document.getElementById('address').classList.add('invalid-field');
+        isValid = false;
+    } else if (address.length < 5) {
+        document.getElementById('addressError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please provide a complete address';
+        document.getElementById('address').classList.add('invalid-field');
+        isValid = false;
+    }
+
+    const lat = document.getElementById('latitude').value;
+    const lng = document.getElementById('longitude').value;
+    if (!lat || !lng) {
+        document.getElementById('locationError').innerHTML =
+            '<i class="fa-solid fa-circle-exclamation"></i> Please pin your delivery location on the map above (search, tap the map, or use "my location").';
+        isValid = false;
+    }
+
+    const dateInput = document.getElementById('deliveryDate');
+    const dateVal = dateInput.value;
+    if (!dateVal) {
+        document.getElementById('dateError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please select a delivery date';
+        dateInput.classList.add('invalid-field');
+        isValid = false;
+    } else {
+        const selectedDate = new Date(dateVal);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+            document.getElementById('dateError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Delivery date cannot be in the past';
+            dateInput.classList.add('invalid-field');
+            isValid = false;
+        }
+    }
+
+    const timeInput = document.getElementById('deliveryTime');
+    const timeVal = timeInput.value;
+    if (!timeVal) {
+        document.getElementById('timeError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please select a preferred time slot';
+        timeInput.classList.add('invalid-field');
+        isValid = false;
+    } else {
+        const [hour, minute] = timeVal.split(':').map(Number);
+        if (hour < 6 || hour > 21 || (hour === 21 && minute > 0)) {
+            document.getElementById('timeError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please select between 06:00 AM and 9:00 PM';
+            timeInput.classList.add('invalid-field');
+            isValid = false;
+        }
+    }
+
+    return isValid;
+}
+
+document.getElementById('waterQty').addEventListener('change', updatePriceDisplay);
+
+['customerName', 'phoneNumber', 'address', 'deliveryDate', 'deliveryTime'].forEach(fieldId => {
+    const element = document.getElementById(fieldId);
+    if (element) {
+        ['input', 'change'].forEach(evt => {
+            element.addEventListener(evt, function () {
+                this.classList.remove('invalid-field');
+                const errorDiv = document.getElementById(fieldId + 'Error');
+                if (errorDiv) errorDiv.innerHTML = '';
+            });
+        });
+    }
+});
+
+const form = document.getElementById('tankerBookingForm');
+form.addEventListener('submit', function (e) {
+    if (!validateForm()) {
+        e.preventDefault();
+        showToast('⚠️ Please fill all required fields correctly before confirming.', true);
+    } else {
+        const submitBtn = document.querySelector('.btn-gradient');
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+        showToast('✅ Valid details! Redirecting to booking confirmation...', false);
+        // No preventDefault — allow the natural POST to Flask's /booking route
+    }
+});
+
+document.getElementById('closeToastBtn')?.addEventListener('click', hideToast);
+
+window.addEventListener('DOMContentLoaded', () => {
+    setMinDate();
+    updatePriceDisplay();
+    const timeField = document.getElementById('deliveryTime');
+    if (timeField && !timeField.value) timeField.value = "10:00";
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+<script>
+(function () {
+    var HOME_URL = "/dashboard";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

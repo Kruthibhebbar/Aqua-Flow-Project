@@ -1,0 +1,182 @@
+"""
+razorpay_payments.py
+=====================
+
+Real online-payment checkout for customers, via Razorpay.
+
+Flow:
+    1. Customer picks "Pay Now (UPI)" on the booking form.
+    2. Browser hits /checkout/<booking_id>, which asks Razorpay to
+       create an Order (server-side, needs RAZORPAY_KEY_ID +
+       RAZORPAY_KEY_SECRET) and renders Razorpay's Checkout.js with
+       the UPI method pre-selected - this is what actually hands the
+       customer off to whichever UPI app they choose (GPay, PhonePe,
+       Paytm, etc.) to complete payment.
+    3. Razorpay calls our JS success handler with a payment id, order
+       id, and a signature. We POST those to /verify-razorpay-payment,
+       which recomputes the HMAC signature server-side with the key
+       secret - this is the step that actually proves the payment is
+       real, not something the customer's browser made up.
+    4. On a verified signature, the booking is marked paid, which
+       immediately feeds into the driver wallet (no cash to collect
+       for this order) and the admin finance dashboard.
+
+WITHOUT REAL RAZORPAY KEYS this whole flow can't run - Razorpay
+rejects the order-creation call. `razorpay_configured()` tells the
+booking route whether to offer this at all; if not, the booking flow
+falls back to the plain UPI-deep-link page that was already built
+(pay_upi_redirect.html / /pay-upi/<id>), which needs no gateway
+account but also can't auto-verify payment.
+"""
+
+import os
+import hmac
+import hashlib
+import requests
+from datetime import datetime
+
+from flask import request, redirect, url_for, session, flash, render_template, jsonify
+
+_RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders"
+
+
+def razorpay_configured():
+    return bool(os.getenv("RAZORPAY_KEY_ID")) and bool(os.getenv("RAZORPAY_KEY_SECRET"))
+
+
+def _create_order(amount_rupees, receipt):
+    """Calls Razorpay's Orders API. Returns the order dict, or None on
+    failure (bad keys, network issue, Razorpay account not activated,
+    etc.) - callers must handle None and fall back gracefully."""
+    key_id = os.getenv("RAZORPAY_KEY_ID")
+    key_secret = os.getenv("RAZORPAY_KEY_SECRET")
+
+    try:
+        resp = requests.post(
+            _RAZORPAY_ORDERS_URL,
+            auth=(key_id, key_secret),
+            json={
+                "amount": int(round(amount_rupees * 100)),  # paise
+                "currency": "INR",
+                "receipt": receipt,
+                "payment_capture": 1
+            },
+            timeout=10
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return None
+    except requests.RequestException:
+        return None
+
+
+def init_razorpay_payments(app, bookings_collection, settings_collection):
+
+    # =========================================
+    # CHECKOUT PAGE - creates the Razorpay order
+    # and renders Checkout.js
+    # =========================================
+
+    @app.route("/checkout/<booking_id>")
+    def razorpay_checkout(booking_id):
+
+        if "user_email" not in session:
+            return redirect(url_for("login"))
+
+        try:
+            from bson.objectid import ObjectId
+            booking_doc = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+        except Exception:
+            booking_doc = None
+
+        if not booking_doc or booking_doc.get("user_email") != session["user_email"]:
+            flash("Booking not found.", "danger")
+            return redirect(url_for("history"))
+
+        if not razorpay_configured():
+            # No gateway account set up - fall back to the plain UPI
+            # deep-link flow instead of showing a broken checkout.
+            return redirect(url_for("pay_upi", booking_id=booking_id))
+
+        amount = booking_doc.get("delivery_fee", 500)
+
+        order = _create_order(amount, receipt=f"aquaflow_{booking_id}")
+
+        if not order:
+            flash("Couldn't start online payment right now - please try Cash on Delivery, or try again in a moment.", "danger")
+            return redirect(url_for("history"))
+
+        bookings_collection.update_one(
+            {"_id": ObjectId(booking_id)},
+            {"$set": {"razorpay_order_id": order["id"]}}
+        )
+
+        return render_template(
+            "razorpay_checkout.html",
+            booking_id=booking_id,
+            amount=amount,
+            order_id=order["id"],
+            razorpay_key_id=os.getenv("RAZORPAY_KEY_ID"),
+            customer_name=booking_doc.get("fullname", ""),
+            customer_email=booking_doc.get("user_email", "")
+        )
+
+    # =========================================
+    # VERIFY PAYMENT - Razorpay's Checkout.js
+    # calls this on success with the payment id,
+    # order id, and signature
+    # =========================================
+
+    @app.route("/verify-razorpay-payment", methods=["POST"])
+    def verify_razorpay_payment():
+
+        if "user_email" not in session:
+            return jsonify({"success": False, "message": "Not logged in"}), 401
+
+        data = request.get_json(silent=True) or {}
+        booking_id = data.get("booking_id")
+        razorpay_order_id = data.get("razorpay_order_id")
+        razorpay_payment_id = data.get("razorpay_payment_id")
+        razorpay_signature = data.get("razorpay_signature")
+
+        if not all([booking_id, razorpay_order_id, razorpay_payment_id, razorpay_signature]):
+            return jsonify({"success": False, "message": "Missing payment details"}), 400
+
+        key_secret = os.getenv("RAZORPAY_KEY_SECRET", "")
+
+        # This is the step that actually proves the payment is real:
+        # recompute the HMAC the same way Razorpay did, using our
+        # secret key, and check it matches what came back from the
+        # browser. A forged/replayed request would fail this check.
+        expected_signature = hmac.new(
+            key_secret.encode(),
+            f"{razorpay_order_id}|{razorpay_payment_id}".encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected_signature, razorpay_signature):
+            return jsonify({"success": False, "message": "Payment verification failed"}), 400
+
+        try:
+            from bson.objectid import ObjectId
+            booking_doc = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+        except Exception:
+            booking_doc = None
+
+        if not booking_doc or booking_doc.get("user_email") != session["user_email"]:
+            return jsonify({"success": False, "message": "Booking not found"}), 404
+
+        bookings_collection.update_one(
+            {"_id": ObjectId(booking_id)},
+            {"$set": {
+                "payment_status": "Paid (Online)",
+                "payment_method": "UPI",
+                "razorpay_payment_id": razorpay_payment_id,
+                "razorpay_signature": razorpay_signature,
+                "paid_at": datetime.now()
+            }}
+        )
+
+        return jsonify({"success": True})
+
+    return app

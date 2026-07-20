@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow | Track Your Delivery</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: #f0f2f5; min-height: 100vh; padding: 28px 16px 60px; }
+        .wrap { max-width: 920px; margin: 0 auto; }
+        .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .brand { font-size: 22px; font-weight: 800; color: #0a1c2f; }
+        .brand i { color: #2d7aff; margin-right: 6px; }
+        .back-link { color: #5b6e8c; text-decoration: none; font-weight: 600; font-size: 14px; }
+        .back-link:hover { color: #2d7aff; }
+        .glass-card { background: rgba(255,255,255,0.97); border-radius: 28px; padding: 26px; box-shadow: 0 8px 32px rgba(0,0,0,0.06); border: 1px solid rgba(255,255,255,0.2); margin-bottom: 24px; }
+        .booking-ref { color: #7c8aa5; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+        .status-hero { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+        .status-pill { padding: 8px 18px; border-radius: 40px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .timeline { display: flex; justify-content: space-between; position: relative; margin: 34px 0 10px; }
+        .timeline::before { content: ''; position: absolute; top: 17px; left: 5%; right: 5%; height: 4px; background: #e9edf2; border-radius: 4px; z-index: 0; }
+        .timeline .fill-bar { position: absolute; top: 17px; left: 5%; height: 4px; background: linear-gradient(90deg, #2d7aff, #10b981); border-radius: 4px; z-index: 1; transition: width 0.6s ease; }
+        .tl-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 20%; text-align: center; }
+        .tl-dot { width: 36px; height: 36px; border-radius: 50%; background: #e9edf2; color: #9aa7bd; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid #f0f2f5; transition: all 0.3s ease; }
+        .tl-step.done .tl-dot { background: #2d7aff; color: white; }
+        .tl-step.current .tl-dot { background: #10b981; color: white; box-shadow: 0 0 0 6px rgba(16,185,129,0.15); }
+        .tl-label { font-size: 12px; margin-top: 8px; color: #5b6e8c; font-weight: 600; }
+        .tl-step.done .tl-label, .tl-step.current .tl-label { color: #0a1c2f; }
+        #trackingMap { height: 380px; width: 100%; border-radius: 20px; background: #e9edf2; overflow: hidden; }
+        .waiting-box { height: 260px; border-radius: 20px; background: #f3f6fb; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #7c8aa5; text-align: center; gap: 10px; }
+        .driver-info { display: flex; align-items: center; gap: 16px; }
+        .driver-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #2d7aff, #1a5fcc); color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        @media (max-width: 576px) { .info-grid { grid-template-columns: 1fr; } }
+        .info-cell { background: #f7f9fc; border-radius: 14px; padding: 12px 16px; }
+        .info-cell .label { font-size: 12px; color: #7c8aa5; text-transform: uppercase; letter-spacing: 0.4px; }
+        .info-cell .value { font-weight: 700; color: #0a1c2f; margin-top: 2px; }
+        .eta-chip { background: #0a1c2f; color: #eef4ff; padding: 8px 16px; border-radius: 40px; font-weight: 700; font-size: 13px; }
+        .refresh-note { font-size: 12px; color: #9aa7bd; text-align: center; margin-top: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+    <div class="top-bar">
+        <div class="brand"><i class="fa-solid fa-droplet"></i> AquaFlow</div>
+        <a href="/history" class="back-link"><i class="fa-solid fa-arrow-left me-1"></i> Back to My Bookings</a>
+    </div>
+
+    <div class="glass-card">
+        <div class="booking-ref">BOOKING #{{ booking._id|string|truncate(10, True, '') }}</div>
+        <div class="status-hero mt-2">
+            <div>
+                <h3 class="fw-bold mb-1">Hi {{ booking.fullname if booking.fullname else 'there' }}, here's your delivery status</h3>
+                <p class="text-secondary mb-0"><i class="fa-regular fa-flag-checkered"></i> Delivering to: {{ booking.address }}</p>
+            </div>
+            <span id="statusPill" class="status-pill
+                {% if booking.status == 'Delivered' %}bg-success text-white
+                {% elif booking.status in ['On The Way', 'Arrived'] %}bg-warning text-dark
+                {% elif booking.status == 'Accepted' %}bg-primary text-white
+                {% elif booking.status == 'Rejected' %}bg-danger text-white
+                {% else %}bg-secondary text-white{% endif %}">
+                <i class="fa-solid fa-circle-notch"></i> {{ booking.status if booking.status else 'Pending' }}
+            </span>
+        </div>
+
+        {% set order_map = {'Pending': 0, 'Approved': 1, 'Assigned': 1, 'Accepted': 2, 'On The Way': 3, 'Arrived': 3, 'Delivered': 4} %}
+        {% set step_index = order_map.get(booking.status, 0) %}
+        <div class="timeline">
+            <div class="fill-bar" style="width: {{ (step_index / 4 * 90) }}%;"></div>
+            <div class="tl-step {% if step_index >= 0 %}done{% endif %} {% if step_index == 0 %}current{% endif %}">
+                <div class="tl-dot"><i class="fa-solid fa-clipboard-check"></i></div>
+                <div class="tl-label">Booked</div>
+            </div>
+            <div class="tl-step {% if step_index >= 1 %}done{% endif %} {% if step_index == 1 %}current{% endif %}">
+                <div class="tl-dot"><i class="fa-solid fa-user-check"></i></div>
+                <div class="tl-label">Driver Assigned</div>
+            </div>
+            <div class="tl-step {% if step_index >= 2 %}done{% endif %} {% if step_index == 2 %}current{% endif %}">
+                <div class="tl-dot"><i class="fa-solid fa-thumbs-up"></i></div>
+                <div class="tl-label">Accepted</div>
+            </div>
+            <div class="tl-step {% if step_index >= 3 %}done{% endif %} {% if step_index == 3 %}current{% endif %}">
+                <div class="tl-dot"><i class="fa-solid fa-truck-fast"></i></div>
+                <div class="tl-label">On The Way</div>
+            </div>
+            <div class="tl-step {% if step_index >= 4 %}done{% endif %} {% if step_index == 4 %}current{% endif %}">
+                <div class="tl-dot"><i class="fa-solid fa-box-open"></i></div>
+                <div class="tl-label">Delivered</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card p-0 overflow-hidden">
+        {% if booking.status in ['Accepted', 'On The Way', 'Arrived'] %}
+        <div class="bg-dark px-4 py-3 d-flex justify-content-between align-items-center">
+            <span class="text-white"><i class="fa-solid fa-location-dot me-1"></i> Live Route to Your Address</span>
+            <span id="etaChip" class="eta-chip"><i class="fa-regular fa-hourglass-half"></i> ETA: -- min</span>
+        </div>
+        <div id="trackingMap"></div>
+        {% elif booking.status == 'Delivered' %}
+        <div class="p-4 text-center">
+            <i class="fa-solid fa-champagne-glasses fa-3x text-success mb-3"></i>
+            <h5>Delivered successfully! 🎉</h5>
+            <p class="text-secondary mb-0">Thanks for choosing AquaFlow. Enjoy your water!</p>
+        </div>
+        {% else %}
+        <div class="p-4">
+            <div class="waiting-box">
+                <i class="fa-solid fa-hourglass-half fa-2x"></i>
+                <h6 class="mb-0">Waiting for your driver to accept</h6>
+                <p class="small mb-0">The live map will appear here as soon as a driver accepts your delivery.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="glass-card">
+        <h6 class="fw-bold mb-3"><i class="fa-solid fa-id-card me-2"></i> Driver & Order Details</h6>
+        <div class="driver-info mb-3" id="driverInfoBlock" style="{% if booking.status in ['Pending', 'Approved', 'Assigned'] %}display:none;{% endif %}">
+            <div class="driver-avatar"><i class="fa-solid fa-user"></i></div>
+            <div>
+                <div class="fw-bold" id="driverNameText">{{ booking.driver_name if booking.driver_name and booking.driver_name != 'Not Assigned' else 'Not assigned yet' }}</div>
+                <div class="text-secondary small" id="driverPhoneText"><i class="fa-regular fa-phone"></i> {{ booking.driver_phone if booking.driver_phone else 'Not available' }}</div>
+            </div>
+        </div>
+        <div class="info-grid">
+            <div class="info-cell">
+                <div class="label">Truck Number</div>
+                <div class="value" id="truckNumberText">{{ booking.truck_number if booking.truck_number else 'Not Assigned' }}</div>
+            </div>
+            <div class="info-cell">
+                <div class="label">Water Quantity</div>
+                <div class="value">{{ booking.quantity }} Liters</div>
+            </div>
+            <div class="info-cell">
+                <div class="label">Amount</div>
+                <div class="value">₹{{ booking.get('delivery_fee', 500) }}</div>
+            </div>
+            <div class="info-cell">
+                <div class="label">Current Status</div>
+                <div class="value" id="liveLocationText">{{ booking.live_location if booking.live_location else 'Waiting For Dispatch' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <p class="refresh-note"><i class="fa-solid fa-rotate"></i> This page refreshes automatically every 15 seconds</p>
+</div>
+
+<script>
+const BOOKING_ID = "{{ booking._id }}";
+const DEST_LAT = {{ booking.latitude if booking.latitude else 'null' }};
+const DEST_LNG = {{ booking.longitude if booking.longitude else 'null' }};
+const CURRENT_STATUS = "{{ booking.status if booking.status else 'Pending' }}";
+
+let map = null;
+let driverMarker = null;
+let destMarker = null;
+let routeLine = null;
+let destLat = null;
+let destLng = null;
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+if (['Accepted', 'On The Way', 'Arrived'].includes(CURRENT_STATUS)) {
+    destLat = (DEST_LAT !== null) ? DEST_LAT : 12.9352;
+    destLng = (DEST_LNG !== null) ? DEST_LNG : 77.6245;
+
+    map = L.map('trackingMap').setView([destLat, destLng], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
+    }).addTo(map);
+
+    destMarker = L.marker([destLat, destLng]).addTo(map)
+        .bindPopup('<strong>📍 Your Delivery Address</strong>').openPopup();
+}
+
+// Plot the driver's REAL live position (pushed from the driver's own
+// browser via GPS) whenever the tracking API returns one. Until the
+// driver's phone/browser sends a first fix, no driver marker is shown.
+function updateDriverMarker(lat, lng) {
+    if (!map || lat === null || lat === undefined || lng === null || lng === undefined) return;
+
+    if (!driverMarker) {
+        driverMarker = L.marker([lat, lng]).addTo(map)
+            .bindPopup('<strong>🚛 Your Driver</strong>');
+        routeLine = L.polyline([[lat, lng], [destLat, destLng]], {
+            color: '#2d7aff', weight: 4, dashArray: '8,8', opacity: 0.7
+        }).addTo(map);
+        map.fitBounds([[lat, lng], [destLat, destLng]], { padding: [40, 40] });
+    } else {
+        driverMarker.setLatLng([lat, lng]);
+        routeLine.setLatLngs([[lat, lng], [destLat, destLng]]);
+    }
+
+    const distanceKm = haversineKm(lat, lng, destLat, destLng);
+    const etaMin = Math.max(1, Math.round((distanceKm / 30) * 60));
+    const etaChip = document.getElementById('etaChip');
+    if (etaChip) etaChip.innerHTML = `<i class="fa-regular fa-hourglass-half"></i> ETA: ${etaMin} min (${distanceKm.toFixed(1)} km)`;
+}
+
+async function refreshTracking() {
+    try {
+        const res = await fetch(`/tracking-api/${BOOKING_ID}`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        const liveLocEl = document.getElementById('liveLocationText');
+        if (liveLocEl && data.live_location) liveLocEl.textContent = data.live_location;
+
+        const truckEl = document.getElementById('truckNumberText');
+        if (truckEl && data.truck_number) truckEl.textContent = data.truck_number;
+
+        const nameEl = document.getElementById('driverNameText');
+        if (nameEl && data.driver_name) nameEl.textContent = data.driver_name;
+
+        const phoneEl = document.getElementById('driverPhoneText');
+        if (phoneEl && data.driver_phone) phoneEl.innerHTML = `<i class="fa-regular fa-phone"></i> ${data.driver_phone}`;
+
+        updateDriverMarker(data.driver_lat, data.driver_lng);
+
+        if (data.status && data.status !== CURRENT_STATUS) {
+            window.location.reload();
+        }
+    } catch (e) {
+        console.log('Tracking refresh failed', e);
+    }
+}
+refreshTracking();
+setInterval(refreshTracking, 8000);
+</script>
+
+</body>
+</html>

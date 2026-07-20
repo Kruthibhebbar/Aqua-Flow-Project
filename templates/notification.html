@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow | Notifications</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(145deg, #f1f5f9 0%, #e9eef3 100%);
+            font-family: 'Inter', sans-serif;
+            padding: 32px 40px 60px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header h1 { font-size: 1.8rem; font-weight: 700; color: #0f2b3d; }
+        .dashboard-btn {
+            background: #0f2b3d;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .dashboard-btn:hover {
+            background: #ea580c;
+            transform: translateY(-2px);
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .notifications-list { display: flex; flex-direction: column; gap: 16px; }
+        
+        /* ✅ Enhanced notification card styling */
+        .notification-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 24px;
+            display: flex;
+            gap: 20px;
+            transition: 0.2s;
+            border-left: 6px solid #3b82f6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            animation: slideIn 0.3s ease;
+        }
+        .notification-card:hover { transform: translateX(4px); }
+        
+        /* ✅ Unread notification highlighting */
+        .notification-card[data-read="false"] {
+            background: #f8fbff;
+            border-left-width: 8px;
+            box-shadow: 0 6px 16px rgba(59,130,246,0.15);
+        }
+        .notification-card[data-read="true"] {
+            opacity: 0.85;
+        }
+        
+        /* Notification type colors */
+        .notification-card.driver_accepted { border-left-color: #22c55e; }
+        .notification-card.confirmed { border-left-color: #22c55e; }
+        .notification-card.waiting_driver { border-left-color: #f59e0b; }
+        .notification-card.on_way { border-left-color: #3b82f6; }
+        .notification-card.payment { border-left-color: #8b5cf6; }
+        .notification-card.failed { border-left-color: #ef4444; }
+        
+        .notification-icon { font-size: 28px; min-width: 50px; }
+        .notification-content { flex: 1; }
+        .notification-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; color: #0f2b3d; }
+        
+        /* ✅ Fixed long message display */
+        .notification-message { 
+            color: #4a627a; 
+            line-height: 1.6; 
+            white-space: pre-line;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .notification-time { font-size: 0.75rem; color: #8aa0b5; margin-top: 8px; }
+        .mark-read-btn {
+            background: #eef2ff;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #1e4a76;
+            align-self: flex-start;
+        }
+        .mark-read-btn:hover {
+            background: #0f2b3d;
+            color: white;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 32px;
+        }
+        .empty-state i { font-size: 48px; color: #cbd5e1; margin-bottom: 16px; }
+        .empty-state h3 { margin-top: 16px; color: #0f2b3d; }
+        .empty-state p { color: #8aa0b5; margin-top: 8px; }
+        .notification-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .delete-btn {
+            background: #fff1f0;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #c2412c;
+        }
+        .delete-btn:hover {
+            background: #dc2626;
+            color: white;
+        }
+        
+        /* ✅ Animation */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) { 
+            body { padding: 20px; }
+            .notification-card { flex-wrap: wrap; }
+            .header { flex-direction: column; text-align: center; }
+            .btn-group { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>
+            <i class="fas fa-bell"></i>
+            Your Notifications
+            {% if unread_notifications > 0 %}
+                <span style="background: #ea580c; color: white; font-size: 0.9rem; padding: 4px 12px; border-radius: 40px; margin-left: 12px;">
+                    {{ unread_notifications }} Unread
+                </span>
+            {% endif %}
+        </h1>
+        <div class="btn-group">
+            <button onclick="markAllRead()" class="dashboard-btn" style="background: #1e4a76; padding: 10px 20px;">
+                <i class="fas fa-check-double"></i> Mark All Read
+            </button>
+            <button onclick="deleteAllNotifications()" class="dashboard-btn" style="background: #dc2626; padding: 10px 20px;">
+                <i class="fas fa-trash-alt"></i> Delete All
+            </button>
+            <a href="/dashboard" class="dashboard-btn"><i class="fas fa-arrow-left"></i> Dashboard</a>
+        </div>
+    </div>
+    
+    <div class="notifications-list" id="notificationsList">
+        {% if notifications and notifications|length > 0 %}
+            {% for notif in notifications %}
+            <div class="notification-card {{ notif.type }}" data-id="{{ notif._id }}" data-read="{{ 'true' if notif.read else 'false' }}">
+                <div class="notification-icon">
+                    {% if notif.icon == '🚛' %}🚛
+                    {% elif notif.icon == '✅' %}✅
+                    {% elif notif.icon == '📧' %}📧
+                    {% elif notif.icon == '❌' %}❌
+                    {% elif notif.icon == '⏳' %}⏳
+                    {% elif notif.type == 'driver_accepted' %}✅
+                    {% elif notif.type == 'confirmed' %}✅
+                    {% elif notif.type == 'cancelled' %}❌
+                    {% elif notif.type == 'waiting_driver' %}⏳
+                    {% else %}🔔{% endif %}
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">{{ notif.title }}</div>
+                    <div class="notification-message">{{ notif.message|safe }}</div>
+                    <div class="notification-time">
+                        <i class="far fa-clock"></i> {{ notif.time if notif.time else 'Just now' }}
+                    </div>
+                </div>
+                <div class="notification-actions">
+                    {% if not notif.read %}
+                    <button class="mark-read-btn" onclick="markRead('{{ notif._id }}')">
+                        <i class="fas fa-check"></i> Mark Read
+                    </button>
+                    {% endif %}
+                    <button class="delete-btn" onclick="deleteNotification('{{ notif._id }}')">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <h3>No notifications available</h3>
+                <p>Booking updates, driver status and payment alerts will appear here.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function markRead(notificationId) {
+        fetch(`/mark_notification_read/${notificationId}`)
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to mark as read');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    
+    function deleteNotification(notificationId) {
+        if (confirm('Delete this notification?')) {
+            fetch(`/delete_notification/${notificationId}`)
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    }
+    
+    function markAllRead() {
+        fetch('/mark_all_notifications_read')
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to mark all as read');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    
+    function deleteAllNotifications() {
+        if (confirm("⚠️ Delete ALL notifications? This action cannot be undone.")) {
+            fetch('/clear_all_notifications')
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert("Failed to delete notifications");
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    }
+    
+    // ✅ Auto refresh every 30 seconds if new notifications arrive
+    setInterval(function() {
+        fetch('/notification_count')
+            .then(response => response.json())
+            .then(data => {
+                if (data.count > 0 && data.count !== {{ unread_notifications|default(0) }}) {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }, 30000);
+</script>
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+<script>
+(function () {
+    var HOME_URL = "/dashboard";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

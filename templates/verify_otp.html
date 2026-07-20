@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow - Verify OTP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0c4a6e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+        }
+        .verify-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 45px 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+        }
+        .error-message {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #b91c1c;
+        }
+        .btn-verify {
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+            border: none;
+            height: 50px;
+            border-radius: 12px;
+            font-weight: 700;
+            width: 100%;
+            color: white;
+        }
+        .resend-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .resend-link a {
+            color: #0ea5e9;
+            cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-box">
+        <div class="text-center mb-3">
+            <i class="fas fa-key" style="font-size: 48px; color: #0ea5e9;"></i>
+        </div>
+        <h3 class="text-center">Verify Your Email</h3>
+        <p class="text-center text-muted">Enter the OTP sent to your email</p>
+        
+        {% if error %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label"><i class="fas fa-code"></i> OTP Code</label>
+                <input type="text" name="otp" class="form-control" placeholder="Enter 6-digit OTP" maxlength="6" required>
+            </div>
+            <button type="submit" class="btn-verify"><i class="fas fa-check-circle me-2"></i>Verify & Create Account</button>
+        </form>
+        
+        <div class="resend-link">
+            <a onclick="resendOTP()"><i class="fas fa-redo-alt"></i> Resend OTP</a>
+        </div>
+        <div class="text-center mt-3">
+            <a href="{{ url_for('signup') }}">← Back to Signup</a>
+        </div>
+    </div>
+    
+    <script>
+        async function resendOTP() {
+            const response = await fetch('/resend-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                alert('OTP resent successfully! Check your email.');
+            } else {
+                alert('Failed to resend OTP. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>

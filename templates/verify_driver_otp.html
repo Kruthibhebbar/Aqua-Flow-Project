@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AquaFlow Driver | Secure Verification</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .dashboard-container {
+            max-width: 450px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .right-panel {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.02);
+            padding: 24px;
+            transition: all 0.2s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .brand-logo {
+            margin-bottom: 20px;
+        }
+        .brand-logo h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0f5b7a, #1a8bb8);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            margin: 0;
+        }
+        .brand-logo p {
+            font-size: 0.7rem;
+            color: #7a8e9b;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .login-heading {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a2f3a;
+            margin-bottom: 8px;
+            letter-spacing: -0.2px;
+        }
+
+        .otp-sub {
+            color: #6c7f8b;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+            border-left: none;
+            padding-left: 0;
+        }
+
+        .otp-input-group {
+            position: relative;
+            margin-bottom: 22px;
+            max-width: 240px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .otp-input-group i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #2c9cd4;
+            font-size: 0.95rem;
+            z-index: 2;
+        }
+
+        .otp-field {
+            height: 44px;
+            border-radius: 14px;
+            border: 1.5px solid #e2e8f0;
+            padding-left: 42px;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-align: center;
+            background: white;
+            transition: 0.2s;
+            width: 100%;
+        }
+
+        .otp-field:focus {
+            border-color: #1f7b9c;
+            box-shadow: 0 0 0 3px rgba(31,123,156,0.12);
+            outline: none;
+        }
+
+        .otp-field::placeholder {
+            color: #b9c8d4;
+            font-weight: 500;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .verify-action-btn {
+            background: #1f7b9c;
+            border: none;
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: white;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(31,123,156,0.2);
+            margin-bottom: 18px;
+        }
+
+        .verify-action-btn:hover {
+            background: #0f5b7a;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(31,123,156,0.2);
+        }
+
+        .timer-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 8px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 6px 0 10px 0;
+            flex-wrap: wrap;
+            gap: 6px;
+            border: 1px solid #eef2f6;
+        }
+
+        .timer-text h6 {
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: #1f4e62;
+            font-size: 0.75rem;
+        }
+
+        .timer-text small {
+            font-size: 0.6rem;
+            color: #8aa0ac;
+        }
+
+        .countdown-circle {
+            background: #eef2f6;
+            border-radius: 12px;
+            width: 70px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #1f7b9c;
+            font-family: monospace;
+            letter-spacing: 1px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02), 0 1px 1px rgba(0,0,0,0.02);
+        }
+
+        .resend-button {
+            width: 100%;
+            background: white;
+            border: 1.5px solid #dee6ec;
+            border-radius: 40px;
+            padding: 9px 12px;
+            font-weight: 600;
+            color: #1f7b9c;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .resend-button:not(:disabled):hover {
+            background: #f7fafc;
+            border-color: #1f7b9c;
+        }
+
+        .custom-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 16px;
+            padding: 10px 18px;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #2c9cd4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1100;
+            transform: translateX(120%);
+            transition: transform 0.25s ease;
+            font-weight: 500;
+            font-size: 0.8rem;
+            max-width: 280px;
+        }
+
+        .custom-toast.show-toast {
+            transform: translateX(0);
+        }
+
+        .shake {
+            animation: shakeAnim 0.45s ease;
+        }
+
+        @keyframes shakeAnim {
+            0%,100%{ transform: translateX(0); }
+            25%{ transform: translateX(-5px); }
+            75%{ transform: translateX(5px); }
+        }
+
+        .spinner-small {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 500px) {
+            .right-panel {
+                padding: 20px;
+            }
+            .login-heading {
+                font-size: 1.2rem;
+            }
+            .otp-field {
+                font-size: 18px;
+                height: 42px;
+            }
+            .otp-input-group {
+                max-width: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <div class="right-panel">
+        <div class="brand-logo">
+            <h2>AquaFlow</h2>
+            <p>driver fleet management</p>
+        </div>
+
+        <div class="login-heading">Secure Driver Login</div>
+        <div class="otp-sub">Enter the OTP sent to your registered driver email</div>
+
+        <form method="POST" action="" id="driverOtpForm">
+            <div class="otp-input-group">
+                <i class="fa-regular fa-keyboard"></i>
+                <input 
+                    type="text" 
+                    name="otp" 
+                    id="otpInputField" 
+                    class="form-control otp-field" 
+                    maxlength="6" 
+                    autocomplete="off" 
+                    inputmode="numeric" 
+                    required 
+                    placeholder="Enter OTP">
+            </div>
+            <button type="submit" class="verify-action-btn" id="verifyOtpBtn">
+                <i class="fa-regular fa-circle-check me-2"></i> Verify & Access Dashboard
+            </button>
+        </form>
+
+        <div class="timer-card">
+            <div class="timer-text">
+                <h6><i class="fa-regular fa-clock"></i> Code expires in</h6>
+                <small>Request new code after timer ends</small>
+            </div>
+            <div class="countdown-circle" id="timerCountdown">02:00</div>
+        </div>
+
+        <form method="POST" action="/resend-otp" id="resendCodeForm">
+            <button type="submit" class="resend-button" id="resendOtpButton">
+                <i class="fa-solid fa-arrow-rotate-right me-2"></i> Resend Verification Code
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="globalToast" class="custom-toast">
+    <i id="toastIcon" class="fa-regular fa-bell"></i>
+    <span id="toastMessageText">Notification</span>
+</div>
+
+<script>
+    (function() {
+        const otpField = document.getElementById('otpInputField');
+        const verifyBtn = document.getElementById('verifyOtpBtn');
+        const resendForm = document.getElementById('resendCodeForm');
+        const timerDisplaySpan = document.getElementById('timerCountdown');
+        const otpForm = document.getElementById('driverOtpForm');
+        const toastEl = document.getElementById('globalToast');
+        const toastIconSpan = document.getElementById('toastIcon');
+        const toastMsgSpan = document.getElementById('toastMessageText');
+        
+        let timerSeconds = 120;
+        let timerInterval = null;
+        
+        function showToastMessage(message, type = 'info') {
+            if (!toastEl) return;
+            toastEl.classList.remove('show-toast');
+            if (type === 'error') {
+                toastIconSpan.className = 'fa-regular fa-circle-exclamation';
+                toastEl.style.borderLeftColor = '#dc3545';
+            } else if (type === 'success') {
+                toastIconSpan.className = 'fa-regular fa-circle-check';
+                toastEl.style.borderLeftColor = '#198754';
+            } else {
+                toastIconSpan.className = 'fa-regular fa-bell';
+                toastEl.style.borderLeftColor = '#2c9cd4';
+            }
+            toastMsgSpan.innerText = message;
+            toastEl.classList.add('show-toast');
+            setTimeout(() => {
+                toastEl.classList.remove('show-toast');
+            }, 3800);
+        }
+        
+        function updateTimerUI() {
+            if (!timerDisplaySpan) return;
+            let mins = Math.floor(timerSeconds / 60);
+            let secs = timerSeconds % 60;
+            timerDisplaySpan.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            if (timerSeconds <= 0) {
+                timerDisplaySpan.innerText = "00:00";
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                showToastMessage("Your OTP code has expired. Please request a new code.", "warning");
+            }
+        }
+        
+        function startCountdown(initialSec = 120) {
+            if (timerInterval) clearInterval(timerInterval);
+            timerSeconds = initialSec;
+            updateTimerUI();
+            timerInterval = setInterval(() => {
+                if (timerSeconds > 0) {
+                    timerSeconds--;
+                    updateTimerUI();
+                } else {
+                    if (timerInterval) clearInterval(timerInterval);
+                    timerInterval = null;
+                    updateTimerUI();
+                }
+            }, 1000);
+        }
+        
+        if (otpField) {
+            otpField.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+                if (this.value.length === 6) {
+                    this.style.borderColor = "#1f7b9c";
+                    setTimeout(() => { this.style.borderColor = "#e2e8f0"; }, 600);
+                }
+            });
+            otpField.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (verifyBtn && !verifyBtn.disabled) verifyBtn.click();
+                }
+            });
+        }
+        
+        // STEP 2 & 3: Fixed form submission - NO preventDefault or fake setTimeout
+        if (otpForm) {
+            otpForm.addEventListener('submit', function(e) {
+                const enteredCode = otpField.value.trim();
+                if (enteredCode.length !== 6) {
+                    e.preventDefault();
+                    showToastMessage("Please enter the complete 6-digit verification code.", "error");
+                    otpField.classList.add('shake');
+                    setTimeout(() => otpField.classList.remove('shake'), 500);
+                    return false;
+                }
+                if (!/^\d+$/.test(enteredCode)) {
+                    e.preventDefault();
+                    showToastMessage("Verification code must contain only numbers.", "error");
+                    return false;
+                }
+                // Show loading on button
+                verifyBtn.innerHTML = '<span class="spinner-small"></span> Verifying...';
+                verifyBtn.disabled = true;
+                // Return true to allow natural form submission - NO setTimeout, NO preventDefault
+                return true;
+            });
+        }
+        
+        const resendButton = document.getElementById('resendOtpButton');
+        if (resendButton && resendForm) {
+            resendForm.addEventListener('submit', function(e) {
+                if (resendButton.disabled) {
+                    e.preventDefault();
+                    return false;
+                }
+                const originalHtml = resendButton.innerHTML;
+                resendButton.innerHTML = '<span class="spinner-small"></span> Sending request...';
+                resendButton.disabled = true;
+                setTimeout(() => {
+                    if (resendButton && document.body.contains(resendButton) && resendButton.disabled) {
+                        resendButton.innerHTML = originalHtml;
+                        resendButton.disabled = false;
+                    }
+                }, 5000);
+                showToastMessage("Requesting new OTP code from server...", "info");
+                return true;
+            });
+        }
+        
+        startCountdown(120);
+        
+        if (otpField) {
+            otpField.focus();
+            otpField.addEventListener('paste', function(e) {
+                e.preventDefault();
+                let pasteData = (e.clipboardData || window.clipboardData).getData('text');
+                let cleaned = pasteData.replace(/[^0-9]/g, '').slice(0, 6);
+                if (cleaned.length > 0) {
+                    this.value = cleaned;
+                    showToastMessage("OTP code pasted successfully.", "success");
+                } else {
+                    showToastMessage("Invalid OTP format. Use numbers only.", "error");
+                }
+            });
+            
+            // STEP 1: REMOVED the auto-submit on input reaching 6 digits
+            // No automatic verification - user must click button
+        }
+        
+        // STEP 5: Get error from Flask backend via URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const errorMsg = urlParams.get('error');
+        const successMsg = urlParams.get('message');
+        
+        if (errorMsg === 'invalid_otp') {
+            showToastMessage("Verification failed: Invalid or expired OTP. Please try again.", "error");
+            if (otpField) {
+                otpField.value = '';
+                otpField.focus();
+            }
+            if (verifyBtn) {
+                verifyBtn.innerHTML = '<i class="fa-regular fa-circle-check me-2"></i> Verify & Access Dashboard';
+                verifyBtn.disabled = false;
+            }
+        } else if (errorMsg === 'expired') {
+            showToastMessage("OTP code has expired. Please request a new code.", "warning");
+        } else if (errorMsg === 'resend_failed') {
+            showToastMessage("Failed to resend OTP. Please contact support.", "error");
+        } else if (successMsg === 'otp_resent') {
+            showToastMessage("A new verification code has been sent to your registered email.", "success");
+        } else if (successMsg === 'verification_success') {
+            showToastMessage("Verification successful! Redirecting to dashboard...", "success");
+        }
+        
+        console.clear();
+        
+        window.addEventListener('beforeunload', () => {
+            if (timerInterval) clearInterval(timerInterval);
+        });
+    })();
+</script>
+
+</body>
+</html>

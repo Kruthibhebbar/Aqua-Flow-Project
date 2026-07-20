@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Earnings & Wallet | AquaFlow Driver</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+        body{background:#eef3f9;padding:20px;color:#1f2d3d;}
+        .container{max-width:1000px;margin:auto;}
+        h1{font-size:1.5rem;margin-bottom:18px;}
+        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+        .stat{background:#fff;border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(0,0,0,.06);}
+        .stat .label{font-size:.82rem;color:#6b7684;margin-bottom:6px;}
+        .stat .value{font-size:1.5rem;font-weight:700;}
+        .value.green{color:#1e9e5a;}
+        .value.orange{color:#d68a1f;}
+        .value.blue{color:#2d7aff;}
+        .card{background:#fff;border-radius:16px;padding:22px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:20px;}
+        .card h2{font-size:1.1rem;margin-bottom:14px;}
+        .withdraw-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+        .withdraw-form label{font-size:.82rem;font-weight:600;color:#495057;display:block;margin-bottom:6px;}
+        .withdraw-form input{padding:10px 12px;border-radius:10px;border:1.5px solid #dee2e6;font-size:.95rem;width:180px;}
+        .withdraw-form button{background:linear-gradient(135deg,#2d7aff,#1a5fd6);color:#fff;border:none;padding:11px 20px;border-radius:10px;font-weight:600;cursor:pointer;}
+        .withdraw-form button:disabled{opacity:.5;cursor:not-allowed;}
+        table{width:100%;border-collapse:collapse;font-size:.9rem;}
+        th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #eef1f4;}
+        th{color:#6b7684;font-weight:600;font-size:.8rem;text-transform:uppercase;}
+        .badge{padding:4px 10px;border-radius:999px;font-size:.78rem;font-weight:600;}
+        .badge-pending{background:#fff3cd;color:#8a6d1f;}
+        .badge-processing{background:#dbe9ff;color:#1a5fd6;}
+        .badge-completed{background:#d4f4e2;color:#1e9e5a;}
+        .badge-rejected{background:#fbdada;color:#c0392b;}
+        .empty{color:#9aa5b1;font-size:.9rem;padding:14px 0;text-align:center;}
+        .back-link{display:inline-block;margin-bottom:14px;color:#2d7aff;text-decoration:none;font-size:.9rem;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="{{ url_for('driver_dashboard') }}" class="back-link"><i class="fa-solid fa-arrow-left me-1"></i> Back to dashboard</a>
+    <h1><i class="fa-solid fa-wallet me-2"></i>My Earnings &amp; Wallet</h1>
+
+    <div class="grid">
+        <div class="stat">
+            <div class="label">Today's Earnings</div>
+            <div class="value green">₹{{ "{:,.0f}".format(settlement.todays_earnings) }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">Total Earned (all time)</div>
+            <div class="value">₹{{ "{:,.0f}".format(settlement.driver_earned_total) }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">Pending Settlement</div>
+            <div class="value orange">₹{{ "{:,.0f}".format(settlement.pending_settlement_total) }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">Withdrawable Now</div>
+            <div class="value blue">₹{{ "{:,.0f}".format(settlement.withdrawable) }}</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-money-bill-transfer me-2"></i>Withdraw Earnings</h2>
+        <form class="withdraw-form" method="POST" action="{{ url_for('request_driver_withdrawal') }}">
+            <div>
+                <label for="amount">Amount (₹)</label>
+                <input type="number" id="amount" name="amount" min="1" max="{{ settlement.withdrawable }}" step="1" required>
+            </div>
+            <button type="submit" {{ 'disabled' if settlement.withdrawable <= 0 else '' }}>
+                <i class="fa-solid fa-paper-plane me-1"></i> Request Withdrawal
+            </button>
+        </form>
+        {% if settlement.withdrawable <= 0 %}
+        <p class="empty">Nothing to withdraw right now — complete more deliveries to build up your balance.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-clock-rotate-left me-2"></i>Withdrawal History</h2>
+        {% if settlement.requests %}
+        <table>
+            <thead>
+                <tr><th>Date</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for r in settlement.requests %}
+                <tr>
+                    <td>{{ r.requested_at.strftime('%d %b %Y') if r.requested_at else '-' }}</td>
+                    <td>₹{{ "{:,.0f}".format(r.amount) }}</td>
+                    <td>
+                        <span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No withdrawal requests yet.</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

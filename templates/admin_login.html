@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AquaFlow | Admin Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(145deg, #eef5ff 0%, #e0eefa 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Dynamic animated water wave effect background */
+    body::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 40%, rgba(0, 160, 255, 0.08) 0%, rgba(0, 100, 210, 0.02) 70%);
+        z-index: 0;
+    }
+
+    /* Floating orbs / water droplets animation */
+    .bg-orb {
+        position: absolute;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 180, 255, 0.2), rgba(0, 120, 255, 0.05));
+        filter: blur(60px);
+        z-index: 0;
+        animation: floatOrb 18s infinite alternate ease-in-out;
+        pointer-events: none;
+    }
+
+    @keyframes floatOrb {
+        0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0.5;
+        }
+        100% {
+            transform: translate(30px, -30px) scale(1.2);
+            opacity: 0.8;
+        }
+    }
+
+    .bg-orb:nth-child(1) {
+        width: 380px;
+        height: 380px;
+        top: -120px;
+        left: -80px;
+        animation-duration: 14s;
+    }
+    .bg-orb:nth-child(2) {
+        width: 460px;
+        height: 460px;
+        bottom: -150px;
+        right: -100px;
+        animation-duration: 20s;
+        animation-delay: -3s;
+        background: radial-gradient(circle, rgba(0, 200, 255, 0.18), rgba(0, 100, 210, 0.03));
+    }
+    .bg-orb:nth-child(3) {
+        width: 260px;
+        height: 260px;
+        bottom: 20%;
+        left: -70px;
+        animation-duration: 16s;
+        animation-delay: -7s;
+        background: radial-gradient(circle, rgba(0, 150, 230, 0.15), rgba(0, 90, 200, 0.02));
+    }
+    .bg-orb:nth-child(4) {
+        width: 320px;
+        height: 320px;
+        top: 40%;
+        right: -80px;
+        animation-duration: 22s;
+        animation-delay: -2s;
+        background: radial-gradient(circle, rgba(0, 212, 255, 0.2), rgba(0, 100, 200, 0.03));
+    }
+
+    /* Glassmorphism container refined */
+    .login-card {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 460px;
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(18px);
+        border-radius: 48px;
+        padding: 2.5rem 2.2rem 3rem 2.2rem;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 
+            0 25px 45px -12px rgba(0, 70, 150, 0.25),
+            0 8px 18px rgba(0, 0, 0, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        animation: cardFloatIn 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+    }
+
+    @keyframes cardFloatIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.96) translateY(28px);
+            backdrop-filter: blur(8px);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            backdrop-filter: blur(18px);
+        }
+    }
+
+    .login-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 
+            0 32px 55px -16px rgba(0, 90, 170, 0.3),
+            0 10px 25px -5px rgba(0, 0, 0, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.92);
+    }
+
+    /* Elegant typography and icon spacing */
+    h2 {
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #0a2b3e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #125d8c, #0088cc);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 2px 5px rgba(0, 100, 200, 0.08);
+    }
+
+    h2 i {
+        background: linear-gradient(145deg, #00b4ff, #0066cc);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.3rem;
+        filter: drop-shadow(0 3px 6px rgba(0, 120, 210, 0.2));
+    }
+
+    /* Input field modern design */
+    .input-group {
+        position: relative;
+        margin-bottom: 1.4rem;
+    }
+
+    input {
+        width: 100%;
+        padding: 16px 20px 16px 52px;
+        border-radius: 42px;
+        border: 1.5px solid rgba(203, 222, 240, 0.9);
+        background: rgba(255, 255, 255, 0.85);
+        font-size: 1rem;
+        font-weight: 500;
+        color: #11212e;
+        transition: all 0.25s ease;
+        outline: none;
+        font-family: 'Inter', sans-serif;
+        backdrop-filter: blur(2px);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    input:focus {
+        border-color: #0099ff;
+        background: #ffffff;
+        box-shadow: 0 0 0 5px rgba(0, 153, 255, 0.2), inset 0 1px 2px rgba(0,0,0,0.02);
+        transform: scale(1.01);
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #5d8bb8;
+        font-size: 1.2rem;
+        transition: all 0.2s ease;
+        pointer-events: none;
+    }
+
+    input:focus + .input-icon {
+        color: #0088ff;
+        transform: translateY(-50%) scale(1.05);
+    }
+
+    /* Placeholder styling */
+    input::placeholder {
+        color: #91adc9;
+        font-weight: 450;
+        font-size: 0.95rem;
+        letter-spacing: -0.2px;
+    }
+
+    /* Button premium gradient + ripple effect */
+    button {
+        width: 100%;
+        padding: 16px 18px;
+        border: none;
+        border-radius: 44px;
+        background: linear-gradient(105deg, #0088ff 0%, #006cd9 100%);
+        color: white;
+        font-size: 1.05rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.8rem;
+        transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.4px;
+        box-shadow: 0 12px 24px -10px rgba(0, 102, 204, 0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+        transition: left 0.5s ease;
+    }
+
+    button:hover::before {
+        left: 100%;
+    }
+
+    button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 30px -12px rgba(0, 119, 204, 0.55);
+        background: linear-gradient(105deg, #0095ff, #0077e6);
+    }
+
+    button:active {
+        transform: translateY(1px);
+        box-shadow: 0 8px 16px -8px rgba(0, 102, 204, 0.5);
+    }
+
+    .btn-icon {
+        font-size: 1.1rem;
+        transition: transform 0.2s;
+    }
+
+    button:hover .btn-icon {
+        transform: translateX(2px);
+    }
+
+    /* Error component with modern styling */
+    .error {
+        margin-top: 1.8rem;
+        padding: 14px 18px;
+        border-radius: 60px;
+        background: rgba(255, 240, 245, 0.95);
+        color: #c72a4f;
+        border: 1px solid rgba(255, 170, 190, 0.6);
+        text-align: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        backdrop-filter: blur(8px);
+        letter-spacing: -0.2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        animation: shakeError 0.4s ease-in-out 0s;
+        box-shadow: 0 4px 12px rgba(199, 42, 79, 0.08);
+    }
+
+    @keyframes shakeError {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    .error-icon {
+        font-size: 1rem;
+        background: #c72a4f;
+        color: white;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+    }
+
+    /* extra micro-interaction & branding */
+    .water-brand {
+        text-align: center;
+        margin-top: 1.8rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #5588aa;
+        letter-spacing: 0.4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+    
+    .water-brand i {
+        font-size: 0.8rem;
+        color: #3f9bdc;
+    }
+
+    .water-brand:hover {
+        opacity: 1;
+    }
+
+    /* Responsive fine-tuning */
+    @media (max-width: 520px) {
+        body {
+            padding: 1rem;
+        }
+        .login-card {
+            padding: 2rem 1.6rem 2.4rem;
+            border-radius: 38px;
+        }
+        h2 {
+            font-size: 1.9rem;
+            gap: 8px;
+        }
+        input {
+            padding: 14px 18px 14px 48px;
+            font-size: 0.95rem;
+        }
+        .input-icon {
+            left: 18px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 14px 16px;
+            font-size: 1rem;
+        }
+        .error {
+            padding: 12px 16px;
+            font-size: 0.85rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .login-card, button, input, .bg-orb {
+            animation: none;
+            transition: none;
+        }
+        .error {
+            animation: none;
+        }
+        button::before {
+            display: none;
+        }
+    }
+
+    /* subtle custom focus ring (accessibility) */
+    input:focus-visible, button:focus-visible {
+        outline: 3px solid #0099ff;
+        outline-offset: 3px;
+    }
+    </style>
+</head>
+<body>
+    <!-- dynamic water floating background orbs for fluid atmosphere -->
+    <div class="bg-orb"></div>
+    <div class="bg-orb"></div>
+    <div class="bg-orb"></div>
+    <div class="bg-orb"></div>
+
+    <div class="login-card">
+        <h2>
+            <i class="fas fa-droplet"></i> 
+            AquaFlow
+        </h2>
+        
+        <form method="POST">
+            <div class="input-group">
+                <input 
+                    type="email" 
+                    name="email" 
+                    placeholder="Admin email address" 
+                    required 
+                    autocomplete="username"
+                    id="adminEmail"
+                >
+                <i class="fas fa-envelope input-icon"></i>
+            </div>
+            
+            <div class="input-group">
+                <input 
+                    type="password" 
+                    name="password" 
+                    placeholder="Secure password" 
+                    required 
+                    autocomplete="current-password"
+                    id="adminPass"
+                >
+                <i class="fas fa-lock input-icon"></i>
+            </div>
+            
+            <button type="submit">
+                <i class="fas fa-arrow-right-to-bracket btn-icon"></i> 
+                Sign in to portal
+            </button>
+            
+            {% if error %}
+            <div class="error">
+                <i class="fas fa-exclamation-triangle error-icon"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% else %}
+            <!-- decorative watermark to hint at secure admin area (optional, design friendly) -->
+            <div class="water-brand">
+                <i class="fas fa-shield-alt"></i> 
+                <span>Secure admin gateway • AES-256</span>
+                <i class="fas fa-water"></i>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- tiny inline script for additional effect: interactive micro-feedback for inputs on error? just optional smoothness -->
+    <script>
+        (function() {
+            // adds subtle ripple to buttons and live input decoration but only visual delight
+            const buttons = document.querySelectorAll('button');
+            const inputs = document.querySelectorAll('input');
+            
+            // Add a custom dynamic watermark for "preview" if no error present, but not necessary
+            // ensure that if an error appears, the watermark still looks nice 
+            const waterMarkElem = document.querySelector('.water-brand');
+            
+            // if there is an error container, we keep consistency, but still show watermark only when no error is served
+            // but because template might re-render, we rely on inline style to show or hide? Actually JS just provide enhancement.
+            // make sure "error" message appears from backend, but watermark doesn't conflict. If error block exists from server side, 
+            // watermark will still be present in the else condition (only when no error from templating)
+            // but we also want dynamic smooth floating effect for all cards
+            // smooth input focus glow (extra)
+            inputs.forEach(inp => {
+                inp.addEventListener('focus', (e) => {
+                    e.target.parentElement?.classList.add('focused-group');
+                });
+                inp.addEventListener('blur', (e) => {
+                    e.target.parentElement?.classList.remove('focused-group');
+                });
+            });
+            
+            // optional: add a little dynamic water drop ripple to the card when click on login?
+            const card = document.querySelector('.login-card');
+            if(card) {
+                card.addEventListener('mousemove', (e) => {
+                    // subtle shine effect optional but only when someone moves cursor? Not needed just a fun modern vibe
+                    const rect = card.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width;
+                    const y = (e.clientY - rect.top) / rect.height;
+                    card.style.setProperty('--mouse-x', x);
+                    card.style.setProperty('--mouse-y', y);
+                });
+            }
+            
+            // little animation for the background orbs to create gentle parallax on mousemove
+            const orbs = document.querySelectorAll('.bg-orb');
+            document.body.addEventListener('mousemove', (e) => {
+                const mouseX = e.clientX / window.innerWidth;
+                const mouseY = e.clientY / window.innerHeight;
+                orbs.forEach((orb, idx) => {
+                    const speed = 0.03 + idx * 0.01;
+                    const moveX = (mouseX - 0.5) * 40 * speed;
+                    const moveY = (mouseY - 0.5) * 40 * speed;
+                    orb.style.transform = `translate(${moveX}px, ${moveY}px)`;
+                });
+            });
+            
+            // if we have error set, we can slightly shake login-card? but error animation already appears, add highlight for card
+            const errorDiv = document.querySelector('.error');
+            if(errorDiv) {
+                // add border glow effect on error card for better visual emphasis
+                card.style.border = '1px solid rgba(255, 80, 120, 0.4)';
+                card.style.boxShadow = '0 20px 38px -12px rgba(199, 42, 79, 0.2)';
+                setTimeout(() => {
+                    card.style.border = '1px solid rgba(255, 255, 255, 0.6)';
+                    card.style.boxShadow = '';
+                }, 800);
+            }
+        })();
+    </script>
+    <!-- Additional minor style adjustments for input-group glow on focus -->
+    <style>
+        .input-group.focused-group .input-icon {
+            color: #0088ff;
+            text-shadow: 0 0 3px rgba(0,136,255,0.3);
+        }
+        .login-card {
+            --mouse-x: 0.5;
+            --mouse-y: 0.5;
+            transition: box-shadow 0.4s;
+        }
+        /* micro glass highlight at cursor position - purely decorative for 3d effect */
+        .login-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 48px;
+            background: radial-gradient(circle at calc(var(--mouse-x, 0.5) * 100%) calc(var(--mouse-y, 0.5) * 100%), rgba(255,255,245,0.25), transparent 70%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1;
+        }
+        .login-card:hover::after {
+            opacity: 1;
+        }
+        /* additional mobile polish */
+        @media (max-width: 480px) {
+            .login-card::after {
+                display: none;
+            }
+        }
+        /* smooth icon transitions */
+        .input-icon, .btn-icon {
+            transition: all 0.2s;
+        }
+        button i {
+            will-change: transform;
+        }
+        .water-brand i {
+            filter: drop-shadow(0 0 2px rgba(0,160,255,0.4));
+        }
+    </style>
+</body>
+</html>

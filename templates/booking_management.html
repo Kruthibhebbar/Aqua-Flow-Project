@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AquaFlow | Crystal Clear Booking Management</title>
+
+    <!-- Chart.js (for potential future charts) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Font Awesome 6 (sharp & solid) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font: Inter + Outfit for elegance -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f4f9fe 0%, #eef3fc 100%);
+            font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+            padding: 32px 40px;
+            min-height: 100vh;
+        }
+
+        /* MAIN CONTAINER - full width, glassmorphism effect */
+        .booking-hub {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(2px);
+            border-radius: 48px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 145, 77, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* header area with wave inspiration */
+        .hero-header {
+            padding: 32px 40px 20px 40px;
+            background: white;
+            border-bottom: 1px solid #ffefe2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            background: linear-gradient(135deg, #ff914d, #ff6a2c);
+            width: 52px;
+            height: 52px;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 12px 18px -8px rgba(255, 105, 40, 0.3);
+        }
+
+        .brand-icon i {
+            font-size: 28px;
+            color: white;
+        }
+
+        .brand h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(120deg, #1e2f3f, #2c4b62);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .brand span {
+            font-size: 14px;
+            font-weight: 500;
+            color: #ff914d;
+            background: #fff2ea;
+            padding: 4px 12px;
+            border-radius: 30px;
+            margin-left: 8px;
+        }
+
+        .live-badge {
+            background: #ecfdf5;
+            padding: 10px 18px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #0b5e42;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border: 1px solid #a7f3d0;
+        }
+
+        .pulse {
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* stats premium cards */
+        .stats-pavilion {
+            padding: 20px 40px 10px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+        .stat-card-premium {
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 20px 24px;
+            transition: all 0.25s;
+            border: 1px solid #f0e6df;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.02);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stat-card-premium:hover {
+            transform: translateY(-4px);
+            border-color: #ffd6c2;
+            box-shadow: 0 18px 30px -12px rgba(255, 100, 30, 0.12);
+        }
+
+        .stat-left h4 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #7e6b5e;
+            margin-bottom: 8px;
+        }
+
+        .stat-left .value {
+            font-size: 42px;
+            font-weight: 800;
+            color: #1e293b;
+            line-height: 1.1;
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            background: #fff3ec;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff914d;
+            font-size: 28px;
+        }
+
+        /* filter zone modern */
+        .filter-section {
+            padding: 12px 40px 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #f3ede8;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pill-filter {
+            background: #f8fafc;
+            border: 1px solid #e9eef3;
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pill-filter i {
+            margin-right: 8px;
+            font-size: 0.8rem;
+        }
+
+        .pill-filter.active {
+            background: #ff914d;
+            border-color: #ff914d;
+            color: white;
+            box-shadow: 0 8px 18px rgba(255, 145, 77, 0.25);
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 14px;
+        }
+
+        .btn-export {
+            background: #1f2f3e;
+            border: none;
+            padding: 10px 26px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+
+        .btn-export:hover {
+            background: #ff7b2c;
+            transform: scale(0.98);
+        }
+
+        /* bookings container — clean cards with subtle serial number */
+        .bookings-wrapper {
+            padding: 30px 40px 48px 40px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .section-title h2 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1b2b36;
+        }
+
+        .section-title span {
+            background: #eef2ff;
+            border-radius: 30px;
+            padding: 4px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ff914d;
+        }
+
+        .booking-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* CARD redesign: subtle serial number column - reduced width & cleaner */
+        .booking-card-luxury {
+            background: white;
+            border-radius: 28px;
+            transition: all 0.25s;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.02);
+            border: 1px solid #edefe9;
+            overflow: hidden;
+            display: flex;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .card-accent {
+            width: 8px;
+            background: linear-gradient(to bottom, #ffaa77, #ff6e2c);
+        }
+
+        /* SL NO column - softer, lower width, no extra text */
+        .slno-column {
+            background: transparent;
+            min-width: 58px;
+            width: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: #ff8c54;
+            border-right: 1px solid #f0e2d8;
+            letter-spacing: 0;
+            background: #fffbf8;
+        }
+
+        .card-body {
+            flex: 1;
+            padding: 20px 26px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 18px;
+        }
+
+        .info-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            row-gap: 14px;
+            flex: 3;
+        }
+
+        .info-item {
+            min-width: 170px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #a18f7e;
+            letter-spacing: 0.4px;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-weight: 700;
+            font-size: 14.5px;
+            color: #1e2a3a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge-new {
+            padding: 4px 14px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 11px;
+            background: #fef4e8;
+            color: #b45309;
+        }
+
+        .action-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 200px;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 8px 18px;
+            border-radius: 34px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            width: 100%;
+        }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+        .btn-cancel {
+            background: #f97316;
+            color: white;
+        }
+        /* Assign Driver button styling - matches other action buttons */
+        .btn-assign-driver {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 34px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            width: 100%;
+        }
+        .btn-assign-driver:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+            background: #2563eb;
+        }
+        /* Remove default link underline for driver assignment */
+        .assign-link {
+            text-decoration: none;
+            width: 100%;
+            display: block;
+        }
+        .btn-details {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        /* modal dream */
+        .glass-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-card {
+            background: white;
+            width: 540px;
+            max-width: 90%;
+            border-radius: 48px;
+            padding: 32px;
+            box-shadow: 0 40px 60px rgba(0, 0, 0, 0.25);
+            position: relative;
+            animation: fadeUp 0.25s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 26px;
+            top: 24px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #9ca3af;
+        }
+
+        .empty-art {
+            text-align: center;
+            padding: 60px 20px;
+            background: #fefcf9;
+            border-radius: 48px;
+            color: #c0aa95;
+        }
+
+        @media (max-width: 780px) {
+            body { padding: 20px; }
+            .hero-header { padding: 22px 24px; }
+            .stats-pavilion, .filter-section, .bookings-wrapper { padding-left: 24px; padding-right: 24px; }
+            .info-columns { flex-direction: column; gap: 12px; }
+            .card-body { flex-direction: column; align-items: stretch; }
+            .slno-column { min-width: 48px; width: 48px; font-size: 16px; }
+            .action-stack { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="booking-hub">
+    <!-- Header -->
+    <div class="hero-header">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="fas fa-droplet"></i>
+            </div>
+            <div>
+                <h1>AquaFlow Oasis <span>Live Control</span></h1>
+                <p style="font-size: 13px; color: #6f6e6e; margin-top: 4px;">intelligent water delivery orchestration</p>
+            </div>
+        </div>
+        <div class="live-badge">
+            <div class="pulse"></div>
+            <span>Real-time sync · active dispatch</span>
+            <i class="fas fa-cloud-arrow-up"></i>
+        </div>
+    </div>
+
+    <!-- Stats Cards (dynamic) -->
+    <div class="stats-pavilion">
+        <div class="stat-card-premium">
+            <div class="stat-left">
+                <h4><i class="far fa-calendar-alt"></i> Total Bookings</h4>
+                <div class="value">{{ total_bookings }}</div>
+            </div>
+            <div class="stat-icon"><i class="fas fa-chart-simple"></i></div>
+        </div>
+        <div class="stat-card-premium">
+            <div class="stat-left">
+                <h4><i class="far fa-hourglass-half"></i> Pending</h4>
+                <div class="value">{{ pending_bookings }}</div>
+            </div>
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        </div>
+        <div class="stat-card-premium">
+            <div class="stat-left">
+                <h4><i class="fas fa-check-double"></i> Delivered</h4>
+                <div class="value">{{ delivered_bookings }}</div>
+            </div>
+            <div class="stat-icon"><i class="fas fa-truck-ramp-box"></i></div>
+        </div>
+        <div class="stat-card-premium">
+            <div class="stat-left">
+                <h4><i class="fas fa-rocket"></i> Active</h4>
+                <div class="value">{{ active_bookings }}</div>
+            </div>
+            <div class="stat-icon"><i class="fas fa-water-ladder"></i></div>
+        </div>
+    </div>
+
+    <!-- filter row + export -->
+    <div class="filter-section">
+        <div class="filter-group">
+            <button class="pill-filter active" data-filter="All"><i class="fas fa-globe"></i> All</button>
+            <button class="pill-filter" data-filter="Pending"><i class="fas fa-spinner"></i> Pending</button>
+            <button class="pill-filter" data-filter="Approved"><i class="fas fa-thumbs-up"></i> Approved</button>
+            <button class="pill-filter" data-filter="Cancelled"><i class="fas fa-ban"></i> Cancelled</button>
+            <button class="pill-filter" data-filter="Delivered"><i class="fas fa-circle-check"></i> Delivered</button>
+        </div>
+        <div class="export-actions">
+            <button class="btn-export" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Excel</button>
+            <button class="btn-export" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> PDF Report</button>
+        </div>
+    </div>
+
+    <!-- Bookings section -->
+    <div class="bookings-wrapper">
+        <div class="section-title">
+            <h2><i class="fas fa-clipboard-list"></i> Booking Register</h2>
+            <span>{{ bookings|length }} entries</span>
+        </div>
+        <div class="booking-grid" id="bookingGridContainer">
+            {% if bookings %}
+                {% for booking in bookings %}
+                <div class="booking-card-luxury" data-status="{{ booking.status }}" data-booking-id="{{ booking._id }}">
+                    <div class="slno-column">
+                        {{ loop.index }}
+                    </div>
+                    <div class="card-accent"></div>
+                    <div class="card-body">
+                        <div class="info-columns">
+                            <div class="info-item">
+                                <div class="info-label"><i class="fas fa-user-astronaut"></i> Customer</div>
+                                <div class="info-value">{{ booking.fullname }}</div>
+                                <div class="info-value" style="font-size: 12.5px; font-weight: 400; color: #5c6b7a;">{{ booking.user_email }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label"><i class="fas fa-location-dot"></i> Delivery</div>
+                                <div class="info-value">{{ booking.address | truncate(35) }}</div>
+                                <div class="info-value" style="font-size: 12.5px;">📞 {{ booking.phone }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label"><i class="fas fa-charging-station"></i> Quantity</div>
+                                <div class="info-value">{{ booking.quantity }} Liters <span style="font-size:12px;">💧</span></div>
+                                <div class="info-value" style="font-size: 12.5px;">🚛 Driver: {{ booking.driver_name }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label"><i class="fas fa-wallet"></i> Payment</div>
+                                <div class="info-value">
+                                    <span class="badge-new" style="background:{% if booking.get('payment_method') == 'UPI' %}#e0f2fe{% else %}#f1f3f5{% endif %}; color:{% if booking.get('payment_method') == 'UPI' %}#0369a1{% else %}#495057{% endif %};">
+                                        {% if booking.get('payment_method') == 'UPI' %}<i class="fas fa-bolt"></i> UPI{% else %}<i class="fas fa-money-bill-wave"></i> Cash on Delivery{% endif %}
+                                    </span>
+                                </div>
+                                <div class="info-value" style="font-size: 12.5px; margin-top:4px;">
+                                    {% set pstatus = booking.get('payment_status', 'Pending') %}
+                                    {% if pstatus == 'Paid (Online)' %}
+                                        <span style="color:#137a3c;"><i class="fas fa-circle-check"></i> Paid online</span>
+                                    {% elif pstatus == 'Submitted - Pending Verification' %}
+                                        <span style="color:#b45a1b;"><i class="fas fa-hourglass-half"></i> Paid, awaiting verification</span>
+                                    {% elif booking.get('payment_method') == 'UPI' %}
+                                        <span style="color:#ac2c2c;"><i class="fas fa-clock"></i> Not yet paid</span>
+                                    {% else %}
+                                        <span style="color:#5c6b7a;">Collect on delivery</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Status</div>
+                                <div class="info-value">
+                                    <span class="badge-new" style="background: 
+                                        {% if booking.status == 'Pending' %}#fff0e0{% elif booking.status == 'Approved' %}#e0f2fe{% elif booking.status == 'Delivered' %}#e4efff{% else %}#ffe6e6{% endif %}; 
+                                        color: {% if booking.status == 'Pending' %}#b45a1b{% elif booking.status == 'Approved' %}#0369a1{% elif booking.status == 'Delivered' %}#1e5f9e{% else %}#ac2c2c{% endif %};">
+                                        {{ booking.status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-stack">
+                            <!-- PROFESSIONAL FLOW - FIXED: Backend uses "Approved" not "Accepted" -->
+                            <!-- PENDING: Show Approve + Cancel buttons -->
+                            {% if booking.status == "Pending" %}
+                                <button class="action-btn btn-approve"
+                                    onclick="approveBooking('{{ booking._id }}')">
+                                    <i class="fas fa-check-circle"></i>
+                                    Approve
+                                </button>
+                                <button class="action-btn btn-cancel"
+                                    onclick="cancelBooking('{{ booking._id }}')">
+                                    <i class="fas fa-times-circle"></i>
+                                    Cancel
+                                </button>
+                            {% endif %}
+
+                            <!-- APPROVED: Show Assign Driver button (matching backend status "Approved") -->
+                            {% if booking.status == "Approved" %}
+                                <a href="/driver-assignment/{{ booking._id }}"
+                                   class="assign-link">
+                                    <button class="btn-assign-driver">
+                                        <i class="fas fa-truck"></i>
+                                        Assign Driver
+                                    </button>
+                                </a>
+                            {% endif %}
+
+                            <!-- Details button available for all statuses -->
+                            <button class="action-btn btn-details" onclick="viewDetails('{{ booking._id }}')">
+                                <i class="fas fa-info-circle"></i>
+                                Details
+                            </button>
+
+                            {% if booking.get('payment_submitted') and not booking.get('payment_processed') %}
+                                <button class="action-btn" style="background:#fff4de; color:#b45a1b; border:1px solid #ffd699;"
+                                    onclick="confirmPayment('{{ booking._id }}', this)">
+                                    <i class="fas fa-hand-holding-dollar"></i>
+                                    Confirm ₹{{ "{:,.0f}".format(booking.get('cash_submitted_amount', booking.get('delivery_fee', 0))) }} Received
+                                </button>
+                            {% elif booking.get('payment_processed') %}
+                                <span class="action-btn" style="background:#e6f9ee; color:#137a3c; cursor:default;">
+                                    <i class="fas fa-circle-check"></i> Payment Verified
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-art">
+                    <i class="fas fa-water" style="font-size: 56px; opacity: 0.5;"></i>
+                    <h3 style="margin-top: 20px;">No water bookings yet</h3>
+                    <p>New hydration requests will appear like magic ✨</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal premium -->
+<div class="glass-modal" id="detailModal">
+    <div class="modal-card">
+        <span class="modal-close" onclick="closeDetailModal()">&times;</span>
+        <div id="dynamicModalContent">
+            <h3 style="color:#ff7a2c;">Loading...</h3>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ----- FILTERING preserves SL No (cards are filtered but sl no remains visible)
+    const filterPills = document.querySelectorAll('.pill-filter');
+    const bookingCards = document.querySelectorAll('.booking-card-luxury');
+
+    function filterBookings(filterValue) {
+        bookingCards.forEach(card => {
+            const statusAttr = card.getAttribute('data-status');
+            if (filterValue === 'All' || statusAttr === filterValue) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    filterPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            filterPills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            const filterVal = pill.getAttribute('data-filter');
+            filterBookings(filterVal);
+        });
+    });
+
+    // API interactions: Approve & Cancel (after approval, backend changes status to "Approved")
+    async function approveBooking(id) {
+        try {
+            const resp = await fetch(`/approve-booking/${id}`);
+            const data = await resp.json();
+            alert(data.message || '✅ Booking Approved! Driver assignment now available.');
+            location.reload();
+        } catch(e) { alert('Error approving'); }
+    }
+    
+    async function cancelBooking(id) {
+        if(!confirm('Cancel this water delivery?')) return;
+        try {
+            const resp = await fetch(`/cancel-booking/${id}`);
+            const data = await resp.json();
+            alert(data.message || 'Booking cancelled');
+            location.reload();
+        } catch(e) { alert('Error'); }
+    }
+
+    async function confirmPayment(id, btn) {
+        if(!confirm('Confirm that this cash payment has been physically received from the driver?')) return;
+        try {
+            btn.disabled = true;
+            const resp = await fetch(`/confirm-payment/${id}`, { method: 'POST' });
+            const data = await resp.json();
+            alert(data.message || (data.success ? 'Payment confirmed' : 'Failed to confirm payment'));
+            if (data.success) location.reload();
+            else btn.disabled = false;
+        } catch(e) {
+            alert('Error confirming payment');
+            btn.disabled = false;
+        }
+    }
+
+    // Details with modal beauty
+    async function viewDetails(id) {
+        try {
+            const response = await fetch(`/api/booking/${id}`);
+            const data = await response.json();
+            if(data.success && data.booking) {
+                const b = data.booking;
+                document.getElementById('dynamicModalContent').innerHTML = `
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+                        <div style="background:#ffefe3; width:48px; height:48px; border-radius:60px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-droplet" style="font-size:28px; color:#ff914d;"></i></div>
+                        <h2 style="color:#1f2f3f;">Hydration Insight</h2>
+                    </div>
+                    <div style="display:grid; gap:14px;">
+                        <p><strong><i class="fas fa-user"></i> Full name:</strong> ${escapeHtml(b.fullname)}</p>
+                        <p><strong><i class="fas fa-envelope"></i> Email:</strong> ${escapeHtml(b.user_email)}</p>
+                        <p><strong><i class="fas fa-phone"></i> Phone:</strong> ${escapeHtml(b.phone)}</p>
+                        <p><strong><i class="fas fa-map-pin"></i> Address:</strong> ${escapeHtml(b.address)}</p>
+                        <p><strong><i class="fas fa-fill-drip"></i> Volume:</strong> ${b.quantity} liters</p>
+                        <p><strong><i class="fas fa-flag-checkered"></i> Status:</strong> <span style="background:#feeedf; padding:4px 14px; border-radius:40px;">${escapeHtml(b.status)}</span></p>
+                        <p><strong><i class="fas fa-id-card"></i> Driver:</strong> ${escapeHtml(b.driver_name || 'unassigned')}</p>
+                        <p><strong><i class="fas fa-truck"></i> Truck:</strong> ${escapeHtml(b.truck_number || '—')}</p>
+                        <p><strong><i class="fas fa-fingerprint"></i> Booking ID:</strong> ${escapeHtml(b._id)}</p>
+                    </div>
+                `;
+                document.getElementById('detailModal').style.display = 'flex';
+            } else {
+                alert('Cannot fetch details');
+            }
+        } catch(err) {
+            alert('Server error');
+        }
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+
+    function escapeHtml(str) {
+        if(!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ----- EXPORT EXCEL (with S.No column included)
+    document.getElementById('exportExcelBtn').addEventListener('click', async () => {
+        try {
+            const res = await fetch('/export-bookings');
+            let bookingsList = await res.json();
+            if(!Array.isArray(bookingsList) || bookingsList.length === 0) {
+                alert('No data for export');
+                return;
+            }
+            const sheetData = bookingsList.map((b, idx) => ({
+                'S.No': idx + 1,
+                'Booking ID': b._id || '',
+                'Customer': b.fullname || '',
+                'Email': b.user_email || '',
+                'Phone': b.phone || '',
+                'Address': b.address || '',
+                'Quantity (L)': b.quantity || 0,
+                'Status': b.status || '',
+                'Driver': b.driver_name || '',
+                'Truck No': b.truck_number || ''
+            }));
+            const ws = XLSX.utils.json_to_sheet(sheetData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'AquaFlow_Bookings');
+            XLSX.writeFile(wb, `AquaFlow_Bookings_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`);
+        } catch(e) { alert('Export failed'); }
+    });
+
+    // PDF Export with visible serial numbers
+    document.getElementById('exportPdfBtn').addEventListener('click', () => {
+        const gridContainer = document.querySelector('.booking-grid');
+        if(!gridContainer || gridContainer.children.length === 0 || (gridContainer.children.length === 1 && gridContainer.children[0].classList?.contains('empty-art'))) {
+            alert('No bookings to export');
+            return;
+        }
+        const originalClone = gridContainer.cloneNode(true);
+        const allCardsClone = originalClone.querySelectorAll('.booking-card-luxury');
+        allCardsClone.forEach(card => {
+            card.style.display = 'flex';
+            card.style.marginBottom = '18px';
+            card.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+            card.style.border = '1px solid #e2e8f0';
+        });
+        const wrapper = document.createElement('div');
+        wrapper.style.padding = '24px';
+        wrapper.style.fontFamily = 'Inter, sans-serif';
+        wrapper.style.background = '#fff';
+        const title = document.createElement('h2');
+        title.innerText = '📄 AquaFlow Booking Report';
+        title.style.color = '#ff6a2c';
+        title.style.borderBottom = '2px solid #ff914d';
+        title.style.paddingBottom = '8px';
+        title.style.marginBottom = '12px';
+        const dateP = document.createElement('p');
+        dateP.innerText = `Generated: ${new Date().toLocaleString()}`;
+        dateP.style.marginBottom = '24px';
+        dateP.style.color = '#475569';
+        wrapper.appendChild(title);
+        wrapper.appendChild(dateP);
+        wrapper.appendChild(originalClone);
+        html2pdf().set({ 
+            margin: 0.5, 
+            filename: `aquaflow_bookings_${Date.now()}.pdf`, 
+            html2canvas: { scale: 2, letterRendering: true }, 
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+        }).from(wrapper).save();
+    });
+
+    window.onclick = function(e) {
+        const modal = document.getElementById('detailModal');
+        if(e.target === modal) closeDetailModal();
+    };
+</script>
+</body>
+</html>

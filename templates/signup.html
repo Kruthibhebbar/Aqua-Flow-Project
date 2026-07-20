@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Signup - AquaFlow | Create Account</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0c4a6e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: repeating-linear-gradient(transparent 0px, transparent 98px, rgba(255,255,255,0.1) 98px, rgba(255,255,255,0.15) 100px);
+            pointer-events: none;
+            z-index: 1;
+            animation: waveMove 8s linear infinite;
+        }
+
+        @keyframes waveMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 200px 0; }
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at 20% 40%, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .signup-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 45px 40px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+            animation: slideUp 0.6s ease-out;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            z-index: 2;
+            position: relative;
+        }
+
+        .signup-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .brand-icon {
+            font-size: 48px;
+            background: linear-gradient(135deg, #10b981, #14b8a6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .signup-box h2 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label i {
+            color: #10b981;
+            font-size: 14px;
+        }
+
+        .form-control {
+            height: 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0 16px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+            outline: none;
+        }
+
+        .form-control.error-input {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            transition: color 0.3s ease;
+            z-index: 10;
+        }
+
+        .toggle-password:hover {
+            color: #10b981;
+        }
+
+        .password-strength {
+            margin-top: 8px;
+            height: 4px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            background: #e2e8f0;
+            width: 0%;
+        }
+
+        .strength-text {
+            font-size: 11px;
+            margin-top: 5px;
+            display: block;
+            text-align: right;
+        }
+
+        .btn-signup {
+            background: linear-gradient(135deg, #10b981, #14b8a6);
+            border: none;
+            height: 50px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            margin-top: 10px;
+            width: 100%;
+            color: white;
+        }
+
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669, #0d9488);
+        }
+
+        .btn-signup:active {
+            transform: translateY(0);
+        }
+
+        .btn-signup:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .additional-links {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .additional-links a {
+            color: #10b981;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .additional-links a:hover {
+            color: #059669;
+            text-decoration: underline;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .divider::before {
+            margin-right: 12px;
+        }
+
+        .divider::after {
+            margin-left: 12px;
+        }
+
+        .error-alert {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            border-left: 4px solid #ef4444;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #b91c1c;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+            font-weight: 500;
+        }
+
+        .error-alert i {
+            font-size: 20px;
+            color: #ef4444;
+        }
+
+        .error-alert .close-error {
+            margin-left: auto;
+            cursor: pointer;
+            color: #b91c1c;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            font-size: 18px;
+        }
+
+        .error-alert .close-error:hover {
+            opacity: 1;
+        }
+
+        .success-alert {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border-left: 4px solid #10b981;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #065f46;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideDown 0.4s ease-out;
+            font-weight: 500;
+        }
+
+        .success-alert i {
+            font-size: 20px;
+            color: #10b981;
+        }
+
+        .success-alert .close-success {
+            margin-left: auto;
+            cursor: pointer;
+            color: #065f46;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            font-size: 18px;
+        }
+
+        .success-alert .close-success:hover {
+            opacity: 1;
+        }
+
+        .info-alert {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-left: 4px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #0369a1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .info-alert i {
+            font-size: 20px;
+            color: #0ea5e9;
+        }
+
+        .info-alert .close-info {
+            margin-left: auto;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .terms-check {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .terms-check input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #10b981;
+        }
+
+        .terms-check label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .terms-check a {
+            color: #10b981;
+            text-decoration: none;
+        }
+
+        .terms-check a:hover {
+            text-decoration: underline;
+        }
+
+        .field-error {
+            font-size: 11px;
+            color: #ef4444;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .otp-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .otp-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .otp-input-group .form-control {
+            flex: 1;
+        }
+
+        .btn-verify {
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+            border: none;
+            height: 48px;
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0 20px;
+            color: white;
+        }
+
+        .btn-verify:hover {
+            background: linear-gradient(135deg, #0284c7, #0891b2);
+        }
+
+        .resend-otp {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .resend-otp a {
+            color: #0ea5e9;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .resend-otp a:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .signup-box {
+                padding: 30px 25px;
+                margin: 20px;
+            }
+            
+            .signup-box h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="signup-box">
+        <div class="brand-header">
+            <div class="brand-icon">
+                <i class="fas fa-water"></i>
+            </div>
+            <h2>Join AquaFlow</h2>
+            <div class="subtitle">Start managing your water resources efficiently</div>
+        </div>
+
+        <div id="errorContainer">
+            {% if error %}
+            <div class="error-alert" id="persistentErrorAlert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span style="flex: 1;">{{ error }}</span>
+                <span class="close-error" onclick="this.parentElement.remove()">&times;</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div id="successContainer">
+            {% if success_msg %}
+            <div class="success-alert" id="tempSuccessAlert">
+                <i class="fas fa-check-circle"></i>
+                <span style="flex: 1;">{{ success_msg }}</span>
+                <span class="close-success" onclick="this.parentElement.remove()">&times;</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div id="infoAlert" class="info-alert">
+            <i class="fas fa-info-circle"></i>
+            <span>Create your free account to get started with AquaFlow</span>
+            <span class="close-info" onclick="document.getElementById('infoAlert').style.display='none'" style="margin-left: auto; cursor: pointer;">&times;</span>
+        </div>
+
+        <form method="POST" action="/signup" id="signupForm" novalidate>
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-user"></i> Full Name
+                </label>
+                <input type="text" 
+                       id="nameInput"
+                       name="name"
+                       class="form-control {% if name_error %}error-input{% endif %}" 
+                       placeholder="John Doe"
+                       autocomplete="name"
+                       value="{{ name_value or '' }}">
+                <div class="field-error" id="nameError">
+                    {% if name_error %}<i class="fas fa-exclamation-circle"></i> {{ name_error }}{% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-envelope"></i> Email Address
+                </label>
+                <input type="email" 
+                       id="emailInput"
+                       name="email"
+                       class="form-control {% if email_error %}error-input{% endif %}" 
+                       placeholder="hello@aquaflow.com"
+                       autocomplete="email"
+                       value="{{ email_value or '' }}">
+                <div class="field-error" id="emailError">
+                    {% if email_error %}<i class="fas fa-exclamation-circle"></i> {{ email_error }}{% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-lock"></i> Password
+                </label>
+                <div class="password-wrapper">
+                    <input type="password" 
+                           id="passwordInput"
+                           name="password"
+                           class="form-control {% if password_error %}error-input{% endif %}" 
+                           placeholder="Create a strong password"
+                           autocomplete="new-password">
+                    <span class="toggle-password" onclick="togglePassword()">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+                <div class="password-strength" id="passwordStrength"></div>
+                <span class="strength-text" id="strengthText"></span>
+                <div class="field-error" id="passwordError">
+                    {% if password_error %}<i class="fas fa-exclamation-circle"></i> {{ password_error }}{% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-check-circle"></i> Confirm Password
+                </label>
+                <div class="password-wrapper">
+                    <input type="password" 
+                           id="confirmPasswordInput"
+                           name="confirm_password"
+                           class="form-control {% if confirm_error %}error-input{% endif %}" 
+                           placeholder="Confirm your password"
+                           autocomplete="off">
+                    <span class="toggle-password" onclick="toggleConfirmPassword()">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+                <div class="field-error" id="confirmError">
+                    {% if confirm_error %}<i class="fas fa-exclamation-circle"></i> {{ confirm_error }}{% endif %}
+                </div>
+            </div>
+
+            <div class="terms-check">
+                <input type="checkbox" id="termsCheckbox" name="terms" {% if terms_checked %}checked{% endif %}>
+                <label>
+                    I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                </label>
+            </div>
+            <div class="field-error" id="termsError">
+                {% if terms_error %}<i class="fas fa-exclamation-circle"></i> {{ terms_error }}{% endif %}
+            </div>
+
+            <button type="submit" class="btn-signup" id="submitBtn">
+                <i class="fas fa-user-plus me-2"></i>Signup
+            </button>
+
+            <div class="divider">
+                <span>Already have an account?</span>
+            </div>
+
+            <div class="additional-links">
+                <a href="/login">
+                    <i class="fas fa-sign-in-alt"></i> Sign in to AquaFlow
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const toggleIcon = document.querySelectorAll('.password-wrapper .toggle-password')[0].querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function toggleConfirmPassword() {
+            const confirmInput = document.getElementById('confirmPasswordInput');
+            const toggleIcon = document.querySelectorAll('.password-wrapper .toggle-password')[1].querySelector('i');
+            
+            if (confirmInput.type === 'password') {
+                confirmInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                confirmInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        setTimeout(() => {
+            const infoAlert = document.getElementById('infoAlert');
+            if (infoAlert) infoAlert.style.display = 'none';
+        }, 3000);
+
+        setTimeout(() => {
+            const successAlert = document.getElementById('tempSuccessAlert');
+            if (successAlert && successAlert.parentElement) {
+                successAlert.style.opacity = '0';
+                setTimeout(() => {
+                    if (successAlert.parentElement) successAlert.remove();
+                }, 300);
+            }
+        }, 4000);
+
+        const passwordInput = document.getElementById('passwordInput');
+        const strengthDiv = document.getElementById('passwordStrength');
+        const strengthText = document.getElementById('strengthText');
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                let strength = 0;
+                let message = '';
+                let color = '#e2e8f0';
+
+                if (password.length >= 8) strength++;
+                if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+                if (password.match(/\d/)) strength++;
+                if (password.match(/[^a-zA-Z\d]/)) strength++;
+
+                if (password.length === 0) {
+                    message = '';
+                    color = '#e2e8f0';
+                    strengthDiv.style.width = '0%';
+                } else if (strength <= 1) {
+                    message = 'Weak password';
+                    color = '#ef4444';
+                    strengthDiv.style.width = '25%';
+                } else if (strength === 2) {
+                    message = 'Fair password';
+                    color = '#f59e0b';
+                    strengthDiv.style.width = '50%';
+                } else if (strength === 3) {
+                    message = 'Good password';
+                    color = '#10b981';
+                    strengthDiv.style.width = '75%';
+                } else {
+                    message = 'Strong password!';
+                    color = '#059669';
+                    strengthDiv.style.width = '100%';
+                }
+
+                strengthDiv.style.background = color;
+                strengthText.textContent = message;
+                strengthText.style.color = color;
+            });
+        }
+
+        const fields = ['nameInput', 'emailInput', 'passwordInput', 'confirmPasswordInput'];
+        fields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    this.classList.remove('error-input');
+                    const errorDiv = document.getElementById(fieldId.replace('Input', 'Error'));
+                    if (errorDiv) errorDiv.innerHTML = '';
+                });
+            }
+        });
+
+        const termsCheckbox = document.getElementById('termsCheckbox');
+        if (termsCheckbox) {
+            termsCheckbox.addEventListener('change', function() {
+                const termsError = document.getElementById('termsError');
+                if (termsError) termsError.innerHTML = '';
+            });
+        }
+
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            document.querySelectorAll('.field-error').forEach(el => el.innerHTML = '');
+            document.querySelectorAll('.form-control').forEach(el => el.classList.remove('error-input'));
+            
+            let isValid = true;
+            
+            const name = document.getElementById('nameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+            const termsAccepted = document.getElementById('termsCheckbox').checked;
+            
+            if (!name) {
+                document.getElementById('nameError').innerHTML = '<i class="fas fa-exclamation-circle"></i> Full name is required';
+                document.getElementById('nameInput').classList.add('error-input');
+                isValid = false;
+            } else if (name.length < 2) {
+                document.getElementById('nameError').innerHTML = '<i class="fas fa-exclamation-circle"></i> Name must be at least 2 characters';
+                document.getElementById('nameInput').classList.add('error-input');
+                isValid = false;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email) {
+                document.getElementById('emailError').innerHTML = '<i class="fas fa-exclamation-circle"></i> Email address is required';
+                document.getElementById('emailInput').classList.add('error-input');
+                isValid = false;
+            } else if (!emailRegex.test(email)) {
+                document.getElementById('emailError').innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a valid email address';
+                document.getElementById('emailInput').classList.add('error-input');
+                isValid = false;
+            }
+            
+            if (!password) {
+                document.getElementById('passwordError').innerHTML = '<i class="fas fa-exclamation-circle"></i> Password is required';
+                document.getElementById('passwordInput').classList.add('error-input');
+                isValid = false;
+            } else if (password.length < 6) {
+                document.getElementById('passwordError').innerHTML = '<i class="fas fa-exclamation-circle"></i> Password must be at least 6 characters';
+                document.getElementById('passwordInput').classList.add('error-input');
+                isValid = false;
+            }
+            
+            if (password !== confirmPassword) {
+                document.getElementById('confirmError').innerHTML = '<i class="fas fa-exclamation-circle"></i> Passwords do not match';
+                document.getElementById('confirmPasswordInput').classList.add('error-input');
+                isValid = false;
+            }
+            
+            if (!termsAccepted) {
+                document.getElementById('termsError').innerHTML = '<i class="fas fa-exclamation-circle"></i> You must accept the Terms of Service';
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const errorContainer = document.getElementById('errorContainer');
+                if (errorContainer && !errorContainer.querySelector('.error-alert')) {
+                    const tempError = document.createElement('div');
+                    tempError.className = 'error-alert';
+                    tempError.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Please fix the errors above.</span><span class="close-error" onclick="this.parentElement.remove()">&times;</span>';
+                    errorContainer.appendChild(tempError);
+                    setTimeout(() => {
+                        if (tempError.parentElement) tempError.remove();
+                    }, 3000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

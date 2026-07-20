@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow Driver Registration</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:'Poppins',sans-serif;
+        }
+
+        body{
+
+            min-height:100vh;
+
+            background: linear-gradient(135deg, #ffffff, #e0f2fe, #bae6fd);
+
+            display:flex;
+            justify-content:center;
+            align-items:center;
+
+            padding:40px 15px;
+
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* FLOATING WATER BUBBLES */
+        .bubble{
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(14,165,233,0.18), rgba(59,130,246,0.08));
+            backdrop-filter: blur(2px);
+            animation: floatBubble 10s infinite ease-in-out;
+            z-index: 0;
+        }
+
+        /* Different bubble sizes + positions */
+        .bubble1{
+            width: 140px;
+            height: 140px;
+            left: 80px;
+            top: 420px;
+            animation-delay: 0s;
+        }
+
+        .bubble2{
+            width: 90px;
+            height: 90px;
+            left: 250px;
+            top: 580px;
+            animation-delay: 2s;
+        }
+
+        .bubble3{
+            width: 60px;
+            height: 60px;
+            left: 180px;
+            top: 750px;
+            animation-delay: 4s;
+        }
+
+        .bubble4{
+            width: 110px;
+            height: 110px;
+            right: 120px;
+            top: 500px;
+            animation-delay: 1s;
+        }
+
+        .bubble5{
+            width: 70px;
+            height: 70px;
+            right: 250px;
+            top: 720px;
+            animation-delay: 3s;
+        }
+
+        /* Floating animation */
+        @keyframes floatBubble{
+            0%{
+                transform: translateY(0px);
+            }
+            50%{
+                transform: translateY(-20px);
+            }
+            100%{
+                transform: translateY(0px);
+            }
+        }
+
+        /* Make form stay above bubbles */
+        .register-container{
+            position: relative;
+            z-index: 2;
+        }
+
+        .register-container{
+
+            width:100%;
+            max-width:700px;
+
+            background: white;
+
+            backdrop-filter: blur(0px);
+
+            border: 1px solid rgba(14, 165, 233, 0.2);
+
+            border-radius:30px;
+
+            padding:40px;
+
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+
+            color: #0f172a;
+        }
+
+        .top-section{
+
+            text-align:center;
+            margin-bottom:35px;
+        }
+
+        .top-section h1{
+
+            font-size:38px;
+            font-weight:700;
+            margin-bottom:10px;
+            background: linear-gradient(135deg, #0284c7, #0ea5e9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .top-section p{
+
+            color: #475569;
+            font-size:15px;
+        }
+
+        .form-grid{
+
+            display:grid;
+
+            grid-template-columns:
+            repeat(auto-fit,minmax(280px,1fr));
+
+            gap:20px;
+        }
+
+        .input-group{
+
+            display:flex;
+            flex-direction:column;
+        }
+
+        .input-group label{
+
+            margin-bottom:8px;
+            font-size:14px;
+            color: #1e293b;
+            font-weight:600;
+        }
+
+        .input-group input,
+        .input-group textarea,
+        .input-group select{
+
+            width:100%;
+
+            padding:14px 16px;
+
+            border: 1px solid #e2e8f0;
+
+            border-radius:14px;
+
+            background: white;
+
+            color: #0f172a;
+
+            outline:none;
+
+            font-size:15px;
+
+            transition:0.3s;
+        }
+
+        .input-group textarea{
+
+            resize:none;
+            height:100px;
+        }
+
+        .input-group input::placeholder,
+        .input-group textarea::placeholder{
+
+            color: #94a3b8;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus,
+        .input-group select:focus{
+
+            border: 2px solid #0ea5e9;
+
+            background: white;
+
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        /* FORCE WHITE DROPDOWN BACKGROUND WITH BLACK TEXT - NO DARK POPUP */
+        select,
+        .form-select {
+            background: white !important;
+            color: #0f172a !important;
+            border: 1px solid #e2e8f0 !important;
+            cursor: pointer;
+        }
+
+        /* DROPDOWN OPTIONS - FORCE WHITE BACKGROUND */
+        select option,
+        .form-select option {
+            background-color: white !important;
+            color: #0f172a !important;
+        }
+
+        /* WHEN SELECT IS OPENED/FOCUSED - KEEP WHITE BACKGROUND */
+        select:focus,
+        .form-select:focus {
+            background: white !important;
+            color: #0f172a !important;
+            border-color: #0ea5e9 !important;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1) !important;
+            outline: none;
+        }
+
+        /* Hover effect for options */
+        select option:hover,
+        .form-select option:hover {
+            background-color: #f0f9ff !important;
+            color: #0284c7 !important;
+        }
+
+        /* custom capacity input styling */
+        .custom-capacity-input {
+            margin-top: 12px;
+        }
+
+        .full-width{
+
+            grid-column:1/-1;
+        }
+
+        .photo-box{
+
+            border: 2px dashed #cbd5e1;
+
+            padding:20px;
+
+            border-radius:18px;
+
+            text-align:center;
+
+            cursor:pointer;
+
+            transition:0.3s;
+
+            background: #f8fafc;
+        }
+
+        .photo-box:hover{
+
+            border-color: #0ea5e9;
+            background: #f0f9ff;
+        }
+
+        .photo-box p {
+            color: #475569;
+        }
+
+        .photo-box input{
+
+            margin-top:12px;
+            background: transparent;
+            border: none;
+        }
+
+        .submit-btn{
+
+            width:100%;
+
+            padding:16px;
+
+            border:none;
+
+            border-radius:18px;
+
+            background: linear-gradient(135deg, #0284c7, #0ea5e9);
+
+            color:white;
+
+            font-size:18px;
+
+            font-weight:600;
+
+            cursor:pointer;
+
+            transition:0.3s;
+
+            margin-top:25px;
+
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+
+        .submit-btn:hover{
+
+            transform:translateY(-2px);
+
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+        }
+
+        .login-link{
+
+            text-align:center;
+            margin-top:22px;
+            color: #475569;
+            font-size:14px;
+        }
+
+        .login-link a{
+
+            color: #0284c7;
+            text-decoration:none;
+            font-weight:600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .preview-container{
+
+            margin-top:15px;
+            text-align:center;
+        }
+
+        .preview-container img{
+
+            width:120px;
+            height:120px;
+
+            border-radius:50%;
+
+            object-fit:cover;
+
+            border:4px solid #0ea5e9;
+
+            display:none;
+        }
+
+        .required{
+
+            color: #ef4444;
+        }
+
+        .security-note{
+
+            background: #f0f9ff;
+
+            padding:14px;
+
+            border-radius:14px;
+
+            margin-top:25px;
+
+            font-size:13px;
+
+            color: #1e293b;
+
+            line-height:1.7;
+
+            border-left: 4px solid #0ea5e9;
+        }
+
+        /* extra spacing for capacity group */
+        .capacity-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .capacity-hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        @media(max-width:768px){
+
+            .register-container{
+
+                padding:25px;
+            }
+
+            .top-section h1{
+
+                font-size:28px;
+            }
+
+            .bubble1, .bubble2, .bubble3, .bubble4, .bubble5 {
+                display: none;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Floating Water Bubbles -->
+    <div class="bubble bubble1"></div>
+    <div class="bubble bubble2"></div>
+    <div class="bubble bubble3"></div>
+    <div class="bubble bubble4"></div>
+    <div class="bubble bubble5"></div>
+
+    <div class="register-container">
+
+        <div class="top-section">
+
+            <h1>🚚 AquaFlow Driver Registration</h1>
+
+            <p>
+                Join AquaFlow tanker delivery network and start accepting live delivery orders.
+            </p>
+
+        </div>
+
+        <form
+            action="/driver-register"
+            method="POST"
+            enctype="multipart/form-data"
+        >
+
+            <div class="form-grid">
+
+                <div class="input-group">
+
+                    <label>
+                        Full Name
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Enter full name"
+                        required
+                    >
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>
+                        Email Address
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Enter email"
+                        required
+                    >
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>
+                        Phone Number
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="tel"
+                        name="phone"
+                        placeholder="Enter phone number"
+                        required
+                    >
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>
+                        Password
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="Enter password"
+                        required
+                    >
+
+                </div>
+
+                <div class="input-group">
+
+                    <label>
+                        Truck Number
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        name="truck_number"
+                        placeholder="KA09TR4455"
+                        required
+                    >
+
+                </div>
+
+                <!-- PROFESSIONAL TRUCK CAPACITY: CLEAN WHITE DROPDOWN + MANUAL ENTRY -->
+                <div class="input-group">
+                    <label>
+                        Truck Capacity <span class="required">*</span>
+                    </label>
+                    
+                    <!-- Clean predefined dropdown with white background and black text -->
+                    <select
+                        id="capacitySelect"
+                        class="form-select"
+                        style="width:100%; padding:14px 16px; border-radius:14px;"
+                    >
+                        <option value="">
+                            Select Capacity
+                        </option>
+
+                        <option value="3000">
+                            3000 Liters
+                        </option>
+
+                        <option value="5000">
+                            5000 Liters
+                        </option>
+
+                        <option value="7000">
+                            7000 Liters
+                        </option>
+
+                        <option value="10000">
+                            10000 Liters
+                        </option>
+
+                    </select>
+
+                    <!-- Manual custom capacity input with min="500" -->
+                    <input
+                        type="number"
+                        id="customCapacity"
+                        name="truck_capacity"
+                        class="custom-capacity-input"
+                        style="width:100%; padding:14px 16px; margin-top:12px; border: 1px solid #e2e8f0; border-radius:14px; background: white; color: #0f172a; outline:none; font-size:15px;"
+                        placeholder="Example: 12541 Liters"
+                        required
+                        min="500"
+                        step="1"
+                    >
+                    <div class="capacity-hint">
+                        💡 Tip: Choose from quick list or type any odd capacity like 12541L. Minimum capacity: 500 Liters.
+                    </div>
+                </div>
+
+                <div class="input-group full-width">
+
+                    <label>
+                        Full Address
+                        <span class="required">*</span>
+                    </label>
+
+                    <textarea
+                        name="address"
+                        placeholder="Enter complete address"
+                        required
+                    ></textarea>
+
+                </div>
+
+                <div class="input-group full-width">
+
+                    <label>
+                        Driver Photo
+                        <span class="required">*</span>
+                    </label>
+
+                    <div class="photo-box">
+
+                        <p>
+                            📸 Upload clear driver profile photo
+                        </p>
+
+                        <input
+                            type="file"
+                            name="photo"
+                            id="photoInput"
+                            accept="image/*"
+                            required
+                        >
+
+                        <div class="preview-container">
+
+                            <img
+                                id="previewImage"
+                                src=""
+                            >
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <button
+                type="submit"
+                class="submit-btn"
+            >
+
+                Register Driver 🚛
+
+            </button>
+
+        </form>
+
+        <div class="login-link">
+
+            Already registered?
+
+            <a href="/driver-login">
+                Driver Login →
+            </a>
+
+        </div>
+
+        <div class="security-note">
+
+            🔒 All driver details are securely stored inside AquaFlow logistics database.
+            Fake registrations, invalid truck numbers, or duplicate accounts may be blocked by administrators.
+
+        </div>
+
+    </div>
+
+    <script>
+
+        const photoInput =
+        document.getElementById("photoInput");
+
+        const previewImage =
+        document.getElementById("previewImage");
+
+        photoInput.addEventListener(
+            "change",
+            function(event){
+
+                const file =
+                event.target.files[0];
+
+                if(file){
+
+                    const reader =
+                    new FileReader();
+
+                    reader.onload =
+                    function(e){
+
+                        previewImage.src =
+                        e.target.result;
+
+                        previewImage.style.display =
+                        "block";
+                    }
+
+                    reader.readAsDataURL(file);
+                }
+            }
+        );
+
+        // ========== PROFESSIONAL CAPACITY LOGIC: DROPDOWN + MANUAL BOTH ==========
+        const capacitySelect = document.getElementById("capacitySelect");
+        const customCapacityInput = document.getElementById("customCapacity");
+
+        // When user selects a value from dropdown, auto-fill the manual input field
+        if (capacitySelect && customCapacityInput) {
+            capacitySelect.addEventListener("change", function() {
+                const selectedValue = this.value;
+                if (selectedValue !== "") {
+                    customCapacityInput.value = selectedValue;
+                    // Optional: trigger validation or style
+                    customCapacityInput.dispatchEvent(new Event('input'));
+                }
+            });
+
+            // Also allow manual override: if user types manually, dropdown selection can be reset
+            // but we don't force reset to keep UX clean. Driver can freely type any odd capacity.
+            customCapacityInput.addEventListener("input", function() {
+                // If the user manually clears or changes value, we don't force dropdown change
+                // but we can optionally reset dropdown to placeholder to avoid confusion
+                if (capacitySelect.value !== "" && customCapacityInput.value !== capacitySelect.value) {
+                    // unselect dropdown to show that manual override is active (better UX)
+                    capacitySelect.value = "";
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

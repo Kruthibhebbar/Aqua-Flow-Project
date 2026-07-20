@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow Booking History | Live Filter & Track</title>
+    <!-- FONT AWESOME -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- GOOGLE FONT -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:'Poppins',sans-serif;
+        }
+        body{
+            background:#eef3f9;
+            padding:18px;
+            color:#1f2d3d;
+        }
+        .container{
+            max-width:1500px;
+            margin:auto;
+        }
+        /* ================= HEADER ================= */
+        .top-section{
+            background:white;
+            border-radius:25px;
+            padding:25px;
+            box-shadow:0 10px 25px rgba(0,0,0,0.06);
+            margin-bottom:20px;
+        }
+        .header-flex{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:20px;
+        }
+        .title-box h1{
+            font-size:34px;
+            color:#114b8b;
+            display:flex;
+            align-items:center;
+            gap:12px;
+            font-weight:700;
+        }
+        .title-box p{
+            margin-top:8px;
+            color:#5f7d95;
+            font-size:15px;
+        }
+        .premium-badge{
+            display:inline-block;
+            margin-top:12px;
+            background:#e7f2ff;
+            color:#0d61b8;
+            padding:6px 14px;
+            border-radius:50px;
+            font-size:12px;
+            font-weight:600;
+        }
+        .export-btn{
+            border:none;
+            background:white;
+            border:2px solid #cddff3;
+            padding:12px 20px;
+            border-radius:50px;
+            font-size:14px;
+            cursor:pointer;
+            color:#2165a8;
+            transition:0.3s;
+        }
+        .export-btn:hover{
+            background:#2165a8;
+            color:white;
+        }
+        /* ================= STATS ================= */
+        .stats-grid{
+            margin-top:22px;
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:18px;
+        }
+        .stat-card{
+            background:linear-gradient(to right,#ffffff,#f4f9ff);
+            border-radius:20px;
+            padding:18px;
+            display:flex;
+            align-items:center;
+            gap:15px;
+            box-shadow:0 8px 20px rgba(0,0,0,0.05);
+            border:2px solid #e2eefb;
+            transition:0.3s;
+        }
+        .stat-card:hover{
+            transform:translateY(-4px);
+        }
+        .stat-icon{
+            width:55px;
+            height:55px;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:20px;
+            color:white;
+        }
+        .blue{
+            background:#3d7ff5;
+        }
+        .green{
+            background:#34c97b;
+        }
+        .purple{
+            background:#8b5cf6;
+        }
+        .orange{
+            background:#ff9f1c;
+        }
+        .stat-info h3{
+            font-size:11px;
+            color:#6d86a0;
+            margin-bottom:4px;
+            text-transform:uppercase;
+            letter-spacing:1px;
+        }
+        .stat-info p{
+            font-size:28px;
+            font-weight:700;
+            color:#163d68;
+        }
+        /* ================= SEARCH & FILTER ================= */
+        .search-section{
+            background:white;
+            padding:18px;
+            border-radius:24px;
+            box-shadow:0 10px 25px rgba(0,0,0,0.05);
+            margin-bottom:25px;
+            display:flex;
+            gap:15px;
+            align-items:center;
+            flex-wrap:wrap;
+        }
+        .search-box{
+            flex:1;
+            position:relative;
+        }
+        .search-box i{
+            position:absolute;
+            left:18px;
+            top:50%;
+            transform:translateY(-50%);
+            color:#4d81ba;
+            font-size:16px;
+        }
+        .search-box input{
+            width:100%;
+            padding:14px 18px 14px 48px;
+            border-radius:50px;
+            border:2px solid #dbe8f7;
+            outline:none;
+            font-size:14px;
+            transition:0.2s;
+        }
+        .search-box input:focus{
+            border-color:#2165a8;
+        }
+        select{
+            padding:13px 18px;
+            border-radius:50px;
+            border:2px solid #dbe8f7;
+            outline:none;
+            font-size:14px;
+            color:#315c8c;
+            cursor:pointer;
+            background:white;
+        }
+        .reset-btn{
+            background:#2165a8;
+            color:white;
+            border:none;
+            padding:13px 22px;
+            border-radius:50px;
+            cursor:pointer;
+            font-size:14px;
+            font-weight:600;
+            transition:0.3s;
+        }
+        .reset-btn:hover{
+            background:#114b8b;
+        }
+        /* ================= BOOKING GRID ================= */
+        .booking-grid{
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:20px;
+        }
+        /* ================= CARD STYLES ================= */
+        .booking-card{
+            border-radius:24px;
+            overflow:hidden;
+            box-shadow:0 10px 30px rgba(0,0,0,0.06);
+            transition:0.3s;
+            position:relative;
+        }
+        .booking-card:hover{
+            transform:translateY(-6px) scale(1.01);
+        }
+        /* colorful variations */
+        .booking-card:nth-child(6n+1){
+            border-top:5px solid #3d7ff5;
+            background:linear-gradient(to bottom right,#ffffff,#eef5ff);
+        }
+        .booking-card:nth-child(6n+2){
+            border-top:5px solid #34c97b;
+            background:linear-gradient(to bottom right,#ffffff,#effff5);
+        }
+        .booking-card:nth-child(6n+3){
+            border-top:5px solid #ff9f1c;
+            background:linear-gradient(to bottom right,#ffffff,#fff7ec);
+        }
+        .booking-card:nth-child(6n+4){
+            border-top:5px solid #8b5cf6;
+            background:linear-gradient(to bottom right,#ffffff,#f5efff);
+        }
+        .booking-card:nth-child(6n+5){
+            border-top:5px solid #ef4444;
+            background:linear-gradient(to bottom right,#ffffff,#fff1f1);
+        }
+        .booking-card:nth-child(6n+6){
+            border-top:5px solid #14b8a6;
+            background:linear-gradient(to bottom right,#ffffff,#effffd);
+        }
+        .booking-card:nth-child(6n+1) .card-top{
+            background:#e8f1ff;
+        }
+        .booking-card:nth-child(6n+2) .card-top{
+            background:#e9fff1;
+        }
+        .booking-card:nth-child(6n+3) .card-top{
+            background:#fff4e5;
+        }
+        .booking-card:nth-child(6n+4) .card-top{
+            background:#f2ebff;
+        }
+        .booking-card:nth-child(6n+5) .card-top{
+            background:#ffecec;
+        }
+        .booking-card:nth-child(6n+6) .card-top{
+            background:#e8fffc;
+        }
+        .card-top{
+            padding:16px;
+            text-align:center;
+            border-bottom:2px solid rgba(0,0,0,0.05);
+        }
+        .card-top h2{
+            color:#215a96;
+            font-size:22px;
+        }
+        .card-content{
+            padding:20px;
+        }
+        .info-box{
+            background:rgba(255,255,255,0.75);
+            padding:12px;
+            border-radius:14px;
+            margin-bottom:12px;
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+        .info-box i{
+            width:38px;
+            height:38px;
+            background:#e6f0fb;
+            border-radius:10px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:#2165a8;
+            font-size:15px;
+        }
+        .info-text h4{
+            font-size:11px;
+            color:#5f7d95;
+            margin-bottom:4px;
+            text-transform:uppercase;
+            letter-spacing:1px;
+        }
+        .info-text p{
+            font-size:14px;
+            color:#183b63;
+            font-weight:500;
+        }
+        /* STATUS STYLES (Enhanced with new statuses) */
+        .status-box{
+            margin-top:18px;
+            text-align:center;
+        }
+        .status{
+            display:inline-block;
+            padding:8px 18px;
+            border-radius:50px;
+            font-size:12px;
+            font-weight:600;
+        }
+        .pending{
+            background:#fff4d9;
+            color:#b77900;
+        }
+        .delivered{
+            background:#dff8ea;
+            color:#15803d;
+        }
+        .cancelled{
+            background:#ffe3e3;
+            color:#c1121f;
+        }
+        .approved{
+            background:#dbeafe;
+            color:#1d4ed8;
+        }
+        .onway{
+            background:#e0f2fe;
+            color:#0369a1;
+        }
+        /* TRACK BUTTON */
+        .track-link-box{
+            margin-top:18px;
+            text-align:center;
+            padding-top:8px;
+            border-top:1px solid rgba(0,0,0,0.05);
+        }
+        .track-btn{
+            display:inline-flex;
+            align-items:center;
+            gap:10px;
+            background:rgba(33,101,168,0.12);
+            color:#2165a8;
+            text-decoration:none;
+            font-weight:600;
+            font-size:13px;
+            padding:10px 18px;
+            border-radius:40px;
+            transition:0.3s;
+            backdrop-filter:blur(2px);
+            letter-spacing:0.3px;
+        }
+        .track-btn i{
+            font-size:14px;
+            transition:0.2s;
+        }
+        .track-btn:hover{
+            background:#2165a8;
+            color:white;
+            transform:translateY(-2px);
+            box-shadow:0 6px 14px rgba(33,101,168,0.25);
+        }
+        .track-btn:hover i{
+            transform:translateX(3px);
+            color:white;
+        }
+        footer{
+            margin-top:40px;
+            text-align:center;
+            color:#5d7d96;
+            font-size:13px;
+        }
+        /* responsive */
+        @media(max-width:1200px){
+            .booking-grid{
+                grid-template-columns:repeat(2,1fr);
+            }
+        }
+        @media(max-width:768px){
+            .stats-grid{
+                grid-template-columns:1fr 1fr;
+            }
+            .booking-grid{
+                grid-template-columns:1fr;
+            }
+            .search-section{
+                flex-direction:column;
+                align-items:stretch;
+            }
+            .title-box h1{
+                font-size:28px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- HEADER SECTION -->
+    <div class="top-section">
+        <div class="header-flex">
+            <div class="title-box">
+                <h1><i class="fa-solid fa-calendar-check"></i> Booking History</h1>
+                <div class="premium-badge">AquaTrack • Premium</div>
+                <p>Manage & explore all water delivery bookings with ease</p>
+            </div>
+            <button class="export-btn" id="exportSummaryBtn"><i class="fa-solid fa-download"></i> Export Summary</button>
+        </div>
+        <!-- STATS CARDS (dynamic data from backend) -->
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-droplet"></i></div><div class="stat-info"><h3>Total Bookings</h3><p id="totalBookingsCount">0</p></div></div>
+            <div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-users"></i></div><div class="stat-info"><h3>Customers</h3><p id="customersCount">0</p></div></div>
+            <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-water"></i></div><div class="stat-info"><h3>Tank Sizes</h3><p>4</p></div></div>
+            <div class="stat-card"><div class="stat-icon orange"><i class="fa-solid fa-chart-line"></i></div><div class="stat-info"><h3>Upcoming</h3><p id="upcomingCount">0</p></div></div>
+        </div>
+    </div>
+
+    <!-- SEARCH & FILTER SECTION - NOW FULLY FUNCTIONAL -->
+    <div class="search-section">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search by name, address or quantity...">
+        </div>
+        <select id="quantityFilter">
+            <option value="">All Quantities</option>
+            <option value="2000">2000 Liters</option>
+            <option value="5000">5000 Liters</option>
+            <option value="8000">8000 Liters</option>
+        </select>
+        <select id="sortFilter">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+        </select>
+        <button class="reset-btn" id="resetFiltersBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+    </div>
+
+    <!-- BOOKING GRID -->
+    <div class="booking-grid" id="bookingGrid">
+        <!-- Dynamic jinja cards will be rendered here. For demonstration, static demo data will also be generated by backend but we keep jinja syntax -->
+        {% for booking in bookings %}
+        <div class="booking-card" data-quantity="{{ booking.quantity }}" data-date="{{ booking.created_at }}" data-booking-id="{{ booking._id }}">
+            <div class="card-top">
+                <h2><i class="fa-solid fa-circle-user"></i> {{ booking.fullname }}</h2>
+            </div>
+            <div class="card-content">
+                <div class="info-box"><i class="fa-solid fa-location-dot"></i><div class="info-text"><h4>Address</h4><p>{{ booking.address }}</p></div></div>
+                <div class="info-box"><i class="fa-solid fa-droplet"></i><div class="info-text"><h4>Quantity</h4><p>{{ booking.quantity }} Liters</p></div></div>
+                <div class="info-box"><i class="fa-solid fa-calendar-days"></i><div class="info-text"><h4>Date</h4><p>{{ booking.delivery_date }}</p></div></div>
+                <div class="info-box"><i class="fa-solid fa-envelope"></i><div class="info-text"><h4>Email</h4><p>{{ booking.user_email }}</p></div></div>
+                <div class="info-box"><i class="fa-solid fa-water"></i><div class="info-text"><h4>Water Type</h4><p>{{ booking.water_type }}</p></div></div>
+                
+                <!-- Enhanced status block with new statuses (Assigned, On The Way, Rejected) -->
+                <div class="status-box">
+                    {% if booking.status == "Pending" %}
+                        <span class="status pending">⏳ Pending</span>
+                    {% elif booking.status == "Assigned" %}
+                        <span class="status approved">🚛 Assigned</span>
+                    {% elif booking.status == "On The Way" %}
+                        <span class="status onway">🚚 On The Way</span>
+                    {% elif booking.status == "Delivered" %}
+                        <span class="status delivered">✅ Delivered</span>
+                    {% elif booking.status == "Rejected" %}
+                        <span class="status cancelled">❌ Rejected</span>
+                    {% elif booking.status == "Cancelled" %}
+                        <span class="status cancelled">❌ Cancelled</span>
+                    {% else %}
+                        <span class="status pending">{{ booking.status }}</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Track booking button (with dynamic link) -->
+                <div class="track-link-box">
+                    <a href="/live-status/{{ booking._id }}" class="track-btn">
+                        <i class="fa-solid fa-location-dot"></i> Track Booking <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <footer>AquaFlow Premium Dashboard • Real MongoDB Data • Modern UI</footer>
+</div>
+
+<!-- Enhanced JavaScript: Search + Quantity Filter + Sorting + Reset + Export (notification) -->
+<script>
+    // Helper: update stats counts dynamically based on visible bookings
+    function updateStats() {
+        const cards = document.querySelectorAll('.booking-card');
+        let visibleCards = 0;
+        let uniqueCustomers = new Set();
+        let upcomingCount = 0;
+        cards.forEach(card => {
+            if (card.style.display !== 'none') {
+                visibleCards++;
+                // extract customer name from card
+                const nameElem = card.querySelector('.card-top h2');
+                if (nameElem) {
+                    let fullName = nameElem.innerText.replace(/[📌🔹]/g,'').trim();
+                    if(fullName) uniqueCustomers.add(fullName);
+                }
+                // Check for status not delivered & not cancelled => upcoming approx
+                const statusSpan = card.querySelector('.status');
+                if(statusSpan) {
+                    let statusText = statusSpan.innerText;
+                    if(!statusText.includes('Delivered') && !statusText.includes('Cancelled') && !statusText.includes('Rejected')) {
+                        upcomingCount++;
+                    }
+                }
+            }
+        });
+        document.getElementById('totalBookingsCount').innerText = visibleCards;
+        document.getElementById('customersCount').innerText = uniqueCustomers.size;
+        document.getElementById('upcomingCount').innerText = upcomingCount;
+    }
+
+    // main filtering: text search + quantity
+    function filterBookings() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const quantityValue = document.getElementById('quantityFilter').value;
+        const cards = document.querySelectorAll('.booking-card');
+        cards.forEach(card => {
+            const cardText = card.innerText.toLowerCase();
+            const quantityAttr = card.getAttribute('data-quantity');
+            let quantityMatch = false;
+            if (quantityValue === "") {
+                quantityMatch = true;
+            } else {
+                // quantityAttr is like "2000", "5000", etc.
+                if (quantityAttr && quantityAttr.toString().includes(quantityValue)) {
+                    quantityMatch = true;
+                } else {
+                    quantityMatch = false;
+                }
+            }
+            const searchMatch = cardText.includes(searchValue);
+            if (searchMatch && quantityMatch) {
+                card.style.display = "block";
+            } else {
+                card.style.display = "none";
+            }
+        });
+        updateStats();
+        // after filtering, re-apply current sort order to maintain order
+        applySorting();
+    }
+
+    // Sorting function based on selected sort filter
+    function applySorting() {
+        const sortValue = document.getElementById('sortFilter').value;
+        const grid = document.getElementById('bookingGrid');
+        let cards = Array.from(document.querySelectorAll('.booking-card'));
+        if (cards.length === 0) return;
+        cards.sort((a, b) => {
+            const dateA = new Date(a.getAttribute('data-date'));
+            const dateB = new Date(b.getAttribute('data-date'));
+            if (sortValue === 'newest') {
+                return dateB - dateA;
+            } else {
+                return dateA - dateB;
+            }
+        });
+        // reorder DOM elements while keeping filtered visibility
+        cards.forEach(card => {
+            grid.appendChild(card);
+        });
+    }
+
+    // Event listeners for search, quantity, sort
+    const searchInput = document.getElementById('searchInput');
+    const quantityFilter = document.getElementById('quantityFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    const resetBtn = document.getElementById('resetFiltersBtn');
+    
+    searchInput.addEventListener('keyup', function() { filterBookings(); });
+    quantityFilter.addEventListener('change', function() { filterBookings(); });
+    sortFilter.addEventListener('change', function() { applySorting(); });
+    
+    // Reset all filters
+    function resetFilters() {
+        searchInput.value = '';
+        quantityFilter.value = '';
+        sortFilter.value = 'newest';
+        // reset display all cards to visible
+        const cards = document.querySelectorAll('.booking-card');
+        cards.forEach(card => { card.style.display = 'block'; });
+        updateStats();
+        applySorting();   // ensure sorting also reset to newest order
+    }
+    resetBtn.addEventListener('click', resetFilters);
+    
+    // Initial stats and sorting
+    function initialize() {
+        updateStats();
+        applySorting();
+        // also ensure any card that may have inline display issues is visible.
+        const cards = document.querySelectorAll('.booking-card');
+        cards.forEach(card => { if(card.style.display === 'none') card.style.display = 'block'; });
+        updateStats();
+    }
+    initialize();
+    
+    // Export summary button (simulate action with toast & console)
+    const exportBtn = document.querySelector('.export-btn');
+    if(exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            let totalBookings = document.querySelectorAll('.booking-card:not([style*="display: none"])').length;
+            let visibleBookings = document.querySelectorAll('.booking-card').length;
+            let summary = `AquaFlow Summary\nTotal Bookings in DB: ${visibleBookings}\nFiltered Bookings: ${totalBookings}\nCustomers: ${document.getElementById('customersCount').innerText}\nUpcoming: ${document.getElementById('upcomingCount').innerText}`;
+            alert("📋 Export Summary (CSV ready):\n" + summary + "\n\nFull export can be implemented server-side.");
+            console.log("[Export] summary data:", summary);
+        });
+    }
+    
+    // Additional safeguard: If any track button fails due to _id missing, provide fallback alert for demo
+    // Also ensure that after sorting/filter we keep track links working normally (they are static)
+    // Since we use jinja dynamic _id, buttons are safe.
+    // Edge: For demo template without real data, the booking ids are rendered correctly from backend.
+    // Provide a friendly console message to explain track button route.
+    console.log("AquaFlow dashboard loaded: search, quantity filter, sorting (newest/oldest), reset and dynamic stats are fully functional.");
+    
+    // If any track link is clicked but route not available yet, we show temporary warning (improves UX while backend is not ready)
+    document.querySelectorAll('.track-btn').forEach(link => {
+        link.addEventListener('click', function(e) {
+            let href = this.getAttribute('href');
+            if(href && href !== '#' && href !== '/live-status/undefined') {
+                // proceed normally (will redirect to backend)
+                return true;
+            } else {
+                e.preventDefault();
+                alert("⚠️ Tracking link requires backend route /live-status/<booking_id>. Please integrate MongoDB route to display live tracking.");
+                return false;
+            }
+        });
+    });
+</script>
+<!-- Additional inline notes: Water type, status fully working as per new requirement: Assigned, On The Way, Rejected -->
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+<script>
+(function () {
+    var HOME_URL = "/dashboard";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

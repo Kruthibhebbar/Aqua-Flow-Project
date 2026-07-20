@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AquaFlow | Driver Notifications</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f2f8;
+            color: #1a2c3e;
+            padding: 24px 20px 40px;
+        }
+        .dashboard-container { max-width: 1400px; margin: 0 auto; }
+        .header-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            gap: 16px;
+        }
+        .title-badge h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0b2b3b, #1e4a6e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .title-badge p { color: #4a627a; font-size: 0.9rem; margin-top: 6px; }
+        .driver-card {
+            background: white;
+            border-radius: 28px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            border: 1px solid #eef2f9;
+        }
+        .driver-avatar {
+            width: 52px;
+            height: 52px;
+            background: #1e6f5c;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.6rem;
+        }
+        .driver-info h3 { font-size: 1.2rem; font-weight: 600; }
+        .driver-info p { font-size: 0.8rem; color: #5b7a9a; }
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 28px;
+            padding: 16px 24px;
+            flex: 1;
+            min-width: 150px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid #eef2f9;
+        }
+        .stat-icon { font-size: 2.2rem; width: 54px; height: 54px; background: #f0f7ff; border-radius: 30px; display: flex; align-items: center; justify-content: center; }
+        .stat-number { font-size: 2rem; font-weight: 800; line-height: 1; }
+        .stat-label { font-size: 0.85rem; color: #4f6f8f; font-weight: 500; }
+        .section-title {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin: 32px 0 20px 0;
+        }
+        .section-title h2 { font-size: 1.6rem; font-weight: 600; }
+        .pending-badge {
+            background: #ff7b2c20;
+            color: #c95a0f;
+            padding: 6px 14px;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .notifications-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+            margin-top: 12px;
+        }
+        .notification-card {
+            background: white;
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease;
+            border: 1px solid #e9edf4;
+        }
+        .notification-card:hover { transform: translateY(-4px); }
+        .card-header {
+            background: #fafcff;
+            padding: 18px 22px 12px 22px;
+            border-bottom: 2px solid #f0f3fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .booking-id {
+            font-family: monospace;
+            font-weight: 600;
+            background: #eef2fa;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #1f5e7e;
+        }
+        .urgency {
+            background: #ffede3;
+            color: #e2641e;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .card-body { padding: 20px 22px; }
+        .trip-detail { display: flex; flex-direction: column; gap: 14px; }
+        .detail-line {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e2e8f0;
+            font-size: 0.85rem;
+        }
+        .detail-label { font-weight: 500; color: #4b6f8e; }
+        .detail-value { font-weight: 600; color: #1f3b4c; }
+        .card-actions {
+            padding: 12px 22px 22px 22px;
+            display: flex;
+            gap: 14px;
+            background: #ffffff;
+            border-top: 1px solid #f0f2f8;
+        }
+        .btn-accept, .btn-reject {
+            flex: 1;
+            border: none;
+            padding: 12px 0;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-accept { background: #1b8c5e; color: white; }
+        .btn-accept:hover { background: #0f6e48; transform: scale(0.98); }
+        .btn-reject { background: #f2f4f8; color: #b0003a; border: 1px solid #ffe0e7; }
+        .btn-reject:hover { background: #ffe5ec; }
+        .empty-state {
+            background: white;
+            border-radius: 44px;
+            padding: 54px 28px;
+            text-align: center;
+            color: #6c86a3;
+            margin-top: 20px;
+        }
+        .empty-state i { font-size: 3.2rem; margin-bottom: 16px; opacity: 0.6; }
+        .alert {
+            padding: 14px 20px;
+            border-radius: 60px;
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+        }
+        .alert-success { border-left: 6px solid #1b8c5e; background: #e9f9f1; }
+        .alert-danger { border-left: 6px solid #d14545; background: #fff0f0; }
+        .alert-warning { border-left: 6px solid #f4b942; background: #fff5e6; }
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            font-size: 0.75rem;
+            color: #8aa0b5;
+        }
+        @media (max-width: 680px) {
+            body { padding: 16px; }
+            .notifications-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} flash-toast" style="display:flex; align-items:flex-start; gap:8px;">
+                <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                <span style="flex:1;">{{ message }}</span>
+                <button type="button" onclick="this.closest('.flash-toast').remove()" style="background:none;border:none;cursor:pointer;font-size:16px;line-height:1;">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        <script>
+            setTimeout(function () {
+                document.querySelectorAll('.flash-toast').forEach(function (el) {
+                    el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+                    setTimeout(function () { el.remove(); }, 400);
+                });
+            }, 5000);
+        </script>
+        {% endif %}
+    {% endwith %}
+
+    <div class="header-section">
+        <div class="title-badge">
+            <h1><i class="fas fa-bell" style="color:#f39c12; margin-right: 10px;"></i>Driver Notifications</h1>
+            <p><i class="fas fa-sync-alt"></i> Live delivery requests · Accept or decline</p>
+        </div>
+        <div class="driver-card">
+            <div class="driver-avatar"><i class="fas fa-truck-fast"></i></div>
+            <div class="driver-info">
+                <h3>{{ driver.name if driver else 'Driver' }}</h3>
+                <p><i class="fas fa-envelope"></i> {{ driver.email if driver else session.get('driver_email', 'driver@example.com') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-hourglass-half" style="color:#e67e22;"></i></div>
+            <div>
+                <div class="stat-number">{{ pending_bookings|length }}</div>
+                <div class="stat-label">Pending Requests</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-check-circle" style="color:#1b8c5e;"></i></div>
+            <div>
+                <div class="stat-number">{{ accepted_count|default(0) }}</div>
+                <div class="stat-label">Accepted Rides</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-times-circle" style="color:#b34e4e;"></i></div>
+            <div>
+                <div class="stat-number">{{ rejected_count|default(0) }}</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">
+        <h2><i class="fas fa-bell-ring" style="margin-right: 12px; color:#e67e22;"></i> Live Delivery Requests</h2>
+        {% if pending_bookings %}
+        <span class="pending-badge"><i class="fas fa-clock"></i> {{ pending_bookings|length }} urgent</span>
+        {% endif %}
+    </div>
+
+    {% if pending_bookings and pending_bookings|length > 0 %}
+    <div class="notifications-grid">
+        {% for booking in pending_bookings %}
+        <div class="notification-card" data-booking-id="{{ booking._id }}">
+            <div class="card-header">
+                <span class="booking-id"><i class="far fa-file-alt"></i> #{{ booking._id|string|truncate(10, True, '') }}</span>
+                <span class="urgency"><i class="fas fa-bolt"></i> PENDING RESPONSE</span>
+            </div>
+            <div class="card-body">
+                <div class="trip-detail">
+                    <div class="detail-line">
+                        <span class="detail-label"><i class="fas fa-user"></i> Customer</span>
+                        <span class="detail-value">{{ booking.fullname if booking.fullname else 'Customer' }}</span>
+                    </div>
+                    <div class="detail-line">
+                        <span class="detail-label"><i class="fas fa-phone"></i> Phone</span>
+                        <span class="detail-value">{{ booking.phone if booking.phone else 'Not provided' }}</span>
+                    </div>
+                    <div class="detail-line">
+                        <span class="detail-label"><i class="fas fa-map-marker-alt"></i> Delivery Address</span>
+                        <span class="detail-value">{{ booking.address|truncate(50) if booking.address else 'Address not provided' }}</span>
+                    </div>
+                    <div class="detail-line">
+                        <span class="detail-label"><i class="fas fa-tint"></i> Water Quantity</span>
+                        <span class="detail-value">{{ booking.quantity }} Liters</span>
+                    </div>
+                    <div class="detail-line">
+                        <span class="detail-label"><i class="fas fa-calendar"></i> Delivery Date</span>
+                        <span class="detail-value">{{ booking.delivery_date }} at {{ booking.delivery_time }}</span>
+                    </div>
+                    <div class="detail-line">
+                        <span class="detail-label"><i class="fas fa-truck"></i> Your Truck</span>
+                        <span class="detail-value">{{ driver.truck_number if driver else 'Not assigned' }}</span>
+                    </div>
+                    <div class="detail-line">
+                        <span class="detail-label"><i class="fas fa-info-circle"></i> Status</span>
+                        <span class="detail-value">Waiting for your response</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <form action="{{ url_for('driver_accept_booking', booking_id=booking._id) }}" method="POST" style="flex:1">
+                    <button type="submit" class="btn-accept"><i class="fas fa-check-circle"></i> Accept Delivery</button>
+                </form>
+                <form action="{{ url_for('reject_booking', booking_id=booking._id) }}" method="POST" style="flex:1">
+                    <button type="submit" class="btn-reject"><i class="fas fa-times-circle"></i> Decline</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-check-double"></i>
+        <h3 style="margin: 12px 0 8px;">No pending deliveries!</h3>
+        <p>You're all caught up. New requests will appear here when admin assigns you.</p>
+    </div>
+    {% endif %}
+
+    <footer>
+        <i class="fas fa-shield-alt"></i> Driver notification system · Accept to start delivery · Customer will receive your details
+    </footer>
+</div>
+
+<script>
+    (function() {
+        const rejectForms = document.querySelectorAll('form[action*="reject_booking"]');
+        rejectForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const confirmed = confirm('⚠️ Decline this delivery request? The customer will be notified.');
+                if (!confirmed) e.preventDefault();
+            });
+        });
+
+        const acceptForms = document.querySelectorAll('form[action*="accept_booking"]');
+        acceptForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('✅ Accept this delivery? Customer will receive your details.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    })();
+</script>
+</body>
+</html>

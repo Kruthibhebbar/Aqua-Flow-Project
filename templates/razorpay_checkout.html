@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay for Your Booking | AquaFlow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+        body{background:#eef3f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+        .card{background:#fff;border-radius:20px;padding:36px 32px;max-width:440px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,.08);text-align:center;}
+        .icon{font-size:2.6rem;color:#2d7aff;margin-bottom:10px;}
+        h1{font-size:1.35rem;margin-bottom:6px;color:#1f2d3d;}
+        .amount{font-size:2rem;font-weight:700;color:#1f2d3d;margin:14px 0;}
+        .sub{color:#6b7684;font-size:.92rem;margin-bottom:24px;}
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:12px;border:none;font-weight:600;font-size:1rem;cursor:pointer;text-decoration:none;margin-bottom:12px;}
+        .btn-primary{background:linear-gradient(135deg,#2d7aff,#1a5fd6);color:#fff;}
+        .btn-outline{background:#fff;border:1.5px solid #dee2e6;color:#1f2d3d;}
+        .status{margin-top:16px;font-size:.88rem;color:#6b7684;}
+        .status.error{color:#c0392b;}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h1>Secure Payment</h1>
+        <div class="sub">Booking #{{ booking_id[-6:] }}</div>
+        <div class="amount">₹{{ "{:,.0f}".format(amount) }}</div>
+
+        <button id="payBtn" class="btn btn-primary">
+            <i class="fa-solid fa-bolt"></i> Pay with UPI
+        </button>
+        <a href="{{ url_for('history') }}" class="btn btn-outline">
+            <i class="fa-solid fa-arrow-left"></i> Cancel
+        </a>
+
+        <div id="statusMsg" class="status"></div>
+    </div>
+
+    <script>
+        const options = {
+            key: "{{ razorpay_key_id }}",
+            amount: {{ (amount * 100) | int }},
+            currency: "INR",
+            name: "AquaFlow",
+            description: "Booking #{{ booking_id[-6:] }}",
+            order_id: "{{ order_id }}",
+            prefill: {
+                name: "{{ customer_name }}",
+                email: "{{ customer_email }}"
+            },
+            method: {
+                upi: true,
+                card: true,
+                netbanking: true,
+                wallet: true
+            },
+            config: {
+                display: {
+                    // UPI shown first / preferred, but customer can still
+                    // switch to card, netbanking, or wallet if they want.
+                    blocks: {
+                        upi: {
+                            name: "Pay via UPI",
+                            instruments: [{ method: "upi" }]
+                        }
+                    },
+                    sequence: ["block.upi"],
+                    preferences: { show_default_blocks: true }
+                }
+            },
+            handler: function (response) {
+                document.getElementById('statusMsg').innerText = "Verifying payment...";
+                fetch("{{ url_for('verify_razorpay_payment') }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        booking_id: "{{ booking_id }}",
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = "{{ url_for('history') }}";
+                    } else {
+                        document.getElementById('statusMsg').innerText = "Payment could not be verified. Please contact support if money was deducted.";
+                        document.getElementById('statusMsg').className = "status error";
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('statusMsg').innerText = "Network error while verifying payment.";
+                    document.getElementById('statusMsg').className = "status error";
+                });
+            },
+            modal: {
+                ondismiss: function () {
+                    document.getElementById('statusMsg').innerText = "Payment cancelled.";
+                }
+            },
+            theme: { color: "#2d7aff" }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+            document.getElementById('statusMsg').innerText = "Payment failed: " + response.error.description;
+            document.getElementById('statusMsg').className = "status error";
+        });
+
+        document.getElementById('payBtn').addEventListener('click', function () {
+            rzp.open();
+        });
+    </script>
+</body>
+</html>

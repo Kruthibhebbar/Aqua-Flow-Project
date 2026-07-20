@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AquaFlow Admin | Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        /* FULL WHITE BACKGROUND */
+        body {
+            background: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .dashboard-layout { display: flex; max-width: 1600px; margin: 0 auto; gap: 24px; }
+        
+        /* Sidebar - white background, separate scroll */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 32px;
+            padding: 28px 20px;
+            position: sticky;
+            top: 20px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .admin-profile { text-align: center; padding-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 28px; }
+        .avatar {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #ff9966, #ff5e62);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 40px; color: white;
+            border: 2px solid rgba(255,215,0,0.6);
+        }
+        .admin-name { color: #1f2937; font-size: 1.3rem; margin: 8px 0 4px; font-weight: 700; }
+        .admin-role { color: #ff914d; font-size: 0.8rem; font-weight: 500; }
+        .admin-email { font-size: 0.7rem; color: #4b5563; }
+        .admin-login-time { font-size: 0.7rem; color: #6b7280; }
+        .logout-link {
+            color: #ef4444;
+            text-decoration: none;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            display: inline-block;
+            transition: 0.2s;
+        }
+        .logout-link:hover { color: #dc2626; text-decoration: underline; }
+        
+        .sidebar nav ul { list-style: none; }
+        .sidebar nav ul li { margin: 18px 0; position: relative; }
+        .sidebar nav ul li a {
+            color: #374151; text-decoration: none; font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            border-radius: 20px;
+            transition: 0.2s;
+            position: relative;
+        }
+        .sidebar nav ul li a:hover, .sidebar nav ul li.active a {
+            background: rgba(255, 105, 180, 0.1);
+            color: #ff914d;
+            border-left: 3px solid #ff914d;
+        }
+        
+        /* Notification dot with pulse */
+        .sidebar-link {
+            position: relative;
+        }
+        .notification-dot {
+            width: 12px;
+            height: 12px;
+            background: red;
+            border-radius: 50%;
+            position: absolute;
+            right: 14px;
+            top: 18px;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Live tracking button - matches other sidebar links */
+        .live-tracking-link {
+            color: #374151;
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            border-radius: 20px;
+            transition: 0.2s;
+            position: relative;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            margin: 0;
+        }
+        .live-tracking-link i {
+            font-size: 1rem;
+            width: 24px;
+            text-align: center;
+        }
+        .live-tracking-link:hover {
+            background: rgba(255, 105, 180, 0.1);
+            color: #ff914d;
+            border-left: 3px solid #ff914d;
+            transform: none;
+        }
+        
+        /* Main content - white background */
+        .main-content {
+            flex: 1;
+            background: #ffffff;
+            border-radius: 36px;
+            padding: 28px 32px;
+            border: 1px solid #eef2f6;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+        }
+        .page-title { color: #1f2937; margin-bottom: 16px; font-weight: 700; font-size: 1.8rem; letter-spacing: -0.3px; }
+        .section-title { color: #1f2937; margin-bottom: 20px; margin-top: 28px; font-weight: 600; font-size: 1.4rem; letter-spacing: -0.2px; }
+        
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: #f8fafc;
+            border-radius: 28px;
+            padding: 18px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+            color: #1e293b;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .stat-card:hover { transform: translateY(-5px); border-color: #ff914d; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .stat-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #ff914d; font-weight: 600; }
+        .stat-number { font-size: 2rem; font-weight: 800; margin: 8px 0; background: linear-gradient(135deg, #1e293b, #ff914d); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        
+        /* Analytics Cards */
+        .analytics-row { display: flex; flex-wrap: wrap; gap: 24px; margin: 20px 0 20px; }
+        .chart-card {
+            flex: 1; min-width: 250px;
+            background: #f8fafc;
+            border-radius: 28px;
+            padding: 18px;
+            border: 1px solid #e2e8f0;
+        }
+        .chart-caption { text-align: center; color: #ff914d; margin-top: 12px; font-weight: 500; font-size: 0.85rem; }
+        canvas { max-height: 220px; width: 100%; }
+        
+        /* Toast */
+        .notification-toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: #ff914d; color: #fff;
+            padding: 14px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            z-index: 1100;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 0.9rem;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-layout { flex-direction: column; }
+            .sidebar { width: 100%; position: relative; top: 0; height: auto; max-height: 400px; }
+            .main-content { padding: 20px; }
+        }
+        .sidebar nav ul li a i {
+            width: 24px;
+            text-align: center;
+        }
+        .sidebar-nav-divider {
+            margin: 20px 0 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #ff914d; border-radius: 10px; }
+        
+        .water-icon { color: #ff914d; }
+        .text-accent { color: #ff914d; }
+        
+        /* Empty state or fallback */
+        .analytics-note {
+            text-align: center;
+            color: #64748b;
+            margin-top: 40px;
+            padding: 40px;
+            background: #f8fafc;
+            border-radius: 28px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="flashContainer" style="position:fixed; top:16px; right:16px; z-index:9999; max-width:380px; display:flex; flex-direction:column; gap:10px;">
+        {% for category, message in messages %}
+        <div class="flash-toast" style="background:#fff; border-left:4px solid {{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; box-shadow:0 6px 20px rgba(0,0,0,.12); border-radius:8px; padding:12px 16px; font-size:14px; display:flex; align-items:flex-start; gap:10px;">
+            <i class="fas {{ 'fa-check-circle' if category=='success' else 'fa-triangle-exclamation' if category=='danger' else 'fa-circle-info' }}" style="color:{{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; margin-top:2px;"></i>
+            <span style="flex:1;">{{ message }}</span>
+            <button onclick="this.closest('.flash-toast').remove()" style="background:none; border:none; cursor:pointer; color:#9aa5b1; font-size:14px;">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(function () {
+            document.querySelectorAll('.flash-toast').forEach(function (el) {
+                el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+                setTimeout(function () { el.remove(); }, 400);
+            });
+        }, 5000);
+    </script>
+    {% endif %}
+{% endwith %}
+
+<div class="dashboard-layout">
+    <!-- Sidebar with separate scroll -->
+    <div class="sidebar">
+        <div class="admin-profile">
+            <div class="avatar"><i class="fas fa-crown"></i></div>
+            <h3 class="admin-name">{{ admin_name }}</h3>
+            <p class="admin-role"><i class="fas fa-shield-alt"></i> Super Admin</p>
+            <p class="admin-email"><i class="far fa-envelope"></i> {{ admin_email }}</p>
+            <p class="admin-login-time"><i class="fas fa-clock"></i> Last login: Today</p>
+            <a href="/admin-logout" class="logout-link">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+        <nav>
+            <ul>
+                <li class="active"><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <!-- CHANGED: Booking Management link updated to /booking-management -->
+                <li>
+                    <a href="/booking-management">
+                        <i class="fas fa-calendar-check"></i>
+                        Booking Management
+                    </a>
+                </li>
+                <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
+                <li class="sidebar-link">
+                    <a href="/driver-management">
+                        <i class="fas fa-id-card"></i>
+                        Driver Management
+                    </a>
+                </li>
+                <li class="sidebar-link" id="newDriverRequestLi">
+                    <a href="/new-driver-requests">
+                        <i class="fas fa-user-plus"></i>
+                        New Driver Requests
+                        <span id="driverRequestDot" class="notification-dot"></span>
+                    </a>
+                </li>
+                <div class="sidebar-nav-divider"></div>
+                <!-- Live ETA Tracking -->
+                <li>
+                    <a href="/admin/live_tracking" class="live-tracking-link">
+                        <i class="fas fa-map-marked-alt"></i>
+                        Live ETA Tracking
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title"><i class="fas fa-water water-icon"></i> AquaFlow Analytics Dashboard</h1>
+        
+        <!-- Stats Cards Only - Clean analytics metrics, no filters/export/bookings list -->
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-users"></i> Total Users</div><div class="stat-number" id="statTotalUsers">{{ stats.total_users }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-shopping-cart"></i> Total Orders</div><div class="stat-number" id="statTotalOrders">{{ stats.total_orders }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-clock"></i> Pending</div><div class="stat-number" id="statPending">{{ stats.pending_orders }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-check-circle"></i> Approved</div><div class="stat-number" id="statApproved">{{ stats.approved_orders }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-ban"></i> Cancelled</div><div class="stat-number" id="statCancelled">{{ stats.cancelled_orders }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-day"></i> Today's Orders</div><div class="stat-number" id="statTodayOrders">{{ stats.today_orders }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-indian-rupee-sign"></i> Revenue (Delivered)</div><div class="stat-number" id="statRevenue">₹{{ "{:,.0f}".format(stats.total_revenue) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-truck-fast"></i> Active Deliveries</div><div class="stat-number" id="statActiveDeliveries">{{ stats.active_deliveries }}</div></div>
+        </div>
+
+        <!-- Finance Overview - money position, not order counts -->
+        <h2 class="page-title" style="font-size:20px; margin-top:30px;"><i class="fas fa-sack-dollar water-icon"></i> Finance Overview</h2>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-day"></i> Today's Revenue</div><div class="stat-number" id="statTodayRevenue">₹{{ "{:,.0f}".format(finance.today_revenue) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-percent"></i> Today's Platform Commission</div><div class="stat-number" id="statTodayCommission">₹{{ "{:,.0f}".format(finance.today_commission) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-hand-holding-dollar"></i> Pending Driver Deposits</div><div class="stat-number" id="statPendingDeposits">₹{{ "{:,.0f}".format(finance.pending_driver_deposits) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-money-bill-transfer"></i> Pending Driver Payouts</div><div class="stat-number" id="statPendingPayouts">₹{{ "{:,.0f}".format(finance.pending_driver_payouts) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-rotate-left"></i> Pending Customer Refunds</div><div class="stat-number" id="statPendingRefunds">₹{{ "{:,.0f}".format(finance.pending_customer_refunds) }}</div></div>
+        </div>
+        <p style="color:#9aa5b1; font-size:13px; margin-top:-6px; margin-bottom:20px;">
+            <i class="fas fa-circle-info"></i> Refunds aren't tracked yet — this will show ₹0 until a refund workflow is built.
+        </p>
+
+        <!-- Analytics Charts Section Only (No bookings list, modals, or action buttons) -->
+        <div class="analytics-row">
+            <div class="chart-card">
+                <canvas id="weeklyChart"></canvas>
+                <p class="chart-caption">📈 Weekly Bookings Trend</p>
+            </div>
+            <div class="chart-card">
+                <canvas id="statusChart"></canvas>
+                <p class="chart-caption">📊 Booking Status Distribution</p>
+            </div>
+            <div class="chart-card">
+                <canvas id="revenueChart"></canvas>
+                <p class="chart-caption">💰 Weekly Revenue (Delivered Orders)</p>
+            </div>
+        </div>
+        
+        <!-- Insight note - clean redirection to Booking Management page -->
+        <div class="analytics-note">
+            <i class="fas fa-chart-line" style="color: #ff914d; margin-right: 8px;"></i> 
+            Real-time analytics & metrics — Manage all bookings, approvals, and cancellations from <strong>Booking Management</strong> page.
+        </div>
+    </div>
+</div>
+
+<script>
+// ========================
+// CLEAN ANALYTICS DASHBOARD
+// Removed: filter buttons, export header, bookings list, modal, approve/cancel/deliver/viewDetails functions.
+// Kept: sidebar, stats cards, charts, admin profile, notification dot, live stats polling, weekly chart updates.
+// ========================
+
+const weeklyData = {{ weekly_chart_data | tojson }};
+const weeklyRevenueData = {{ weekly_revenue_data | tojson }};
+let weeklyChart, statusChart, revenueChart;
+let refreshInterval = null;
+
+function initCharts() {
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    weeklyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday', 'Today'],
+            datasets: [{ label: 'Bookings', data: weeklyData, borderColor: '#ff914d', backgroundColor: 'rgba(255,145,77,0.1)', tension: 0.3, fill: true, borderWidth: 2 }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { font: { family: 'Inter', size: 12 } } } } }
+    });
+    
+    const ctx2 = document.getElementById('statusChart').getContext('2d');
+    statusChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pending', 'Approved', 'Cancelled', 'Delivered'],
+            datasets: [{ data: [{{ stats.pending_orders }}, {{ stats.approved_orders }}, {{ stats.cancelled_orders }}, {{ stats.delivered_orders }}], backgroundColor: ['#eab308', '#16a34a', '#dc2626', '#0f7bff'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 } } } } }
+    });
+
+    const ctx3 = document.getElementById('revenueChart').getContext('2d');
+    revenueChart = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: ['6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday', 'Today'],
+            datasets: [{ label: 'Revenue (₹)', data: weeklyRevenueData, backgroundColor: '#0f7bff', borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { font: { family: 'Inter', size: 12 } } } } }
+    });
+}
+
+function showNotification(message) {
+    const toast = document.createElement('div');
+    toast.className = 'notification-toast';
+    toast.innerHTML = `<i class="fas fa-bell"></i> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+async function silentUpdateStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        if (data && typeof data.pending_orders !== 'undefined') {
+            const pendingEl = document.getElementById('statPending');
+            const approvedEl = document.getElementById('statApproved');
+            const cancelledEl = document.getElementById('statCancelled');
+            const totalOrdersEl = document.getElementById('statTotalOrders');
+            const totalUsersEl = document.getElementById('statTotalUsers');
+            const todayOrdersEl = document.getElementById('statTodayOrders');
+            const revenueEl = document.getElementById('statRevenue');
+            const activeDeliveriesEl = document.getElementById('statActiveDeliveries');
+            const todayRevenueEl = document.getElementById('statTodayRevenue');
+            const todayCommissionEl = document.getElementById('statTodayCommission');
+            const pendingDepositsEl = document.getElementById('statPendingDeposits');
+            const pendingPayoutsEl = document.getElementById('statPendingPayouts');
+            
+            if (pendingEl) pendingEl.innerText = data.pending_orders;
+            if (approvedEl) approvedEl.innerText = data.approved_orders;
+            if (cancelledEl) cancelledEl.innerText = data.cancelled_orders;
+            if (totalOrdersEl) totalOrdersEl.innerText = data.total_orders;
+            if (totalUsersEl) totalUsersEl.innerText = data.total_users;
+            if (todayOrdersEl) todayOrdersEl.innerText = data.today_orders;
+            if (revenueEl) revenueEl.innerText = `₹${Number(data.total_revenue).toLocaleString('en-IN')}`;
+            if (activeDeliveriesEl) activeDeliveriesEl.innerText = data.active_deliveries;
+            if (todayRevenueEl && typeof data.today_revenue !== 'undefined') todayRevenueEl.innerText = `₹${Number(data.today_revenue).toLocaleString('en-IN')}`;
+            if (todayCommissionEl && typeof data.today_commission !== 'undefined') todayCommissionEl.innerText = `₹${Number(data.today_commission).toLocaleString('en-IN')}`;
+            if (pendingDepositsEl && typeof data.pending_driver_deposits !== 'undefined') pendingDepositsEl.innerText = `₹${Number(data.pending_driver_deposits).toLocaleString('en-IN')}`;
+            if (pendingPayoutsEl && typeof data.pending_driver_payouts !== 'undefined') pendingPayoutsEl.innerText = `₹${Number(data.pending_driver_payouts).toLocaleString('en-IN')}`;
+            
+            const deliveredVal = data.delivered_orders || 0;
+            if (statusChart && statusChart.data.datasets[0]) {
+                statusChart.data.datasets[0].data = [data.pending_orders, data.approved_orders, data.cancelled_orders, deliveredVal];
+                statusChart.update();
+            }
+            if (weeklyChart && data.weekly_bookings && Array.isArray(data.weekly_bookings) && data.weekly_bookings.length === 7) {
+                weeklyChart.data.datasets[0].data = data.weekly_bookings;
+                weeklyChart.update();
+            }
+        }
+    } catch(err) { 
+        console.log("Stats update silent, using cached data"); 
+    }
+}
+
+function startPolling() { 
+    if (refreshInterval) clearInterval(refreshInterval); 
+    refreshInterval = setInterval(silentUpdateStats, 35000); 
+}
+startPolling();
+window.addEventListener('beforeunload', () => { if (refreshInterval) clearInterval(refreshInterval); });
+window.addEventListener('focus', () => silentUpdateStats());
+
+// Driver request notification dot logic (keep as requested)
+async function checkDriverRequests() {
+    try {
+        const response = await fetch("/new-driver-request-count");
+        const data = await response.json();
+        const dot = document.getElementById("driverRequestDot");
+        if (data.pending_count > 0) dot.style.display = "block";
+        else dot.style.display = "none";
+    } catch(error) { console.log("Error fetching driver request count:", error); }
+}
+
+async function markRequestsAsSeen() {
+    try { await fetch("/mark-driver-requests-seen", { method: "POST" }); } catch (err) { console.log("Failed to mark seen:", err); }
+}
+
+checkDriverRequests();
+markRequestsAsSeen();
+setInterval(checkDriverRequests, 5000);
+
+// Initialize charts after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+});
+</script>
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+<script>
+(function () {
+    var HOME_URL = "/";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

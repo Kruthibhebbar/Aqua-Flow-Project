@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        AquaFlow Driver Management
+    </title>
+
+    <!-- FONT AWESOME -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    >
+
+    <!-- GOOGLE FONT -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:'Poppins',sans-serif;
+        }
+
+        body{
+
+            background:#f5f7fb;
+            min-height:100vh;
+            padding:30px;
+            color:#1e293b;
+        }
+
+        .page-container{
+
+            width:100%;
+        }
+
+        .top-header{
+
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:30px;
+        }
+
+        .page-title{
+
+            font-size:38px;
+            font-weight:700;
+            color:#0f172a;
+        }
+
+        .page-subtitle{
+
+            color:#64748b;
+            margin-top:6px;
+            font-size:15px;
+        }
+
+        .stats-grid{
+
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+            gap:20px;
+            margin-bottom:35px;
+        }
+
+        .stat-card{
+
+            background:white;
+            border-radius:24px;
+            padding:28px;
+            border:1px solid #e2e8f0;
+            box-shadow:0 8px 25px rgba(0,0,0,0.05);
+            transition:0.3s;
+        }
+
+        .stat-card:hover{
+
+            transform:translateY(-4px);
+        }
+
+        .stat-top{
+
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:20px;
+        }
+
+        .stat-icon{
+
+            width:58px;
+            height:58px;
+            border-radius:18px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:22px;
+            background:#eff6ff;
+            color:#2563eb;
+        }
+
+        .stat-value{
+
+            font-size:34px;
+            font-weight:700;
+            color:#0f172a;
+        }
+
+        .stat-label{
+
+            color:#64748b;
+            font-size:15px;
+            margin-top:4px;
+        }
+
+        .table-container{
+
+            background:white;
+            border-radius:30px;
+            padding:25px;
+            border:1px solid #e2e8f0;
+            box-shadow:0 10px 30px rgba(0,0,0,0.05);
+            overflow-x:auto;
+        }
+
+        .section-title{
+
+            font-size:28px;
+            font-weight:700;
+            margin-bottom:25px;
+            color:#0f172a;
+
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+
+        table{
+
+            width:100%;
+            border-collapse:collapse;
+            min-width:1300px;
+        }
+
+        thead{
+
+            background:#eff6ff;
+        }
+
+        th{
+
+            padding:18px;
+            text-align:left;
+            color:#1e3a8a;
+            font-size:14px;
+            font-weight:600;
+        }
+
+        td{
+
+            padding:18px;
+            border-bottom:1px solid #e2e8f0;
+            color:#334155;
+            font-size:14px;
+            vertical-align:middle;
+        }
+
+        tr:hover{
+
+            background:#f8fafc;
+        }
+
+        .driver-info{
+
+            display:flex;
+            align-items:center;
+            gap:14px;
+        }
+
+        .driver-photo{
+
+            width:60px;
+            height:60px;
+            border-radius:50%;
+            object-fit:cover;
+            border:3px solid #dbeafe;
+        }
+
+        .driver-name{
+
+            font-weight:600;
+            color:#0f172a;
+            font-size:15px;
+        }
+
+        .truck-badge{
+
+            background:#eff6ff;
+            color:#2563eb;
+            padding:8px 14px;
+            border-radius:12px;
+            font-weight:600;
+            display:inline-block;
+        }
+
+        .capacity-badge{
+
+            background:#ecfeff;
+            color:#0891b2;
+            padding:8px 14px;
+            border-radius:12px;
+            font-weight:600;
+            display:inline-block;
+        }
+
+        .status{
+
+            padding:8px 18px;
+            border-radius:30px;
+            font-size:13px;
+            font-weight:600;
+            display:inline-block;
+        }
+
+        .online{
+
+            background:#dcfce7;
+            color:#15803d;
+        }
+
+        .offline{
+
+            background:#fee2e2;
+            color:#dc2626;
+        }
+
+        .orders-box{
+
+            font-weight:600;
+            color:#0f172a;
+        }
+
+        .deliveries-box{
+
+            font-weight:600;
+            color:#2563eb;
+        }
+
+        .address{
+
+            max-width:240px;
+            line-height:1.5;
+            color:#475569;
+        }
+
+        .deposit-badge{
+            padding:8px 14px;
+            border-radius:12px;
+            font-weight:700;
+            display:inline-block;
+        }
+        .deposit-owed{ background:#fee2e2; color:#b91c1c; }
+        .deposit-clear{ background:#dcfce7; color:#15803d; }
+
+        .bank-form-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+            gap:16px;
+        }
+        .bank-form-grid label{
+            display:block;
+            font-size:13px;
+            font-weight:600;
+            color:#475569;
+            margin-bottom:6px;
+        }
+        .bank-form-grid input[type="text"],
+        .bank-form-grid input[type="file"]{
+            width:100%;
+            padding:12px 14px;
+            border:1px solid #e2e8f0;
+            border-radius:14px;
+            font-size:14px;
+            font-family:'Poppins',sans-serif;
+        }
+        .qr-preview{
+            width:130px;
+            height:130px;
+            object-fit:cover;
+            border-radius:16px;
+            border:2px solid #dbeafe;
+        }
+        .btn-pill{
+            border:none;
+            padding:10px 20px;
+            border-radius:30px;
+            font-weight:600;
+            font-size:13px;
+            cursor:pointer;
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+        }
+        .btn-approve{ background:#16a34a; color:#fff; }
+        .btn-approve:hover{ background:#15803d; }
+        .btn-reject{ background:#fff; color:#dc2626; border:1.5px solid #fecaca; }
+        .btn-reject:hover{ background:#fee2e2; }
+        .btn-save-bank{ background:#2563eb; color:#fff; }
+        .btn-save-bank:hover{ background:#1d4ed8; }
+
+        .proof-link{
+            color:#2563eb;
+            font-weight:600;
+            text-decoration:none;
+        }
+        .proof-link:hover{ text-decoration:underline; }
+
+        .verify-status{
+            padding:6px 14px;
+            border-radius:30px;
+            font-size:12px;
+            font-weight:700;
+            display:inline-block;
+        }
+        .verify-pending{ background:#fef3c7; color:#92400e; }
+        .verify-approved{ background:#dcfce7; color:#15803d; }
+        .verify-rejected{ background:#fee2e2; color:#b91c1c; }
+
+        .empty-box{
+
+            background:white;
+            padding:80px 30px;
+            border-radius:30px;
+            text-align:center;
+            border:1px solid #e2e8f0;
+        }
+
+        .empty-box i{
+
+            font-size:70px;
+            color:#cbd5e1;
+            margin-bottom:20px;
+        }
+
+        .empty-title{
+
+            font-size:24px;
+            font-weight:700;
+            color:#0f172a;
+            margin-bottom:10px;
+        }
+
+        .empty-subtitle{
+
+            color:#64748b;
+            font-size:15px;
+        }
+
+        @media(max-width:768px){
+
+            body{
+
+                padding:16px;
+            }
+
+            .page-title{
+
+                font-size:28px;
+            }
+
+            .section-title{
+
+                font-size:22px;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div id="flashContainer" style="position:fixed; top:16px; right:16px; z-index:9999; max-width:380px; display:flex; flex-direction:column; gap:10px;">
+            {% for category, message in messages %}
+            <div class="flash-toast" style="background:#fff; border-left:4px solid {{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; box-shadow:0 6px 20px rgba(0,0,0,.12); border-radius:8px; padding:12px 16px; font-size:14px; display:flex; align-items:flex-start; gap:10px;">
+                <i class="fas {{ 'fa-check-circle' if category=='success' else 'fa-triangle-exclamation' if category=='danger' else 'fa-circle-info' }}" style="color:{{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; margin-top:2px;"></i>
+                <span style="flex:1;">{{ message }}</span>
+                <button onclick="this.closest('.flash-toast').remove()" style="background:none; border:none; cursor:pointer; color:#9aa5b1; font-size:14px;">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        <script>
+            setTimeout(function () {
+                document.querySelectorAll('.flash-toast').forEach(function (el) {
+                    el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+                    setTimeout(function () { el.remove(); }, 400);
+                });
+            }, 5000);
+        </script>
+        {% endif %}
+    {% endwith %}
+
+    <div class="page-container">
+
+        <!-- HEADER -->
+
+        <div class="top-header">
+
+            <div>
+
+                <h1 class="page-title">
+                    Driver Management
+                </h1>
+
+                <p class="page-subtitle">
+                    Monitor all approved AquaFlow tanker drivers
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- STATS -->
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-value">
+                    {{ total_drivers }}
+                </div>
+
+                <div class="stat-label">
+                    Total Drivers
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-icon">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-value">
+                    {{ online_drivers }}
+                </div>
+
+                <div class="stat-label">
+                    Online Drivers
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-icon">
+                        <i class="fas fa-circle-xmark"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-value">
+                    {{ offline_drivers }}
+                </div>
+
+                <div class="stat-label">
+                    Offline Drivers
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+
+                </div>
+
+                <div class="stat-value">
+                    {{ pending_requests }}
+                </div>
+
+                <div class="stat-label">
+                    Pending Requests
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TABLE -->
+
+        {% if approved_drivers %}
+
+        <div class="table-container">
+
+            <h2 class="section-title">
+
+                <i class="fas fa-id-card"></i>
+
+                Registered Drivers
+
+            </h2>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Photo
+                        </th>
+
+                        <th>
+                            Name
+                        </th>
+
+                        <th>
+                            Phone
+                        </th>
+
+                        <th>
+                            Address
+                        </th>
+
+                        <th>
+                            Truck Number
+                        </th>
+
+                        <th>
+                            Capacity
+                        </th>
+
+                        <th>
+                            Orders
+                        </th>
+
+                        <th>
+                            Deliveries
+                        </th>
+
+                        <th>
+                            Pending Deposit
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for driver in approved_drivers %}
+
+                    <tr>
+
+                        <td>
+
+                            <div class="driver-info">
+
+                                <img
+
+                                    src="{{ url_for('static', filename=driver.photo) }}"
+
+                                    class="driver-photo"
+                                >
+
+                            </div>
+
+                        </td>
+
+                        <td>
+
+                            <div class="driver-name">
+
+                                {{ driver.full_name }}
+
+                            </div>
+
+                        </td>
+
+                        <td>
+
+                            {{ driver.phone }}
+
+                        </td>
+
+                        <td>
+
+                            <div class="address">
+
+                                {{ driver.address }}
+
+                            </div>
+
+                        </td>
+
+                        <td>
+
+                            <span class="truck-badge">
+
+                                {{ driver.truck_number }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="capacity-badge">
+
+                                {{ driver.truck_capacity }} L
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <div class="orders-box">
+
+                                {{ driver.total_orders_accepted }}
+
+                            </div>
+
+                        </td>
+
+                        <td>
+
+                            <div class="deliveries-box">
+
+                                {{ driver.total_deliveries }}
+
+                            </div>
+
+                        </td>
+
+                        <td>
+
+                            {% if driver.wallet.pending_deposit > 0 %}
+                            <span class="deposit-badge deposit-owed">₹{{ "{:,.0f}".format(driver.wallet.pending_deposit) }}</span>
+                            {% else %}
+                            <span class="deposit-badge deposit-clear"><i class="fas fa-check"></i> Clear</span>
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if driver.online_status == "Online" %}
+
+                            <span class="status online">
+
+                                Online
+
+                            </span>
+
+                            {% else %}
+
+                            <span class="status offline">
+
+                                Offline
+
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <i class="fas fa-user-slash"></i>
+
+            <div class="empty-title">
+
+                No Approved Drivers Yet
+
+            </div>
+
+            <div class="empty-subtitle">
+
+                Approved drivers will appear here automatically
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+        <!-- ===================================================== -->
+        <!-- COMPANY BANK / UPI DETAILS -->
+        <!-- Where every driver is told to deposit collected cash    -->
+        <!-- ===================================================== -->
+
+        <div class="table-container" style="margin-top:30px;">
+
+            <h2 class="section-title">
+                <i class="fas fa-building-columns"></i>
+                Company Bank &amp; UPI Details
+            </h2>
+
+            <p style="color:#64748b; margin-bottom:20px; margin-top:-15px;">
+                This is shown to every driver on their dashboard as the account to send collected cash to.
+                Total the company is currently owed across all drivers:
+                <strong style="color:#b91c1c;">₹{{ "{:,.0f}".format(total_pending_deposit) }}</strong>
+            </p>
+
+            <form action="{{ url_for('update_bank_details') }}" method="POST" enctype="multipart/form-data">
+
+                <div class="bank-form-grid">
+
+                    <div>
+                        <label>Bank Name</label>
+                        <input type="text" name="bank_name" value="{{ bank_details.bank_name if bank_details.bank_name != 'Not set up yet' else '' }}" placeholder="e.g. Canara Bank">
+                    </div>
+
+                    <div>
+                        <label>Account Holder Name</label>
+                        <input type="text" name="account_holder" value="{{ bank_details.account_holder if bank_details.account_holder != 'Not set up yet' else '' }}" placeholder="e.g. Kruthik B Hebbar">
+                    </div>
+
+                    <div>
+                        <label>Account Number</label>
+                        <input type="text" name="account_number" value="{{ bank_details.account_number }}" placeholder="e.g. XXXXXXXX1234">
+                    </div>
+
+                    <div>
+                        <label>IFSC Code</label>
+                        <input type="text" name="ifsc" value="{{ bank_details.ifsc }}" placeholder="e.g. CNRB0001234">
+                    </div>
+
+                    <div>
+                        <label>UPI ID</label>
+                        <input type="text" name="upi_id" value="{{ bank_details.upi_id }}" placeholder="e.g. aquaflow@upi">
+                    </div>
+
+                    <div>
+                        <label>Payment QR Code Image</label>
+                        <input type="file" name="qr_image" accept="image/*">
+                    </div>
+
+                </div>
+
+                <div style="display:flex; align-items:center; gap:20px; margin-top:20px;">
+                    <button type="submit" class="btn-pill btn-save-bank">
+                        <i class="fas fa-floppy-disk"></i> Save Bank Details
+                    </button>
+
+                    {% if bank_details.qr_image %}
+                    <img src="{{ url_for('static', filename=bank_details.qr_image) }}" class="qr-preview" alt="Current QR code">
+                    {% endif %}
+                </div>
+
+            </form>
+
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- DRIVER SETTLEMENT (WITHDRAWAL) REQUESTS -->
+        <!-- Drivers requesting payout of their earned commission -->
+        <!-- ===================================================== -->
+
+        <div class="table-container" style="margin-top:30px;">
+
+            <h2 class="section-title">
+                <i class="fas fa-money-bill-transfer"></i>
+                Driver Settlement Requests
+                {% if pending_settlements %}
+                <span style="font-size:14px; background:#fef3c7; color:#92400e; padding:6px 14px; border-radius:30px;">
+                    {{ pending_settlements|length }} awaiting action
+                </span>
+                {% endif %}
+            </h2>
+
+            {% if pending_settlements %}
+            <table style="width:100%; margin-top:14px;">
+                <thead>
+                    <tr>
+                        <th>Driver</th>
+                        <th>Amount</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_settlements %}
+                    <tr>
+                        <td>{{ req.driver_email }}</td>
+                        <td style="font-weight:700;">₹{{ "{:,.0f}".format(req.amount) }}</td>
+                        <td>{{ req.requested_at.strftime('%d %b %Y, %I:%M %p') if req.requested_at else '-' }}</td>
+                        <td>{{ req.status }}</td>
+                        <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                            {% if req.status == "Pending" %}
+                            <form action="{{ url_for('resolve_driver_settlement', request_id=req._id, action='approve') }}" method="POST">
+                                <button type="submit" class="btn-pill" style="background:#dbe9ff; color:#1a5fd6;">Approve</button>
+                            </form>
+                            <form action="{{ url_for('resolve_driver_settlement', request_id=req._id, action='reject') }}" method="POST">
+                                <button type="submit" class="btn-pill" style="background:#fbdada; color:#c0392b;">Reject</button>
+                            </form>
+                            {% elif req.status == "Processing" %}
+                            <form action="{{ url_for('resolve_driver_settlement', request_id=req._id, action='complete') }}" method="POST">
+                                <button type="submit" class="btn-pill" style="background:#d4f4e2; color:#1e9e5a;">Mark Paid</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color:#9aa5b1; padding:14px 0;">No settlement requests right now.</p>
+            {% endif %}
+
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- PENDING PAYMENT VERIFICATIONS -->
+        <!-- Driver-submitted transaction proof, awaiting admin      -->
+        <!-- to check the real bank statement and approve/reject    -->
+        <!-- ===================================================== -->
+
+        <div class="table-container" style="margin-top:30px;">
+
+            <h2 class="section-title">
+                <i class="fas fa-money-check-dollar"></i>
+                Payment Verifications
+                {% if pending_verifications %}
+                <span style="font-size:14px; background:#fef3c7; color:#92400e; padding:6px 14px; border-radius:30px;">
+                    {{ pending_verifications|length }} awaiting review
+                </span>
+                {% endif %}
+            </h2>
+
+            {% if pending_verifications %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Driver</th>
+                        <th>Booking</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Transaction Ref</th>
+                        <th>Proof</th>
+                        <th>Submitted</th>
+                        <th>Decision</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in pending_verifications %}
+                    <tr>
+                        <td class="driver-name">{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</td>
+                        <td>#{{ order._id|string|truncate(10, True, '') }}</td>
+                        <td style="font-weight:700;">₹{{ "{:,.0f}".format(order.get('cash_submitted_amount', order.get('delivery_fee', 500))) }}</td>
+                        <td>{{ order.get('payment_submission_method', 'UPI') }}</td>
+                        <td>{{ order.get('payment_transaction_ref', '-') }}</td>
+                        <td>
+                            {% if order.get('payment_screenshot') %}
+                            <a href="{{ url_for('static', filename=order.payment_screenshot) }}" target="_blank" class="proof-link"><i class="fas fa-image"></i> View</a>
+                            {% else %}
+                            <span style="color:#94a3b8;">None</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ order.payment_submitted_at.strftime('%d %b, %I:%M %p') if order.get('payment_submitted_at') else '-' }}</td>
+                        <td>
+                            <div style="display:flex; gap:8px;">
+                                <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST">
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn-pill btn-approve"><i class="fas fa-check"></i> Approve</button>
+                                </form>
+                                <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST">
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="btn-pill btn-reject"><i class="fas fa-xmark"></i> Reject</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-box">
+                <i class="fas fa-circle-check"></i>
+                <div class="empty-title">All Caught Up</div>
+                <div class="empty-subtitle">No payment submissions are waiting on verification right now.</div>
+            </div>
+            {% endif %}
+
+            {% if recent_verifications %}
+            <h2 class="section-title" style="font-size:20px; margin-top:35px;">
+                <i class="fas fa-clock-rotate-left"></i>
+                Recent Decisions
+            </h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Driver</th>
+                        <th>Booking</th>
+                        <th>Amount</th>
+                        <th>Reference</th>
+                        <th>Decided</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_verifications %}
+                    <tr>
+                        <td class="driver-name">{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</td>
+                        <td>#{{ order._id|string|truncate(10, True, '') }}</td>
+                        <td style="font-weight:700;">₹{{ "{:,.0f}".format(order.get('cash_submitted_amount', order.get('delivery_fee', 500))) }}</td>
+                        <td>{{ order.get('payment_transaction_ref', '-') }}</td>
+                        <td>{{ order.payment_verified_at.strftime('%d %b, %I:%M %p') if order.get('payment_verified_at') else '-' }}</td>
+                        <td>
+                            {% set vstatus = order.get('payment_submission_status') %}
+                            <span class="verify-status {% if vstatus == 'Approved' %}verify-approved{% else %}verify-rejected{% endif %}">{{ vstatus }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

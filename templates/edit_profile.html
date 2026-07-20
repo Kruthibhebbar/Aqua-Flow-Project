@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Profile</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:'Poppins',sans-serif;
+        }
+
+        body{
+            background:#f4f8ff;
+            min-height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            padding:30px;
+        }
+
+        .container{
+
+            width:100%;
+            max-width:600px;
+
+            background:white;
+
+            padding:40px;
+
+            border-radius:25px;
+
+            box-shadow:0 10px 30px rgba(0,0,0,0.08);
+
+        }
+
+        h1{
+            text-align:center;
+            margin-bottom:30px;
+            color:#0077ff;
+        }
+
+        .form-group{
+            margin-bottom:20px;
+        }
+
+        label{
+            display:block;
+            margin-bottom:8px;
+            font-weight:600;
+            color:#1e293b;
+        }
+
+        input,
+        select,
+        textarea{
+
+            width:100%;
+
+            padding:14px;
+
+            border:1px solid #dbeafe;
+
+            border-radius:12px;
+
+            font-size:16px;
+
+            outline:none;
+
+        }
+
+        textarea{
+            min-height:120px;
+            resize:none;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus{
+
+            border-color:#0077ff;
+
+        }
+
+        .save-btn{
+
+            width:100%;
+
+            padding:15px;
+
+            border:none;
+
+            border-radius:14px;
+
+            background:linear-gradient(135deg,#0077ff,#00b7ff);
+
+            color:white;
+
+            font-size:18px;
+
+            font-weight:600;
+
+            cursor:pointer;
+
+            transition:0.3s;
+        }
+
+        .save-btn:hover{
+            transform:translateY(-2px);
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Edit Profile</h1>
+
+    <form method="POST">
+
+        <div class="form-group">
+
+            <label>Phone Number</label>
+
+            <input
+                type="text"
+                name="phone"
+                value="{{ user.phone if user.phone else '' }}"
+            >
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Gender</label>
+
+            <select name="gender">
+
+                <option value="">Select Gender</option>
+
+                <option value="Male"
+                {% if user.gender == 'Male' %}selected{% endif %}>
+                Male
+                </option>
+
+                <option value="Female"
+                {% if user.gender == 'Female' %}selected{% endif %}>
+                Female
+                </option>
+
+            </select>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Date of Birth</label>
+
+            <input
+                type="date"
+                name="dob"
+                value="{{ user.dob if user.dob else '' }}"
+            >
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Address</label>
+
+            <textarea name="address">{{ user.address if user.address else '' }}</textarea>
+
+        </div>
+
+        <button type="submit" class="save-btn">
+
+            Save Profile
+
+        </button>
+
+    </form>
+
+</div>
+
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+<script>
+(function () {
+    var HOME_URL = "/dashboard";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

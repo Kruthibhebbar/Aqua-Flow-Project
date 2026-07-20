@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NeoDispatch | Intelligent Driver Assignment Suite</title>
+    <style>
+        /* ===== RESET & GLOBAL ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 10% 30%, #eef2f9, #d9e0ec);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 2rem 1.8rem;
+            color: #0a1c2f;
+            transition: all 0.2s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 20px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2c7da0;
+            border-radius: 20px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 2.2rem;
+            background: rgba(255,255,255,0.45);
+            backdrop-filter: blur(14px);
+            padding: 1.2rem 2rem;
+            border-radius: 48px;
+            box-shadow: 0 12px 28px -8px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.6);
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0f2b3d, #1f6392);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        h1::before {
+            content: "🚚";
+            font-size: 2rem;
+            background: none;
+            -webkit-background-clip: unset;
+            color: #1e5a7a;
+        }
+        .stats-panel {
+            display: flex;
+            gap: 1.2rem;
+        }
+        .stat-badge {
+            background: white;
+            border-radius: 60px;
+            padding: 0.4rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+        .search-wrapper {
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 0.35rem 0.35rem 0.35rem 1.2rem;
+            border-radius: 60px;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.03);
+            border: 1px solid #eef2ff;
+        }
+        .search-wrapper input {
+            border: none;
+            padding: 0.6rem 0;
+            font-size: 0.9rem;
+            width: 220px;
+            outline: none;
+            background: transparent;
+        }
+        .search-wrapper button {
+            background: #1f6392;
+            border: none;
+            color: white;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            background: rgba(255,255,240,0.7);
+            padding: 0.3rem 1rem;
+            border-radius: 60px;
+            backdrop-filter: blur(4px);
+            flex-wrap: wrap;
+        }
+        .filter-group select, .filter-group button {
+            background: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .primary-btn {
+            background: #0f2b3d;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 34px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.8rem;
+            margin-top: 0.8rem;
+        }
+
+        .driver-card {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(2px);
+            border-radius: 32px;
+            padding: 1.6rem 1.5rem;
+            transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.6);
+            position: relative;
+            overflow: hidden;
+        }
+        .driver-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 28px 36px -14px rgba(0,32,64,0.2);
+            background: white;
+        }
+
+        .booking-badge {
+            display: inline-block;
+            background: #eef2ff;
+            padding: 0.2rem 1rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1f6392;
+        }
+        .driver-card h2 {
+            font-size: 1.5rem;
+            margin: 0.75rem 0 0.5rem 0;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+        .info-row {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-top: 0.7rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px dashed #e2edf2;
+        }
+        .info-label {
+            font-weight: 600;
+            width: 120px;
+            font-size: 0.85rem;
+            color: #2c4c6e;
+        }
+        .info-value {
+            font-weight: 500;
+            color: #0a2a3b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .quantity-meter {
+            background: #e9f0f5;
+            border-radius: 40px;
+            height: 8px;
+            width: 100%;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .meter-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #2aa9c9, #1e6f8f);
+            border-radius: 40px;
+            transition: width 0.4s ease;
+        }
+
+        .action-btn {
+            background: #f0f4fa;
+            border: none;
+            border-radius: 32px;
+            padding: 0.35rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .reassign-btn {
+            background: #eef2ff;
+            color: #1f6392;
+        }
+        .delete-btn {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .toast-message {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            font-weight: 500;
+            z-index: 1200;
+            animation: fadeSlide 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateX(40px);}
+            to { opacity: 1; transform: translateX(0);}
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background: white;
+            border-radius: 48px;
+            grid-column: 1 / -1;
+        }
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #3b5c7a;
+        }
+
+        @media (max-width: 720px) {
+            body { padding: 1rem; }
+            .drivers-grid { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .assign-modal {
+            background: white;
+            border-radius: 40px;
+            max-width: 550px;
+            width: 90%;
+            padding: 2rem;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.2);
+        }
+        .assign-modal h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1.2rem;
+        }
+        .assign-modal input, .assign-modal select {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.6rem 0;
+            border-radius: 60px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.9rem;
+        }
+        .assign-modal .form-hint {
+            font-size: 0.7rem;
+            color: #4b6a8b;
+            margin-top: -5px;
+            margin-bottom: 12px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 1.2rem;
+            justify-content: flex-end;
+        }
+        .modal-actions button {
+            padding: 0.6rem 1.4rem;
+            border-radius: 40px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .driver-stats {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.3);
+            border-radius: 32px;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .driver-stat-card {
+            background: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        
+        .warning-badge {
+            background: #fef3c7;
+            color: #d97706;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+        
+        .auto-refresh-btn {
+            background: #2c7da0;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .auto-refresh-btn.off {
+            background: #6b7280;
+        }
+
+        .refresh-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .last-updated {
+            font-size: 0.7rem;
+            color: #6b7280;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-header">
+    <h1>Driver Assignment · NeoDispatch</h1>
+    <div class="stats-panel">
+        <div class="stat-badge"><i>📋</i> Total Bookings: <span id="totalCount">0</span></div>
+        <div class="stat-badge"><i>✅</i> Assigned: <span id="assignedCount">0</span></div>
+        <div class="stat-badge"><i>🚛</i> Active Trucks: <span id="activeTrucksCount">0</span></div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="search-wrapper">
+        <input type="text" id="searchInput" placeholder="🔍 Search by customer, driver, booking ID..." value="">
+        <button id="searchBtn">Search</button>
+        <button id="clearSearchBtn" style="background:#cfdfed; color:#1e3a4d;">Clear</button>
+    </div>
+    <div class="filter-group" id="filterGroup">
+        <select id="quantityFilter">
+            <option value="all">All Water Qty</option>
+            <option value=">3000">Above 3000 L</option>
+            <option value="<3000">Below 3000 L</option>
+        </select>
+        <button id="resetFiltersBtn" style="background:#eef2ff;">⟳ Reset</button>
+        <button id="manualRefreshBtn" style="background:#2c7da0; color:white;">🔄 Refresh Now</button>
+    </div>
+</div>
+
+<div id="driversContainer" class="drivers-grid">
+    <div class="empty-state">
+        ⏳ Loading bookings from database...
+    </div>
+</div>
+
+<div class="driver-stats" id="driverStatsPanel">
+    <div class="driver-stat-card">👨‍✈️ Total Drivers: <span id="totalDriversCount">0</span></div>
+    <div class="driver-stat-card">🚛 Available Trucks: <span id="availableTrucksCount">0</span></div>
+    <div class="driver-stat-card">📊 Active Assignments: <span id="activeAssignmentsCount">0</span></div>
+</div>
+
+<!-- MODAL WITH MANDATORY EMAIL CAPTURE -->
+<div id="assignModal" class="modal-overlay">
+    <div class="assign-modal">
+        <h3>✍️ Assign Driver & Logistics</h3>
+        <p style="margin-bottom: 12px;" id="modalBookingRef">Booking: --</p>
+        
+        <input type="hidden" name="driver_email" id="driver_email" value="">
+        
+        <label>👨‍✈️ Select Driver</label>
+        <select name="driver_name" id="modalDriverSelect" required>
+            <option value="">-- Choose Driver --</option>
+        </select>
+        
+        <div class="form-hint">📧 Driver email will be automatically captured for approval workflow</div>
+        
+        <label>📍 Live Location (admin input)</label>
+        <input type="text" id="modalLiveLocation" placeholder="e.g., Near City Center, En Route to Customer" value="In Transit">
+        
+        <label>⏱️ ETA (minutes or text)</label>
+        <input type="text" id="modalETA" placeholder="e.g., 35 min, 1 hour" value="45 min">
+        
+        <div class="modal-actions">
+            <button id="modalCancelBtn" style="background:#e2e8f0;">Cancel</button>
+            <button id="modalConfirmBtn" style="background:#1f6392; color:white;">Confirm Assignment</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    ⚡ Driver email required for approval workflow | Waiting Driver Approval → Accept/Reject | 🔄 Auto-refreshes every 5 seconds
+</footer>
+
+<script>
+    // ============================================================
+    // DYNAMIC DATA STORE - Will be updated by API
+    // ============================================================
+    let bookings = [];
+    let backendDrivers = [];
+    
+    // UI STATE
+    let currentFilter = "all";
+    let currentSearchTerm = "";
+    let activeBookingIdForModal = null;
+    
+    // AUTO-REFRESH VARIABLES
+    let autoRefreshInterval = null;
+    let isAutoRefreshEnabled = true;
+    let lastUpdateTime = null;
+    
+    // DOM Elements
+    const container = document.getElementById("driversContainer");
+    const totalSpan = document.getElementById("totalCount");
+    const assignedSpan = document.getElementById("assignedCount");
+    const activeTrucksSpan = document.getElementById("activeTrucksCount");
+    const totalDriversSpan = document.getElementById("totalDriversCount");
+    const availableTrucksSpan = document.getElementById("availableTrucksCount");
+    const activeAssignmentsSpan = document.getElementById("activeAssignmentsCount");
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const clearSearchBtn = document.getElementById("clearSearchBtn");
+    const quantityFilterSelect = document.getElementById("quantityFilter");
+    const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+    const modalOverlay = document.getElementById("assignModal");
+    const modalDriverSelect = document.getElementById("modalDriverSelect");
+    const modalLiveLocation = document.getElementById("modalLiveLocation");
+    const modalETA = document.getElementById("modalETA");
+    const modalBookingRefSpan = document.getElementById("modalBookingRef");
+    const modalConfirmBtn = document.getElementById("modalConfirmBtn");
+    const modalCancelBtn = document.getElementById("modalCancelBtn");
+    const driverEmailHidden = document.getElementById("driver_email");
+    const manualRefreshBtn = document.getElementById("manualRefreshBtn");
+    
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+    
+    function showToast(message, isError = false) {
+        const existingToast = document.querySelector(".toast-message");
+        if(existingToast) existingToast.remove();
+        const toast = document.createElement("div");
+        toast.className = "toast-message";
+        toast.style.backgroundColor = isError ? "#b91c1c" : "#1f6392";
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2800);
+    }
+    
+    function updateStats() {
+        totalSpan.innerText = bookings.length;
+        const assignedTotal = bookings.filter(b => b.status === "Delivered" || b.status === "On The Way" || b.status === "Waiting Driver Approval" || (b.driver && b.driver !== "Not Assigned" && b.driver !== "")).length;
+        assignedSpan.innerText = assignedTotal;
+        const activeDrivers = backendDrivers.filter(d => d.status === 'Available' || d.status === 'On Trip' || d.status === 'Active');
+        activeTrucksSpan.innerText = activeDrivers.length;
+        totalDriversSpan.innerText = backendDrivers.length;
+        const availableDrivers = backendDrivers.filter(d => d.status === 'Available').length;
+        availableTrucksSpan.innerText = availableDrivers;
+        const activeAssignments = bookings.filter(b => b.status === 'On The Way' || b.status === 'Waiting Driver Approval' || (b.driver && b.driver !== "Not Assigned" && b.status !== 'Delivered')).length;
+        activeAssignmentsSpan.innerText = activeAssignments;
+    }
+    
+    function getFilteredBookings() {
+        let filtered = [...bookings];
+        if(currentSearchTerm.trim() !== "") {
+            const term = currentSearchTerm.trim().toLowerCase();
+            filtered = filtered.filter(b => 
+                (b.customer && b.customer.toLowerCase().includes(term)) ||
+                (b.driver && b.driver.toLowerCase().includes(term)) ||
+                (b.bookingRef && b.bookingRef.toLowerCase().includes(term)) ||
+                (b.truckNumber && b.truckNumber.toLowerCase().includes(term))
+            );
+        }
+        if(currentFilter !== "all") {
+            if(currentFilter === ">3000") {
+                filtered = filtered.filter(b => b.waterQuantity > 3000);
+            } else if(currentFilter === "<3000") {
+                filtered = filtered.filter(b => b.waterQuantity < 3000);
+            }
+        }
+        return filtered;
+    }
+    
+    function escapeHtml(str) {
+        if(!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ============================================================
+    // EMAIL CAPTURE FUNCTIONS
+    // ============================================================
+    
+    function attachDriverEmailCapture() {
+        const selectElement = document.querySelector("#modalDriverSelect");
+        if (selectElement) {
+            selectElement.removeEventListener('change', emailChangeHandler);
+            selectElement.addEventListener('change', emailChangeHandler);
+        }
+    }
+    
+    function emailChangeHandler() {
+        const selectEl = document.querySelector("#modalDriverSelect");
+        const selectedOption = selectEl.options[selectEl.selectedIndex];
+        const email = selectedOption ? selectedOption.dataset.email : "";
+        
+        if (driverEmailHidden) {
+            driverEmailHidden.value = email || "";
+            if (email) {
+                console.log(`✅ driver_email set to: ${email}`);
+            }
+        }
+    }
+    
+    // ============================================================
+    // CORE DATA FETCHING - THE KEY FIX
+    // ============================================================
+    
+    async function fetchFreshData(showToastOnSuccess = false) {
+        try {
+            // Add cache-busting timestamp
+            const response = await fetch('/api/latest-bookings?t=' + Date.now());
+            const data = await response.json();
+            
+            if (data.success && data.bookings) {
+                const oldCount = bookings.length;
+                
+                // ✅ CRITICAL: Replace arrays with fresh data from MongoDB
+                bookings = data.bookings;
+                
+                if (data.drivers) {
+                    backendDrivers = data.drivers;
+                }
+                
+                lastUpdateTime = new Date();
+                
+                // Re-render the UI
+                renderBookings();
+                
+                // Show notification if new bookings were added
+                if (oldCount !== bookings.length && showToastOnSuccess) {
+                    const change = bookings.length - oldCount;
+                    if (change > 0) {
+                        showToast(`📦 ${change} new booking${change > 1 ? 's' : ''} added! Total: ${bookings.length}`, false);
+                    } else if (change < 0) {
+                        showToast(`🗑️ ${Math.abs(change)} booking${Math.abs(change) > 1 ? 's' : ''} removed`, false);
+                    }
+                }
+                
+                console.log(`✅ Data refreshed: ${bookings.length} bookings, ${backendDrivers.length} drivers at ${lastUpdateTime.toLocaleTimeString()}`);
+                return true;
+            } else {
+                console.error('API returned unsuccessful response:', data);
+                return false;
+            }
+        } catch (error) {
+            console.error("Fetch failed:", error);
+            if (showToastOnSuccess) {
+                showToast("Failed to fetch data from server", true);
+            }
+            return false;
+        }
+    }
+    
+    // ============================================================
+    // AUTO-REFRESH SYSTEM
+    // ============================================================
+    
+    function startAutoRefresh() {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        
+        autoRefreshInterval = setInterval(async () => {
+            if (isAutoRefreshEnabled) {
+                await fetchFreshData(false);
+            }
+        }, 5000); // Refresh every 5 seconds
+        
+        console.log("✅ Auto-refresh started (every 5 seconds)");
+    }
+    
+    function stopAutoRefresh() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+            console.log("⏸️ Auto-refresh stopped");
+        }
+    }
+    
+    function addAutoRefreshToggle() {
+        const filterGroup = document.getElementById('filterGroup');
+        if (filterGroup && !document.getElementById('autoRefreshToggle')) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'autoRefreshToggle';
+            toggleBtn.className = 'auto-refresh-btn';
+            toggleBtn.innerHTML = '⏸️ Auto: ON';
+            toggleBtn.style.background = '#2c7da0';
+            toggleBtn.style.color = 'white';
+            toggleBtn.onclick = () => {
+                isAutoRefreshEnabled = !isAutoRefreshEnabled;
+                toggleBtn.innerHTML = isAutoRefreshEnabled ? '⏸️ Auto: ON' : '▶️ Auto: OFF';
+                toggleBtn.style.background = isAutoRefreshEnabled ? '#2c7da0' : '#6b7280';
+                showToast(`Auto-refresh ${isAutoRefreshEnabled ? 'enabled' : 'disabled'}`, false);
+            };
+            filterGroup.appendChild(toggleBtn);
+        }
+    }
+    
+    // ============================================================
+    // MANUAL REFRESH BUTTON
+    // ============================================================
+    
+    if (manualRefreshBtn) {
+        manualRefreshBtn.addEventListener('click', async () => {
+            const originalText = manualRefreshBtn.innerHTML;
+            manualRefreshBtn.innerHTML = '<span class="refresh-spinner"></span> Refreshing...';
+            manualRefreshBtn.disabled = true;
+            
+            await fetchFreshData(true);
+            
+            manualRefreshBtn.innerHTML = '🔄 Refresh Now';
+            manualRefreshBtn.disabled = false;
+        });
+    }
+    
+    // ============================================================
+    // RENDER BOOKINGS (Your existing render function, FIXED)
+    // ============================================================
+    
+    function renderBookings() {
+        const filtered = getFilteredBookings();
+        
+        if(filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    📭 No bookings found<br>
+                    <small style="color: #6b7280;">Total bookings in system: ${bookings.length}</small>
+                </div>`;
+            updateStats();
+            return;
+        }
+        
+        const cardsHtml = filtered.map(booking => {
+            const fillPercent = Math.min(100, (booking.waterQuantity / 10000) * 100);
+            let statusColor = "#6b7280";
+            let statusBadge = booking.status || "Pending";
+            if(booking.status === 'Delivered') statusColor = "#0f6e3f";
+            else if(booking.status === 'On The Way') statusColor = "#d97706";
+            else if(booking.status === 'Waiting Driver Approval') statusColor = "#ea580c";
+            else if(booking.status === 'Approved') statusColor = "#2c7da0";
+            
+            const showEmailWarning = !booking.driverEmail && booking.driver && booking.driver !== "Not Assigned";
+            
+            return `
+                <div class="driver-card" data-id="${booking.id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="booking-badge">${escapeHtml(booking.bookingRef)}</span>
+                        <span style="font-size:0.7rem; background:#eef2ff; border-radius:40px; padding:0.2rem 0.8rem;">🚛 ${escapeHtml(booking.truckNumber || 'Not Assigned')}</span>
+                    </div>
+                    <h2>${escapeHtml(booking.customer)} <span style="font-size:0.85rem; font-weight:400;">📞 ${escapeHtml(booking.phone || '—')}</span></h2>
+                    <div class="info-row">
+                        <span class="info-label">👨‍✈️ Driver</span>
+                        <span class="info-value">${escapeHtml(booking.driver && booking.driver !== "Not Assigned" ? booking.driver : '🔹 Unassigned')}
+                        ${showEmailWarning ? '<span class="warning-badge">⚠️ Missing Email!</span>' : ''}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">📧 Driver Email</span>
+                        <span class="info-value">${escapeHtml(booking.driverEmail || '—')}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">📍 Live Location</span>
+                        <span class="info-value">📍 ${escapeHtml(booking.liveLocation || '—')}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">💧 Water Quantity</span>
+                        <span class="info-value">${Number(booking.waterQuantity).toLocaleString()} Liters</span>
+                    </div>
+                    <div class="quantity-meter">
+                        <div class="meter-fill" style="width: ${fillPercent}%;"></div>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">📅 Status</span>
+                        <span class="info-value"><span style="background:${statusColor}; padding:0.2rem 1rem; border-radius:30px; color:white; font-size:0.75rem;">${escapeHtml(statusBadge)}</span></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap:wrap; gap:8px;">
+                        <select class="status-select" data-id="${booking.id}" style="padding:6px; border-radius:40px; background:#f3f4f6;">
+                            <option value="">Update Status</option>
+                            <option value="Pending" ${booking.status === "Pending" ? "selected" : ""}>Pending</option>
+                            <option value="Waiting Driver Approval" ${booking.status === "Waiting Driver Approval" ? "selected" : ""}>⏳ Waiting Driver Approval</option>
+                            <option value="Approved" ${booking.status === "Approved" ? "selected" : ""}>Approved</option>
+                            <option value="On The Way" ${booking.status === "On The Way" ? "selected" : ""}>On The Way</option>
+                            <option value="Delivered" ${booking.status === "Delivered" ? "selected" : ""}>Delivered</option>
+                        </select>
+                        <button class="action-btn reassign-btn" data-id="${booking.id}">🔄 Assign/Edit</button>
+                        <button class="action-btn delete-btn" data-id="${booking.id}">🗑️ Delete</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = cardsHtml;
+        
+        // Re-attach event listeners
+        document.querySelectorAll('.reassign-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = btn.getAttribute('data-id');
+                openAssignModal(id);
+            });
+        });
+        
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = btn.getAttribute('data-id');
+                const bookingRef = bookings.find(b => b.id === id)?.bookingRef || id;
+                deleteBooking(id, bookingRef);
+            });
+        });
+        
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const newStatus = e.target.value;
+                if(!newStatus) return;
+                const bookingId = select.getAttribute('data-id');
+                updateStatusQuick(bookingId, newStatus);
+            });
+        });
+        
+        updateStats();
+    }
+    
+    // ============================================================
+    // MODAL FUNCTIONS
+    // ============================================================
+    
+    function openAssignModal(bookingId) {
+        const booking = bookings.find(b => b.id === bookingId);
+        if(!booking) return;
+        activeBookingIdForModal = bookingId;
+        modalBookingRefSpan.innerText = `Booking: ${booking.bookingRef} | Customer: ${booking.customer}`;
+        
+        modalDriverSelect.innerHTML = '<option value="">-- Choose Driver --</option>';
+        backendDrivers.forEach(driver => {
+            const option = document.createElement("option");
+            option.value = driver.name;
+            option.setAttribute("data-email", driver.email);
+            const statusIcon = driver.status === 'Available' ? '✅' : (driver.status === 'On Trip' ? '🚛' : '⏸️');
+            option.textContent = `${statusIcon} ${driver.name} - ${driver.truck} (${driver.status || 'Available'})`;
+            if(booking.driver === driver.name) option.selected = true;
+            modalDriverSelect.appendChild(option);
+        });
+        
+        if(driverEmailHidden) driverEmailHidden.value = "";
+        
+        modalLiveLocation.value = booking.liveLocation && booking.liveLocation !== "Not Set" ? booking.liveLocation : "In Transit";
+        modalETA.value = booking.eta && booking.eta !== "—" ? booking.eta : "45 min";
+        
+        attachDriverEmailCapture();
+        
+        if (booking.driver && booking.driver !== "Not Assigned") {
+            const event = new Event('change');
+            modalDriverSelect.dispatchEvent(event);
+        }
+        
+        modalOverlay.classList.add("active");
+    }
+    
+    function closeModal() {
+        modalOverlay.classList.remove("active");
+        activeBookingIdForModal = null;
+        if(driverEmailHidden) driverEmailHidden.value = "";
+    }
+    
+    async function confirmAssignment() {
+        if(!activeBookingIdForModal) return;
+        
+        const selectedDriverName = modalDriverSelect.value;
+        if(!selectedDriverName) {
+            showToast("Please select a driver", true);
+            return;
+        }
+        
+        const selectedDriver = backendDrivers.find(d => d.name === selectedDriverName);
+        if(!selectedDriver) {
+            showToast("Driver not found in database", true);
+            return;
+        }
+        
+        const driverEmail = driverEmailHidden ? driverEmailHidden.value : "";
+        
+        if(!driverEmail || driverEmail === "") {
+            showToast("❌ CRITICAL ERROR: Driver email missing! Cannot assign without email.", true);
+            return;
+        }
+        
+        const liveLocation = modalLiveLocation.value.trim() || "In Transit";
+        const eta = modalETA.value.trim() || "45 min";
+        
+        showToast(`📨 Assigning driver ${selectedDriverName}...`, false);
+        
+        const formData = new URLSearchParams();
+        formData.append("driver_name", selectedDriver.name);
+        formData.append("driver_phone", selectedDriver.phone);
+        formData.append("driver_email", driverEmail);
+        formData.append("truck_number", selectedDriver.truck);
+        formData.append("live_location", liveLocation);
+        formData.append("ETA", eta);
+        formData.append("status", "Waiting Driver Approval");
+        
+        try {
+            const response = await fetch(`/assign-driver/${activeBookingIdForModal}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData.toString()
+            });
+            
+            if(response.ok || response.redirected) {
+                showToast(`✅ Driver ${selectedDriver.name} assigned! Waiting for driver approval.`);
+                await fetchFreshData(true); // Refresh data immediately
+                closeModal();
+            } else {
+                const errorText = await response.text();
+                showToast(`Assignment failed: ${errorText.substring(0, 100)}`, true);
+            }
+        } catch(err) {
+            showToast("Network error while assigning", true);
+        }
+    }
+    
+    function deleteBooking(bookingId, bookingRef) {
+        if(confirm(`❗ Delete booking ${bookingRef} permanently from database?`)) {
+            fetch(`/delete-booking/${bookingId}`, { method: "GET" })
+            .then(async () => {
+                showToast(`🗑️ Booking ${bookingRef} deleted`);
+                await fetchFreshData(true); // Refresh data immediately
+            })
+            .catch(() => showToast("Delete failed", true));
+        }
+    }
+    
+    function updateStatusQuick(bookingId, newStatus) {
+        const formData = new URLSearchParams();
+        formData.append("status", newStatus);
+        fetch(`/update-driver-status/${bookingId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData.toString()
+        })
+        .then(res => res.json())
+        .then(async (data) => {
+            if(data.success) {
+                showToast(`📌 Status changed to ${newStatus}`);
+                await fetchFreshData(true); // Refresh data immediately
+            } else {
+                showToast("Status update failed", true);
+            }
+        })
+        .catch(() => showToast("Error updating status", true));
+    }
+    
+    // ============================================================
+    // SEARCH & FILTER FUNCTIONS
+    // ============================================================
+    
+    function performSearch() {
+        currentSearchTerm = searchInput.value;
+        renderBookings();
+    }
+    
+    function clearSearch() {
+        searchInput.value = '';
+        currentSearchTerm = '';
+        renderBookings();
+        showToast("Search cleared");
+    }
+    
+    function applyQuantityFilter() {
+        currentFilter = quantityFilterSelect.value;
+        renderBookings();
+    }
+    
+    function resetAllFilters() {
+        currentSearchTerm = "";
+        currentFilter = "all";
+        searchInput.value = "";
+        quantityFilterSelect.value = "all";
+        renderBookings();
+        showToast("All filters cleared");
+    }
+    
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
+    
+    async function initialize() {
+        // Show loading state
+        container.innerHTML = '<div class="empty-state"><span class="refresh-spinner" style="border-color: #2c7da0; border-top-color: transparent;"></span> Loading from database...</div>';
+        
+        // Fetch fresh data from MongoDB API
+        const success = await fetchFreshData(true);
+        
+        if (!success) {
+            container.innerHTML = '<div class="empty-state">❌ Failed to load data. Please check your connection and refresh.</div>';
+        }
+    }
+    
+    // Event Listeners
+    searchBtn.addEventListener("click", performSearch);
+    clearSearchBtn.addEventListener("click", clearSearch);
+    quantityFilterSelect.addEventListener("change", applyQuantityFilter);
+    resetFiltersBtn.addEventListener("click", resetAllFilters);
+    modalConfirmBtn.addEventListener("click", confirmAssignment);
+    modalCancelBtn.addEventListener("click", closeModal);
+    modalOverlay.addEventListener("click", (e) => { if(e.target === modalOverlay) closeModal(); });
+    
+    document.addEventListener("keydown", (e) => {
+        if((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+        if(e.key === "Escape" && modalOverlay.classList.contains("active")) closeModal();
+        if(e.key === "F5") {
+            e.preventDefault();
+            fetchFreshData(true);
+        }
+    });
+    
+    // Start everything
+    initialize();
+    startAutoRefresh();
+    addAutoRefreshToggle();
+    
+    // Optional: Refresh when tab becomes visible again
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            fetchFreshData(false);
+        }
+    });
+    
+    console.log("✅ NeoDispatch fully initialized - Auto-refresh every 5 seconds");
+</script>
+</body>
+</html>
