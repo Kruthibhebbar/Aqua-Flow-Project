@@ -1,0 +1,22 @@
+# Never bake secrets into the image — set these as Cloud Run
+# environment variables / secrets instead (see deployment notes)
+.env
+ 
+# Local virtual environments / caches — reinstalled fresh inside the
+# container from requirements.txt, don't need to be copied in
+venv/
+uploads/venv/
+**/__pycache__/
+*.pyc
+ 
+# Git and editor cruft
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+ 
+# Not needed inside the container
+README.md
+static/README.md
+static/requirements.txt
