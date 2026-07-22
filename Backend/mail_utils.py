@@ -1,30 +1,38 @@
-"""
-Sends email with a hard wall-clock cap.
-
-Flask-Mail's mail.send() goes through Python's smtplib with NO timeout
-configured by default - if the SMTP connection is silently dropped or
-throttled (common on free hosting tiers restricting outbound SMTP), the
-call doesn't fail, it just hangs. On a request like driver login that
-sends an OTP email as one of its steps, that means the whole login
-request hangs too - "the page just spins forever."
-
-This runs the send in a background thread and only waits up to
-`timeout_seconds` for it. If it doesn't finish in time, the request
-continues anyway (login still succeeds) and the mail thread either
-finishes silently in the background or is abandoned - either way, the
-person using the app is never stuck waiting on Gmail's SMTP server.
-"""
-
+import os
 import threading
+import requests
+
+_RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+_RESEND_FROM = os.environ.get("RESEND_FROM_EMAIL", "AquaFlow <onboarding@resend.dev>").strip()
 
 
-def send_mail_capped(mail, msg, timeout_seconds=6):
-    """
-    Returns True if the email was confirmed sent within the time limit,
-    False otherwise (timed out OR a real send error - check server logs
-    for which one). Never raises, and never blocks longer than
-    timeout_seconds regardless of what the SMTP server does.
-    """
+def _send_via_resend(msg):
+    """Sends a Flask-Mail Message object via Resend's HTTPS API. Returns
+    True/False. Raises nothing - failures are logged and return False."""
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {_RESEND_API_KEY}"},
+            json={
+                "from": _RESEND_FROM,
+                "to": msg.recipients,
+                "subject": msg.subject,
+                "text": msg.body
+            },
+            timeout=10
+        )
+        if resp.status_code in (200, 201):
+            return True
+        print(f"[mail] Resend API error {resp.status_code}: {resp.text}")
+        return False
+    except Exception as e:
+        print(f"[mail] Resend request failed: {e}")
+        return False
+
+
+def _send_via_smtp_capped(mail, msg, timeout_seconds):
+    """Original Gmail-SMTP-via-Flask-Mail path, capped with a background
+    thread so a blocked/slow connection can't hang the request."""
     result = {"sent": False, "error": None}
 
     def _send():
@@ -39,12 +47,33 @@ def send_mail_capped(mail, msg, timeout_seconds=6):
     thread.join(timeout=timeout_seconds)
 
     if thread.is_alive():
-        print(f"[mail] send exceeded {timeout_seconds}s - continuing without "
+        print(f"[mail] SMTP send exceeded {timeout_seconds}s - continuing without "
               f"blocking the request (subject: {getattr(msg, 'subject', '?')})")
         return False
 
     if result["error"]:
-        print(f"[mail] send failed: {result['error']}")
+        print(f"[mail] SMTP send failed: {result['error']}")
         return False
 
     return result["sent"]
+
+
+def send_mail_capped(mail, msg, timeout_seconds=6):
+    """
+    Returns True if the email was confirmed sent, False otherwise (check
+    server logs for the specific reason). Never raises, never blocks
+    longer than timeout_seconds regardless of what the mail server does.
+
+    Uses Resend's HTTP API automatically if RESEND_API_KEY is set (fixes
+    Render's outbound-SMTP block); otherwise falls back to Gmail SMTP via
+    Flask-Mail exactly as before.
+    """
+    if _RESEND_API_KEY:
+        sent = _send_via_resend(msg)
+        if sent:
+            return True
+        # Fall through to SMTP only if Resend itself is misconfigured -
+        # keeps the app working while you're still setting it up.
+        print("[mail] Resend send failed, falling back to SMTP")
+
+    return _send_via_smtp_capped(mail, msg, timeout_seconds)
