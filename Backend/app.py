@@ -21,6 +21,7 @@ from live_status_tracking import init_live_tracking
 from payment_admin import init_payment_admin, get_bank_details, get_finance_overview
 from razorpay_payments import init_razorpay_payments, razorpay_configured
 from gps_engine import init_gps_engine
+from mail_utils import send_mail_capped
 
 # =====================================================
 # LOAD ENV
@@ -357,7 +358,7 @@ Thank You,
 AquaFlow Team
 """
 
-            mail.send(msg)
+            send_mail_capped(mail, msg, timeout_seconds=6)
 
             return redirect(url_for('verify_otp'))
 
@@ -1035,7 +1036,7 @@ Thank You,
 AquaFlow Team
 """
 
-            mail.send(msg)
+            send_mail_capped(mail, msg, timeout_seconds=6)
 
             return redirect(url_for('reset_password_otp'))
 
@@ -1449,7 +1450,7 @@ Thank You,
 AquaFlow Team
 """
 
-        mail.send(msg)
+        send_mail_capped(mail, msg, timeout_seconds=6)
         notifications_collection.insert_one({
 
     "user_email": user_email,

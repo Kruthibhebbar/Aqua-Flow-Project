@@ -12,6 +12,7 @@ from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from functools import wraps
 from flask_mail import Message
+from mail_utils import send_mail_capped
 import random
 import logging
 from typing import Dict, Any, List, Optional
@@ -1014,7 +1015,7 @@ Please share this OTP with the driver only after your delivery has arrived.
 Thank You,
 AquaFlow Team
 """
-                    _mail.send(msg)
+                    send_mail_capped(_mail, msg, timeout_seconds=6)
                 except Exception as mail_err:
                     logger.error(f"Failed to email delivery OTP to customer: {mail_err}")
                     return jsonify({"success": False, "message": "Could not send OTP to customer email"}), 500

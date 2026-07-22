@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 import bcrypt
+from mail_utils import send_mail_capped
 
 
 def init_driver_auth(
@@ -177,8 +178,8 @@ Do not share this OTP with anyone.
 
 This OTP is valid for 10 minutes.
 """
-                mail.send(msg)
-                print(f"OTP email sent successfully to {email}")
+                sent = send_mail_capped(mail, msg, timeout_seconds=6)
+                print(f"OTP email {'sent' if sent else 'still sending in background / failed'} for {email}")
             except Exception as e:
                 print(f"Email sending failed: {e}")
                 print(traceback.format_exc())
@@ -326,9 +327,11 @@ Do not share this OTP with anyone.
 
 This OTP is valid for 10 minutes.
 """
-            mail.send(msg)
-            print(f"New OTP email sent successfully to {email}")
-            # Redirect with success message parameter
+            sent = send_mail_capped(mail, msg, timeout_seconds=6)
+            print(f"Resent OTP email {'sent' if sent else 'still sending in background / failed'} for {email}")
+            # Redirect with success message parameter regardless - the OTP
+            # is already valid in the session even if the email is slow;
+            # the driver can also use "resend" again if it never arrives.
             return redirect(url_for("verify_driver_otp", message="otp_resent"))
         except Exception as e:
             print(f"Email sending failed: {e}")
