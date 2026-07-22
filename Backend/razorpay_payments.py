@@ -32,10 +32,13 @@ account but also can't auto-verify payment.
 import os
 import hmac
 import hashlib
+import logging
 import requests
 from datetime import datetime
 
 from flask import request, redirect, url_for, session, flash, render_template, jsonify
+
+logger = logging.getLogger(__name__)
 
 _RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders"
 
@@ -65,8 +68,17 @@ def _create_order(amount_rupees, receipt):
         )
         if resp.status_code == 200:
             return resp.json()
+
+        # Order creation failed - log the real reason (bad keys, account
+        # not activated, invalid amount, etc.) so it shows up in the
+        # server logs instead of failing silently for the customer.
+        logger.error(
+            "Razorpay order creation failed: status=%s body=%s",
+            resp.status_code, resp.text
+        )
         return None
-    except requests.RequestException:
+    except requests.RequestException as exc:
+        logger.error("Razorpay order creation raised an exception: %s", exc)
         return None
 
 

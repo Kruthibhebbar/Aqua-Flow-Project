@@ -151,7 +151,7 @@
         </div>
     </div>
 
-    <p class="refresh-note"><i class="fa-solid fa-rotate"></i> This page refreshes automatically every 15 seconds</p>
+    <p class="refresh-note"><i class="fa-solid fa-rotate"></i> Live GPS updates automatically every 5 seconds</p>
 </div>
 
 <script>
@@ -167,16 +167,6 @@ let routeLine = null;
 let destLat = null;
 let destLng = null;
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 if (['Accepted', 'On The Way', 'Arrived'].includes(CURRENT_STATUS)) {
     destLat = (DEST_LAT !== null) ? DEST_LAT : 12.9352;
     destLng = (DEST_LNG !== null) ? DEST_LNG : 77.6245;
@@ -191,37 +181,32 @@ if (['Accepted', 'On The Way', 'Arrived'].includes(CURRENT_STATUS)) {
 }
 
 // Plot the driver's REAL live position (pushed from the driver's own
-// browser via GPS) whenever the tracking API returns one. Until the
+// browser via GPS every 5s) and the REAL road route from OSRM. Until the
 // driver's phone/browser sends a first fix, no driver marker is shown.
-function updateDriverMarker(lat, lng) {
+function updateDriverMarker(lat, lng, routeGeometry) {
     if (!map || lat === null || lat === undefined || lng === null || lng === undefined) return;
 
     if (!driverMarker) {
         driverMarker = L.marker([lat, lng]).addTo(map)
             .bindPopup('<strong>🚛 Your Driver</strong>');
-        routeLine = L.polyline([[lat, lng], [destLat, destLng]], {
-            color: '#2d7aff', weight: 4, dashArray: '8,8', opacity: 0.7
-        }).addTo(map);
-        map.fitBounds([[lat, lng], [destLat, destLng]], { padding: [40, 40] });
     } else {
         driverMarker.setLatLng([lat, lng]);
-        routeLine.setLatLngs([[lat, lng], [destLat, destLng]]);
     }
 
-    const distanceKm = haversineKm(lat, lng, destLat, destLng);
-    const etaMin = Math.max(1, Math.round((distanceKm / 30) * 60));
-    const etaChip = document.getElementById('etaChip');
-    if (etaChip) etaChip.innerHTML = `<i class="fa-regular fa-hourglass-half"></i> ETA: ${etaMin} min (${distanceKm.toFixed(1)} km)`;
+    if (routeGeometry && routeGeometry.length > 1) {
+        if (routeLine) map.removeLayer(routeLine);
+        routeLine = L.polyline(routeGeometry, { color: '#2d7aff', weight: 5, opacity: 0.75 }).addTo(map);
+        map.fitBounds(routeGeometry, { padding: [40, 40] });
+    } else if (!routeLine) {
+        map.fitBounds([[lat, lng], [destLat, destLng]], { padding: [40, 40] });
+    }
 }
 
 async function refreshTracking() {
     try {
-        const res = await fetch(`/tracking-api/${BOOKING_ID}`);
+        const res = await fetch(`/api/gps/track/${BOOKING_ID}`);
         const data = await res.json();
         if (!data.success) return;
-
-        const liveLocEl = document.getElementById('liveLocationText');
-        if (liveLocEl && data.live_location) liveLocEl.textContent = data.live_location;
 
         const truckEl = document.getElementById('truckNumberText');
         if (truckEl && data.truck_number) truckEl.textContent = data.truck_number;
@@ -232,7 +217,27 @@ async function refreshTracking() {
         const phoneEl = document.getElementById('driverPhoneText');
         if (phoneEl && data.driver_phone) phoneEl.innerHTML = `<i class="fa-regular fa-phone"></i> ${data.driver_phone}`;
 
-        updateDriverMarker(data.driver_lat, data.driver_lng);
+        const liveLocEl = document.getElementById('liveLocationText');
+        const etaChip = document.getElementById('etaChip');
+
+        if (data.driver_lat != null && data.driver_lng != null) {
+            updateDriverMarker(data.driver_lat, data.driver_lng, data.route_geometry);
+
+            if (data.driver_online === false) {
+                if (liveLocEl) liveLocEl.textContent = 'Driver Offline — GPS signal lost';
+                if (etaChip) etaChip.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Driver Offline';
+            } else if (data.arrived) {
+                if (liveLocEl) liveLocEl.textContent = 'Driver Arrived';
+                if (etaChip) etaChip.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> Arrived';
+            } else if (data.eta_min != null) {
+                if (liveLocEl) liveLocEl.textContent = data.moving_status === 'Stopped' ? 'Stopped en route' : 'En route — live GPS';
+                if (etaChip) etaChip.innerHTML = `<i class="fa-regular fa-hourglass-half"></i> ETA: ${data.eta_min} min (${data.distance_remaining_km} km)`;
+            }
+
+            if (data.route_deviated) {
+                showRouteDeviationBanner();
+            }
+        }
 
         if (data.status && data.status !== CURRENT_STATUS) {
             window.location.reload();
@@ -241,8 +246,18 @@ async function refreshTracking() {
         console.log('Tracking refresh failed', e);
     }
 }
+
+function showRouteDeviationBanner() {
+    if (document.getElementById('deviationBanner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'deviationBanner';
+    banner.className = 'alert alert-warning mt-2';
+    banner.innerHTML = '<i class="fa-solid fa-route"></i> Your driver appears to have taken a different route than planned.';
+    document.querySelector('.wrap').prepend(banner);
+}
+
 refreshTracking();
-setInterval(refreshTracking, 8000);
+setInterval(refreshTracking, 5000);
 </script>
 
 </body>

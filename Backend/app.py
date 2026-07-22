@@ -20,6 +20,7 @@ from driver_notifications import init_driver_notifications
 from live_status_tracking import init_live_tracking
 from payment_admin import init_payment_admin, get_bank_details, get_finance_overview
 from razorpay_payments import init_razorpay_payments, razorpay_configured
+from gps_engine import init_gps_engine
 
 # =====================================================
 # LOAD ENV
@@ -103,6 +104,12 @@ earnings_collection = db["earnings"]
 settings_collection = db["settings"]
 transactions_collection = db["transactions"]
 
+# Real-time GPS engine collections:
+# driver_locations = latest known fix per driver (fast reads)
+# tracking_history  = every GPS point ever received (replay / analytics / ML)
+driver_locations_collection = db["driver_locations"]
+tracking_history_collection = db["tracking_history"]
+
 init_driver_assignment(
     app,
     bookings_collection,
@@ -176,6 +183,14 @@ init_razorpay_payments(
     app,
     bookings_collection,
     settings_collection
+)
+init_gps_engine(
+    app,
+    drivers_collection,
+    bookings_collection,
+    driver_locations_collection,
+    tracking_history_collection,
+    notifications_collection
 )
 
 # ================= HOME =================
@@ -709,6 +724,16 @@ def booking():
 
         if not delivery_date:
             errors.append("Please select a delivery date")
+        else:
+            try:
+                parsed_delivery_date = datetime.strptime(delivery_date, "%Y-%m-%d").date()
+                today_date = datetime.now().date()
+                if parsed_delivery_date < today_date:
+                    errors.append("Delivery date cannot be in the past")
+                elif parsed_delivery_date > today_date + timedelta(days=15):
+                    errors.append("Delivery date can be at most 15 days from today")
+            except ValueError:
+                errors.append("Invalid delivery date")
 
         if not delivery_time:
             errors.append("Please select a preferred delivery time")
@@ -778,6 +803,12 @@ def booking():
             "delivery_date": delivery_date,
 
             "delivery_time": delivery_time,
+
+            # Bookings for today go straight to the main admin screen.
+            # Future-dated bookings are held back and flagged unseen
+            # until the admin checks the future-orders dropdown for
+            # that date (see booking_management.py).
+            "admin_seen_future": delivery_date == datetime.now().strftime("%Y-%m-%d"),
 
             "user_email": session['user_email'],
 

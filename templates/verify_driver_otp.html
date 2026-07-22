@@ -274,7 +274,16 @@
         <div class="login-heading">Secure Driver Login</div>
         <div class="otp-sub">Enter the OTP sent to your registered driver email</div>
 
+        <div id="locationBanner" style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:#EAF4F5; border:1px solid #CFE7E9; margin-bottom:16px; font-size:12.5px; color:#0E6672;">
+            <i class="fa-solid fa-location-dot" id="locationBannerIcon"></i>
+            <span id="locationBannerText" style="flex:1;">Getting your precise location for accurate live tracking…</span>
+            <button type="button" id="locationRetryBtn" style="display:none; border:none; background:#0E6672; color:#fff; font-size:11px; font-weight:700; padding:5px 10px; border-radius:8px; cursor:pointer;">Retry</button>
+        </div>
+
         <form method="POST" action="" id="driverOtpForm">
+            <input type="hidden" name="driver_lat" id="hiddenDriverLat" value="">
+            <input type="hidden" name="driver_lng" id="hiddenDriverLng" value="">
+            <input type="hidden" name="driver_location_accuracy" id="hiddenDriverAccuracy" value="">
             <div class="otp-input-group">
                 <i class="fa-regular fa-keyboard"></i>
                 <input 
@@ -491,6 +500,70 @@
             if (timerInterval) clearInterval(timerInterval);
         });
     })();
+</script>
+
+<script>
+(function() {
+    const bannerText = document.getElementById('locationBannerText');
+    const bannerIcon = document.getElementById('locationBannerIcon');
+    const retryBtn = document.getElementById('locationRetryBtn');
+    const latField = document.getElementById('hiddenDriverLat');
+    const lngField = document.getElementById('hiddenDriverLng');
+    const accField = document.getElementById('hiddenDriverAccuracy');
+
+    function setBanner(text, mode) {
+        if (!bannerText) return;
+        bannerText.textContent = text;
+        const colors = {
+            info: { bg: '#EAF4F5', border: '#CFE7E9', fg: '#0E6672', icon: 'fa-location-dot' },
+            good: { bg: '#E1F5EA', border: '#BFE6CE', fg: '#157A50', icon: 'fa-circle-check' },
+            warn: { bg: '#FBF0DC', border: '#F0DDAF', fg: '#A5690C', icon: 'fa-triangle-exclamation' }
+        };
+        const c = colors[mode] || colors.info;
+        const banner = document.getElementById('locationBanner');
+        if (banner) { banner.style.background = c.bg; banner.style.borderColor = c.border; banner.style.color = c.fg; }
+        if (bannerIcon) bannerIcon.className = 'fa-solid ' + c.icon;
+    }
+
+    // Requests a REAL, fresh GPS fix (maximumAge:0 forces the browser to
+    // re-measure rather than reuse a stale/coarse cached position - this is
+    // the main cause of a driver's live map starting from the wrong place).
+    function requestPreciseLocation() {
+        if (retryBtn) retryBtn.style.display = 'none';
+        setBanner('Getting your precise location for accurate live tracking…', 'info');
+
+        if (!navigator.geolocation) {
+            setBanner('Your browser does not support location. Live tracking accuracy will be limited.', 'warn');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const accuracy = pos.coords.accuracy;
+                latField.value = pos.coords.latitude;
+                lngField.value = pos.coords.longitude;
+                accField.value = accuracy;
+
+                if (accuracy <= 100) {
+                    setBanner(`Location confirmed (±${Math.round(accuracy)}m) — live tracking will be accurate.`, 'good');
+                } else {
+                    setBanner(`Location found but only approximate (±${Math.round(accuracy)}m). Move to open sky or enable GPS for a precise fix.`, 'warn');
+                    if (retryBtn) retryBtn.style.display = 'inline-block';
+                }
+            },
+            function(err) {
+                setBanner('Location access denied or unavailable — live tracking will show approximate positions until enabled.', 'warn');
+                if (retryBtn) retryBtn.style.display = 'inline-block';
+                console.warn('OTP-stage geolocation error:', err.message);
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+    }
+
+    if (retryBtn) retryBtn.addEventListener('click', requestPreciseLocation);
+
+    requestPreciseLocation();
+})();
 </script>
 
 </body>

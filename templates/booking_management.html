@@ -1,752 +1,1005 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>AquaFlow | Crystal Clear Booking Management</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#EEF3F4">
+<title>AquaFlow Console | Booking Operations</title>
 
-    <!-- Chart.js (for potential future charts) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- SheetJS for Excel Export -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- html2pdf for PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Font Awesome 6 (sharp & solid) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Font: Inter + Outfit for elegance -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<style>
+    :root {
+        --ink: #0A1A22;
+        --ink-2: #123039;
+        --ink-soft: #55707A;
+        --ink-faint: #93A8AF;
+        --teal-900: #073239;
+        --teal-700: #0E6672;
+        --teal-600: #0E7C86;
+        --teal-500: #17A6B4;
+        --cyan-glow: #26D0C9;
+        --teal-050: #EAF4F5;
+        --teal-100: #DCEEEF;
 
-        body {
-            background: linear-gradient(145deg, #f4f9fe 0%, #eef3fc 100%);
-            font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
-            padding: 32px 40px;
-            min-height: 100vh;
-        }
+        --amber-600: #A5690C;
+        --amber-100: #FBF0DC;
+        --green-600: #157A50;
+        --green-100: #E1F5EA;
+        --red-600: #B23B30;
+        --red-100: #FBEAE8;
+        --blue-600: #2C5F9E;
+        --blue-100: #E8EFFA;
+        --violet-600: #5B4AA8;
+        --violet-100: #ECE9F9;
 
-        /* MAIN CONTAINER - full width, glassmorphism effect */
-        .booking-hub {
-            max-width: 1600px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(2px);
-            border-radius: 48px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 145, 77, 0.1);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
+        --bg: #EEF3F4;
+        --surface: #FFFFFF;
+        --border: #DCE6E8;
+        --border-soft: #E7EEEF;
 
-        /* header area with wave inspiration */
-        .hero-header {
-            padding: 32px 40px 20px 40px;
-            background: white;
-            border-bottom: 1px solid #ffefe2;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
+        --r-lg: 16px;
+        --r-md: 10px;
+        --r-sm: 7px;
+        --r-pill: 999px;
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
+        --shadow-xs: 0 1px 2px rgba(10,26,34,.05);
+        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
+        --shadow-md: 0 16px 40px -18px rgba(10,26,34,.28);
+        --shadow-lg: 0 30px 70px -20px rgba(10,26,34,.35);
+    }
 
-        .brand-icon {
-            background: linear-gradient(135deg, #ff914d, #ff6a2c);
-            width: 52px;
-            height: 52px;
-            border-radius: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 12px 18px -8px rgba(255, 105, 40, 0.3);
-        }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
 
-        .brand-icon i {
-            font-size: 28px;
-            color: white;
-        }
+    body {
+        background: var(--bg);
+        font-family: 'Inter', system-ui, sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+    }
 
-        .brand h1 {
-            font-size: 28px;
-            font-weight: 800;
-            background: linear-gradient(120deg, #1e2f3f, #2c4b62);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -0.3px;
-        }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    a { color: inherit; }
 
-        .brand span {
-            font-size: 14px;
-            font-weight: 500;
-            color: #ff914d;
-            background: #fff2ea;
-            padding: 4px 12px;
-            border-radius: 30px;
-            margin-left: 8px;
-        }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #C3D3D6; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--teal-600); }
 
-        .live-badge {
-            background: #ecfdf5;
-            padding: 10px 18px;
-            border-radius: 60px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #0b5e42;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border: 1px solid #a7f3d0;
-        }
+    /* ============================================================
+       APP SHELL — full-bleed, not a floating boxed card
+    ============================================================ */
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
-        .pulse {
-            width: 10px;
-            height: 10px;
-            background: #10b981;
-            border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
-            animation: pulse 1.8s infinite;
-        }
+    /* ===== TOP BAR ===== */
+    .topbar {
+        background: var(--ink);
+        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 72px;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 30;
+        border-top: 4px solid var(--cyan-glow);
+    }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
-            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(155deg, var(--teal-500), var(--teal-700));
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
+    }
+    .brand-mark i { font-size: 17px; color: #fff; }
+    .brand-text h1 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px; font-weight: 700; color: #fff;
+        letter-spacing: -.1px; display: flex; align-items: center; gap: 9px; line-height: 1.1;
+    }
+    .brand-text .tag {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 9.5px; font-weight: 600; color: var(--cyan-glow);
+        background: rgba(38,208,201,.12);
+        border: 1px solid rgba(38,208,201,.25);
+        padding: 2.5px 8px; border-radius: var(--r-pill);
+        letter-spacing: .6px; text-transform: uppercase;
+    }
+    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; font-weight: 400; }
 
-        /* stats premium cards */
-        .stats-pavilion {
-            padding: 20px 40px 10px 40px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-        }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
 
-        .stat-card-premium {
-            background: #ffffff;
-            border-radius: 32px;
-            padding: 20px 24px;
-            transition: all 0.25s;
-            border: 1px solid #f0e6df;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.02);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    .sync-chip {
+        background: rgba(38,208,201,.10);
+        border: 1px solid rgba(38,208,201,.22);
+        padding: 7px 14px 7px 11px;
+        border-radius: var(--r-pill);
+        display: flex; align-items: center; gap: 8px;
+        color: #7FE8DF; font-weight: 600; font-size: 11.5px;
+    }
+    .pulse-dot {
+        width: 6px; height: 6px; background: var(--cyan-glow); border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(38,208,201,.6);
+        animation: pulseDot 1.8s infinite;
+    }
+    @keyframes pulseDot {
+        0% { box-shadow: 0 0 0 0 rgba(38,208,201,.55); }
+        70% { box-shadow: 0 0 0 7px rgba(38,208,201,0); }
+        100% { box-shadow: 0 0 0 0 rgba(38,208,201,0); }
+    }
 
-        .stat-card-premium:hover {
-            transform: translateY(-4px);
-            border-color: #ffd6c2;
-            box-shadow: 0 18px 30px -12px rgba(255, 100, 30, 0.12);
-        }
+    .icon-btn {
+        position: relative;
+        width: 36px; height: 36px; border-radius: var(--r-sm);
+        background: rgba(255,255,255,.05);
+        border: 1px solid rgba(255,255,255,.09);
+        color: #B9CBD1; display: flex; align-items: center; justify-content: center;
+        font-size: 13.5px; cursor: pointer; transition: background .15s, color .15s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .notif-badge {
+        position: absolute; top: -5px; right: -5px;
+        min-width: 15px; height: 15px; padding: 0 3px;
+        background: #E14C3C; border: 2px solid var(--ink);
+        border-radius: 20px;
+        font-size: 8.5px; font-weight: 700; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'IBM Plex Mono', monospace;
+    }
 
-        .stat-left h4 {
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #7e6b5e;
-            margin-bottom: 8px;
-        }
+    .admin-chip {
+        display: flex; align-items: center; gap: 9px;
+        padding: 5px 12px 5px 5px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    }
+    .admin-avatar {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(155deg,#3A5A63,#1B343C);
+        display: flex; align-items: center; justify-content: center;
+        color: #DCEBEE; font-size: 10.5px; font-weight: 700; font-family:'Space Grotesk',sans-serif;
+    }
+    .admin-chip span { font-size: 11.5px; font-weight: 600; color: #D6E4E7; }
 
-        .stat-left .value {
-            font-size: 42px;
-            font-weight: 800;
-            color: #1e293b;
-            line-height: 1.1;
-        }
+    /* ===== FLOW LINE — signature telemetry strip ===== */
+    .flow-line {
+        height: 3px; width: 100%; flex-shrink: 0; position: relative; overflow: hidden;
+        background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900));
+        background-size: 200% 100%;
+        animation: flowMove 5s linear infinite;
+    }
+    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
 
-        .stat-icon {
-            width: 56px;
-            height: 56px;
-            background: #fff3ec;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ff914d;
-            font-size: 28px;
-        }
+    /* ===== INSTRUMENT STRIP (compact KPI row) ===== */
+    .instrument-strip {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+        display: flex;
+        align-items: stretch;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+    .instrument {
+        display: flex; align-items: center; gap: 11px;
+        padding: 13px 26px 13px 0;
+        margin-right: 26px;
+        border-right: 1px solid var(--border-soft);
+        flex-shrink: 0;
+    }
+    .instrument:last-of-type { border-right: none; margin-right: 0; }
+    .instrument-icon {
+        width: 30px; height: 30px; border-radius: var(--r-sm);
+        display: flex; align-items: center; justify-content: center; font-size: 12.5px; flex-shrink: 0;
+    }
+    .instrument-icon.total { background: var(--blue-100); color: var(--blue-600); }
+    .instrument-icon.pending { background: var(--amber-100); color: var(--amber-600); }
+    .instrument-icon.delivered { background: var(--green-100); color: var(--green-600); }
+    .instrument-icon.active { background: var(--violet-100); color: var(--violet-600); }
+    .instrument-icon.cancelled { background: var(--red-100); color: var(--red-600); }
+    .instrument-copy h4 {
+        font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .55px;
+        color: var(--ink-faint); margin-bottom: 3px;
+    }
+    .instrument-copy .val {
+        font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 600; color: var(--ink); line-height: 1;
+    }
+    .instrument-spacer { flex: 1; }
+    .instrument-time {
+        display: flex; align-items: center; gap: 7px;
+        font-size: 11px; color: var(--ink-faint); padding: 13px 0;
+    }
+    .instrument-time i { color: var(--teal-600); }
 
-        /* filter zone modern */
-        .filter-section {
-            padding: 12px 40px 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            border-bottom: 1px solid #f3ede8;
-        }
+    /* ===== CONTROL BAR (filters + search + export) ===== */
+    .control-bar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 13px 32px;
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px;
+        position: sticky; top: 0; z-index: 20;
+    }
+    .filter-group { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
 
-        .filter-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+    .seg-filters {
+        display: flex; background: var(--bg); border: 1px solid var(--border);
+        border-radius: var(--r-pill); padding: 3px; gap: 2px;
+    }
+    .pill-filter {
+        background: transparent; border: none;
+        padding: 7px 15px; border-radius: var(--r-pill);
+        font-weight: 600; font-size: 12px; color: var(--ink-soft);
+        cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif;
+        white-space: nowrap;
+    }
+    .pill-filter i { margin-right: 6px; font-size: 10.5px; }
+    .pill-filter.active { background: var(--ink); color: #fff; box-shadow: var(--shadow-xs); }
+    .pill-filter:hover:not(.active) { color: var(--teal-700); }
 
-        .pill-filter {
-            background: #f8fafc;
-            border: 1px solid #e9eef3;
-            padding: 10px 24px;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #334155;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+    .search-box {
+        display: flex; align-items: center; gap: 8px;
+        background: var(--bg); border: 1px solid var(--border);
+        border-radius: var(--r-pill); padding: 8px 15px 8px 14px;
+    }
+    .search-box i { color: var(--ink-faint); font-size: 12px; }
+    .search-box input {
+        border: none; background: transparent; outline: none;
+        font-family: 'Inter', sans-serif; font-size: 12.5px; width: 190px; color: var(--ink);
+    }
+    .search-box input::placeholder { color: var(--ink-faint); }
 
-        .pill-filter i {
-            margin-right: 8px;
-            font-size: 0.8rem;
-        }
+    .upcoming-wrap { position: relative; display: inline-flex; align-items: center; }
+    .upcoming-wrap select.pill-filter {
+        appearance: none; background: var(--teal-050);
+        border: 1px solid var(--teal-100); color: var(--teal-900);
+        padding: 7px 30px 7px 15px;
+    }
+    .upcoming-wrap::after {
+        content: '\f0d7'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+        position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+        font-size: 10px; color: var(--teal-700); pointer-events: none;
+    }
+    .notif-dot-toolbar {
+        position: absolute; top: -2px; right: -2px;
+        width: 8px; height: 8px; background: #E14C3C;
+        border-radius: 50%; border: 2px solid var(--surface);
+    }
+    .back-today {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        padding: 7px 15px; border-radius: var(--r-pill); border: 1px solid var(--border);
+        font-size: 12px; font-weight: 600; color: var(--ink-soft); background: var(--bg);
+    }
 
-        .pill-filter.active {
-            background: #ff914d;
-            border-color: #ff914d;
-            color: white;
-            box-shadow: 0 8px 18px rgba(255, 145, 77, 0.25);
-        }
+    .export-actions { display: flex; gap: 8px; }
+    .btn-export {
+        border: 1.5px solid; border-radius: var(--r-pill);
+        padding: 8px 16px 8px 12px;
+        font-weight: 700; font-size: 12px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        transition: all .15s; font-family: 'Inter', sans-serif;
+        background: var(--surface);
+    }
+    .btn-export .chip-ic {
+        width: 20px; height: 20px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center; font-size: 10.5px; color: #fff;
+    }
+    .btn-export.excel { border-color: #BFE3CE; color: #157A50; }
+    .btn-export.excel .chip-ic { background: #1D9A5C; }
+    .btn-export.excel:hover { background: var(--green-100); border-color: #157A50; }
+    .btn-export.pdf { border-color: #F2C4BC; color: #B23B30; }
+    .btn-export.pdf .chip-ic { background: #C0392B; }
+    .btn-export.pdf:hover { background: var(--red-100); border-color: #B23B30; }
+    .btn-export:active { transform: scale(.97); }
 
-        .export-actions {
-            display: flex;
-            gap: 14px;
-        }
+    /* ============================================================
+       MAIN CONTENT
+    ============================================================ */
+    .main-content { flex: 1; padding: 22px 32px 48px; }
 
-        .btn-export {
-            background: #1f2f3e;
-            border: none;
-            padding: 10px 26px;
-            border-radius: 40px;
-            color: white;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            transition: 0.2s;
-        }
+    .section-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+    }
+    .section-head h2 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 700; color: var(--ink);
+        display: flex; align-items: center; gap: 9px;
+    }
+    .section-head h2 i { color: var(--teal-600); font-size: 15px; }
+    .section-head .count-chip {
+        background: var(--teal-050); border: 1px solid var(--teal-100);
+        border-radius: var(--r-pill); padding: 3px 12px; font-size: 11.5px; font-weight: 700;
+        color: var(--teal-700); font-family: 'IBM Plex Mono', monospace;
+    }
+    .legend { display: flex; align-items: center; gap: 14px; font-size: 11px; color: var(--ink-faint); }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { font-size: 7px; }
 
-        .btn-export:hover {
-            background: #ff7b2c;
-            transform: scale(0.98);
-        }
+    /* ===== DISPATCH LEDGER TABLE ===== */
+    .ledger-wrap {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    table.ledger { width: 100%; border-collapse: collapse; }
+    .ledger thead th {
+        text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .6px; color: var(--ink-faint);
+        background: #FBFDFD; padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    .ledger thead th:first-child { padding-left: 20px; }
+    .ledger tbody tr {
+        border-bottom: 1px solid var(--border-soft);
+        transition: background .12s;
+    }
+    .ledger tbody tr:last-child { border-bottom: none; }
+    .ledger tbody tr:hover { background: #FAFCFC; }
+    .ledger tbody td { padding: 14px 16px; vertical-align: middle; font-size: 13px; }
+    .ledger tbody td:first-child { padding-left: 20px; }
 
-        /* bookings container — clean cards with subtle serial number */
-        .bookings-wrapper {
-            padding: 30px 40px 48px 40px;
-        }
+    .rownum {
+        font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
+        color: var(--ink-faint); width: 30px;
+    }
+    .status-rail-cell { width: 4px; padding: 0 !important; }
+    .status-rail { width: 4px; height: 100%; min-height: 44px; border-radius: 3px; }
+    .status-rail.Pending { background: var(--amber-600); }
+    .status-rail.Approved { background: var(--blue-600); }
+    .status-rail.Delivered { background: var(--green-600); }
+    .status-rail.Cancelled { background: var(--red-600); }
 
-        .section-title {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
-            margin-bottom: 28px;
-        }
+    .cell-primary { font-weight: 600; color: var(--ink); font-size: 13.3px; }
+    .cell-secondary { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+    .cell-address { max-width: 240px; }
+    .cell-address .cell-primary { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .qty-value { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 13.5px; color: var(--ink); }
 
-        .section-title h2 {
-            font-size: 26px;
-            font-weight: 700;
-            color: #1b2b36;
-        }
+    .booked-time { display: flex; flex-direction: column; gap: 2px; }
+    .booked-time .rel { font-size: 12px; font-weight: 600; color: var(--ink); }
+    .booked-time .abs { font-size: 10.5px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
 
-        .section-title span {
-            background: #eef2ff;
-            border-radius: 30px;
-            padding: 4px 14px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #ff914d;
-        }
+    .pay-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 3px 10px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 10.5px;
+    }
+    .pay-status-line { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
 
-        .booking-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+    .status-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 12px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 11px; letter-spacing: .2px;
+    }
+    .status-pill i { font-size: 7px; }
 
-        /* CARD redesign: subtle serial number column - reduced width & cleaner */
-        .booking-card-luxury {
-            background: white;
-            border-radius: 28px;
-            transition: all 0.25s;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.02);
-            border: 1px solid #edefe9;
-            overflow: hidden;
-            display: flex;
-            flex-wrap: wrap;
-            position: relative;
-        }
+    .actions-cell { text-align: right; white-space: nowrap; }
+    .action-stack { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
-        .card-accent {
-            width: 8px;
-            background: linear-gradient(to bottom, #ffaa77, #ff6e2c);
-        }
+    .action-btn, .btn-assign-driver {
+        border: none; padding: 7px 14px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 11px; cursor: pointer;
+        transition: filter .15s, transform .1s, opacity .15s;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        font-family: 'Inter', sans-serif; white-space: nowrap;
+    }
+    .action-btn:active, .btn-assign-driver:active { transform: scale(0.96); }
+    .action-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .btn-approve { background: var(--green-100); color: var(--green-600); }
+    .btn-approve:hover:not(:disabled) { background: #CFEEDD; }
+    .btn-cancel { background: var(--red-100); color: var(--red-600); }
+    .btn-cancel:hover:not(:disabled) { background: #F7D9D5; }
+    .btn-assign-driver { background: var(--blue-600); color: white; }
+    .btn-assign-driver:hover { background: #234B7D; }
+    .btn-details { background: var(--violet-100); color: var(--violet-600); }
+    .btn-details:hover { background: #DFD9F3; }
+    .btn-confirm-pay { background: var(--amber-100); color: var(--amber-600); }
+    .assign-link { text-decoration: none; }
+    .btn-locked {
+        background: #F1F3F4; color: var(--ink-faint); cursor: default;
+    }
+    .btn-verified { background: var(--green-100); color: var(--green-600); cursor: default; }
 
-        /* SL NO column - softer, lower width, no extra text */
-        .slno-column {
-            background: transparent;
-            min-width: 58px;
-            width: 58px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 18px;
-            color: #ff8c54;
-            border-right: 1px solid #f0e2d8;
-            letter-spacing: 0;
-            background: #fffbf8;
-        }
+    .spin-ic { display: inline-block; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        .card-body {
-            flex: 1;
-            padding: 20px 26px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 18px;
-        }
+    .empty-ledger { text-align: center; padding: 70px 20px; color: var(--ink-faint); }
+    .empty-ledger i { font-size: 40px; opacity: .35; color: var(--teal-600); }
+    .empty-ledger h3 { margin-top: 16px; font-family: 'Space Grotesk', sans-serif; color: var(--ink-soft); font-size: 15px; }
+    .empty-ledger p { margin-top: 4px; font-size: 12.5px; }
 
-        .info-columns {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 24px;
-            row-gap: 14px;
-            flex: 3;
-        }
+    /* ===== FLASH TOASTS ===== */
+    .flash-toast {
+        display: flex; align-items: flex-start; gap: 10px;
+        border-radius: var(--r-md); padding: 11px 16px; font-size: 13px; margin-bottom: 10px;
+        border: 1px solid; box-shadow: var(--shadow-xs);
+    }
 
-        .info-item {
-            min-width: 170px;
-        }
+    /* ============================================================
+       DETAIL MODAL
+    ============================================================ */
+    .glass-modal {
+        display: none; position: fixed; inset: 0;
+        background: rgba(10,26,34,0.6); backdrop-filter: blur(6px);
+        justify-content: center; align-items: center; z-index: 3000;
+    }
+    .modal-card {
+        background: var(--surface); width: 500px; max-width: 90%;
+        border-radius: var(--r-lg); padding: 26px;
+        box-shadow: var(--shadow-lg);
+        animation: fadeUp .2s ease; position: relative;
+    }
+    @keyframes fadeUp { from { opacity:0; transform: scale(.97) translateY(6px); } to { opacity:1; transform: scale(1) translateY(0); } }
+    .modal-close {
+        position: absolute; right: 18px; top: 16px; font-size: 20px; cursor: pointer;
+        color: var(--ink-faint); width: 30px; height: 30px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; transition: background .15s;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--ink); }
+    .detail-row {
+        display: flex; align-items: flex-start; gap: 12px; padding: 10px 0;
+        border-bottom: 1px dashed var(--border-soft); font-size: 13.5px;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row i { width: 15px; color: var(--teal-600); margin-top: 2px; font-size: 12.5px; }
+    .detail-row .d-label { color: var(--ink-soft); font-weight: 600; min-width: 96px; flex-shrink: 0; }
+    .detail-row .d-value { color: var(--ink); font-weight: 600; }
 
-        .info-label {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: #a18f7e;
-            letter-spacing: 0.4px;
-            margin-bottom: 5px;
-        }
+    /* ============================================================
+       ACTION-RESULT OVERLAY (success / processing confirmations)
+    ============================================================ */
+    .result-overlay {
+        display: none; position: fixed; inset: 0; z-index: 4000;
+        background: rgba(10,26,34,0.62); backdrop-filter: blur(6px);
+        align-items: center; justify-content: center;
+    }
+    .result-card {
+        background: var(--surface); width: 380px; max-width: 88%;
+        border-radius: var(--r-lg); padding: 34px 30px 28px;
+        text-align: center; box-shadow: var(--shadow-lg);
+        animation: fadeUp .25s ease;
+    }
+    .result-icon-ring {
+        width: 68px; height: 68px; border-radius: 50%; margin: 0 auto 18px;
+        display: flex; align-items: center; justify-content: center; font-size: 27px;
+    }
+    .result-icon-ring.success { background: var(--green-100); color: var(--green-600); }
+    .result-icon-ring.danger { background: var(--red-100); color: var(--red-600); }
+    .result-icon-ring.processing { background: var(--teal-050); color: var(--teal-600); }
+    .result-icon-ring.processing i { animation: spin .8s linear infinite; }
+    .result-card h3 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700;
+        color: var(--ink); margin-bottom: 6px;
+    }
+    .result-card p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+    .result-card .result-meta {
+        margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border-soft);
+        font-size: 11.5px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace;
+    }
+    .result-card .result-close-btn {
+        margin-top: 20px; border: none; background: var(--ink); color: #fff;
+        padding: 9px 24px; border-radius: var(--r-pill); font-weight: 700; font-size: 12.5px;
+        cursor: pointer; font-family: 'Inter', sans-serif;
+    }
 
-        .info-value {
-            font-weight: 700;
-            font-size: 14.5px;
-            color: #1e2a3a;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+    /* Checkmark draw animation */
+    .check-draw { width: 30px; height: 30px; }
+    .check-draw circle { stroke-dasharray: 76; stroke-dashoffset: 76; animation: circleDraw .5s ease forwards; }
+    .check-draw path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: checkDraw .35s .45s ease forwards; }
+    @keyframes circleDraw { to { stroke-dashoffset: 0; } }
+    @keyframes checkDraw { to { stroke-dashoffset: 0; } }
 
-        .badge-new {
-            padding: 4px 14px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 11px;
-            background: #fef4e8;
-            color: #b45309;
-        }
+    /* ============================================================
+       CONFIRM MODAL (replaces window.confirm)
+    ============================================================ */
+    .confirm-card { width: 400px; }
+    .confirm-card .result-card-actions {
+        display: flex; gap: 10px; margin-top: 22px; justify-content: center;
+    }
+    .confirm-card button {
+        border: none; padding: 9px 20px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif;
+        transition: filter .15s;
+    }
+    .confirm-card button:hover { filter: brightness(0.95); }
+    .confirm-btn-cancel { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--border) !important; }
+    .confirm-btn-danger { background: var(--red-600); color: #fff; }
+    .confirm-btn-primary { background: var(--teal-700); color: #fff; }
 
-        .action-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-width: 200px;
-        }
-
-        .action-btn {
-            border: none;
-            padding: 8px 18px;
-            border-radius: 34px;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            width: 100%;
-        }
-
-        .btn-approve {
-            background: #10b981;
-            color: white;
-        }
-        .btn-cancel {
-            background: #f97316;
-            color: white;
-        }
-        /* Assign Driver button styling - matches other action buttons */
-        .btn-assign-driver {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 34px;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            width: 100%;
-        }
-        .btn-assign-driver:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.05);
-            background: #2563eb;
-        }
-        /* Remove default link underline for driver assignment */
-        .assign-link {
-            text-decoration: none;
-            width: 100%;
-            display: block;
-        }
-        .btn-details {
-            background: #8b5cf6;
-            color: white;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.05);
-        }
-
-        /* modal dream */
-        .glass-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(12px);
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-
-        .modal-card {
-            background: white;
-            width: 540px;
-            max-width: 90%;
-            border-radius: 48px;
-            padding: 32px;
-            box-shadow: 0 40px 60px rgba(0, 0, 0, 0.25);
-            position: relative;
-            animation: fadeUp 0.25s ease;
-        }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: scale(0.96); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .modal-close {
-            position: absolute;
-            right: 26px;
-            top: 24px;
-            font-size: 28px;
-            cursor: pointer;
-            color: #9ca3af;
-        }
-
-        .empty-art {
-            text-align: center;
-            padding: 60px 20px;
-            background: #fefcf9;
-            border-radius: 48px;
-            color: #c0aa95;
-        }
-
-        @media (max-width: 780px) {
-            body { padding: 20px; }
-            .hero-header { padding: 22px 24px; }
-            .stats-pavilion, .filter-section, .bookings-wrapper { padding-left: 24px; padding-right: 24px; }
-            .info-columns { flex-direction: column; gap: 12px; }
-            .card-body { flex-direction: column; align-items: stretch; }
-            .slno-column { min-width: 48px; width: 48px; font-size: 16px; }
-            .action-stack { min-width: 100%; }
-        }
-    </style>
+    @media (max-width: 980px) {
+        .ledger thead { display: none; }
+        table.ledger, .ledger tbody, .ledger tbody tr, .ledger tbody td { display: block; width: 100%; }
+        .ledger tbody tr { padding: 14px 16px; position: relative; }
+        .status-rail-cell { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; height: auto; }
+        .status-rail { min-height: 100%; }
+        .ledger tbody td { padding: 4px 0 4px 8px; }
+        .cell-address { max-width: none; }
+        .actions-cell { text-align: left; margin-top: 8px; }
+        .action-stack { justify-content: flex-start; }
+    }
+    @media (max-width: 700px) {
+        .topbar, .instrument-strip, .control-bar, .main-content { padding-left: 16px; padding-right: 16px; }
+        .instrument { padding-right: 16px; margin-right: 16px; }
+        .search-box input { width: 130px; }
+    }
+</style>
 </head>
 <body>
+<div class="app-shell">
 
-<div class="booking-hub">
-    <!-- Header -->
-    <div class="hero-header">
+    <!-- ================= TOP BAR ================= -->
+    <div class="topbar">
         <div class="brand">
-            <div class="brand-icon">
-                <i class="fas fa-droplet"></i>
-            </div>
-            <div>
-                <h1>AquaFlow Oasis <span>Live Control</span></h1>
-                <p style="font-size: 13px; color: #6f6e6e; margin-top: 4px;">intelligent water delivery orchestration</p>
+            <div class="brand-mark"><i class="fas fa-droplet"></i></div>
+            <div class="brand-text">
+                <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+                <p>Booking operations &amp; dispatch oversight</p>
             </div>
         </div>
-        <div class="live-badge">
-            <div class="pulse"></div>
-            <span>Real-time sync · active dispatch</span>
-            <i class="fas fa-cloud-arrow-up"></i>
-        </div>
-    </div>
-
-    <!-- Stats Cards (dynamic) -->
-    <div class="stats-pavilion">
-        <div class="stat-card-premium">
-            <div class="stat-left">
-                <h4><i class="far fa-calendar-alt"></i> Total Bookings</h4>
-                <div class="value">{{ total_bookings }}</div>
+        <div class="topbar-right">
+            <div class="sync-chip"><div class="pulse-dot"></div><span>Live sync</span></div>
+            <div class="icon-btn" id="bellBtn" title="{% if has_unseen_future %}New order coming on {{ next_unseen_date }}{% else %}No new alerts{% endif %}">
+                <i class="fas fa-bell"></i>
+                {% if has_unseen_future %}<span class="notif-badge">1</span>{% endif %}
             </div>
-            <div class="stat-icon"><i class="fas fa-chart-simple"></i></div>
-        </div>
-        <div class="stat-card-premium">
-            <div class="stat-left">
-                <h4><i class="far fa-hourglass-half"></i> Pending</h4>
-                <div class="value">{{ pending_bookings }}</div>
+            <div class="admin-chip">
+                <div class="admin-avatar">A</div>
+                <span>Admin</span>
             </div>
-            <div class="stat-icon"><i class="fas fa-clock"></i></div>
-        </div>
-        <div class="stat-card-premium">
-            <div class="stat-left">
-                <h4><i class="fas fa-check-double"></i> Delivered</h4>
-                <div class="value">{{ delivered_bookings }}</div>
-            </div>
-            <div class="stat-icon"><i class="fas fa-truck-ramp-box"></i></div>
-        </div>
-        <div class="stat-card-premium">
-            <div class="stat-left">
-                <h4><i class="fas fa-rocket"></i> Active</h4>
-                <div class="value">{{ active_bookings }}</div>
-            </div>
-            <div class="stat-icon"><i class="fas fa-water-ladder"></i></div>
         </div>
     </div>
+    <div class="flow-line"></div>
 
-    <!-- filter row + export -->
-    <div class="filter-section">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="padding:14px 32px 0;">
+          {% for category, message in messages %}
+            <div class="flash-toast" style="
+                background:{{ '#fdecea' if category == 'danger' else '#fff8e1' if category == 'warning' else '#e7f2ff' }};
+                color:{{ '#a02622' if category == 'danger' else '#8a6100' if category == 'warning' else '#0d61b8' }};
+                border-color:{{ '#f5c2c0' if category == 'danger' else '#ffe28a' if category == 'warning' else '#cddff3' }};">
+              <i class="fas fa-triangle-exclamation" style="margin-top:2px;"></i>
+              <span style="flex:1;">{{ message }}</span>
+              <button type="button" onclick="this.closest('.flash-toast').remove()"
+                      style="background:none;border:none;cursor:pointer;font-size:15px;line-height:1;color:inherit;">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+        <script>
+          setTimeout(function () {
+            document.querySelectorAll('.flash-toast').forEach(function (el) {
+              el.style.transition = 'opacity .4s';
+              el.style.opacity = '0';
+              setTimeout(function () { el.remove(); }, 400);
+            });
+          }, 6000);
+        </script>
+      {% endif %}
+    {% endwith %}
+
+    <!-- ================= INSTRUMENT STRIP ================= -->
+    <div class="instrument-strip">
+        <div class="instrument">
+            <div class="instrument-icon total"><i class="fas fa-chart-simple"></i></div>
+            <div class="instrument-copy"><h4>Total Bookings</h4><div class="val">{{ total_bookings }}</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon pending"><i class="fas fa-clock"></i></div>
+            <div class="instrument-copy"><h4>Pending</h4><div class="val">{{ pending_bookings }}</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon active"><i class="fas fa-truck-fast"></i></div>
+            <div class="instrument-copy"><h4>Active</h4><div class="val">{{ active_bookings }}</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon delivered"><i class="fas fa-circle-check"></i></div>
+            <div class="instrument-copy"><h4>Delivered</h4><div class="val">{{ delivered_bookings }}</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon cancelled"><i class="fas fa-ban"></i></div>
+            <div class="instrument-copy"><h4>Cancelled (view)</h4><div class="val">{{ bookings|selectattr('status','equalto','Cancelled')|list|length }}</div></div>
+        </div>
+        <div class="instrument-spacer"></div>
+        <div class="instrument-time"><i class="far fa-clock"></i> Updated {{ current_time.strftime('%d %b, %I:%M %p') }}</div>
+    </div>
+
+    <!-- ================= CONTROL BAR ================= -->
+    <div class="control-bar">
         <div class="filter-group">
-            <button class="pill-filter active" data-filter="All"><i class="fas fa-globe"></i> All</button>
-            <button class="pill-filter" data-filter="Pending"><i class="fas fa-spinner"></i> Pending</button>
-            <button class="pill-filter" data-filter="Approved"><i class="fas fa-thumbs-up"></i> Approved</button>
-            <button class="pill-filter" data-filter="Cancelled"><i class="fas fa-ban"></i> Cancelled</button>
-            <button class="pill-filter" data-filter="Delivered"><i class="fas fa-circle-check"></i> Delivered</button>
+            <div class="seg-filters">
+                <button class="pill-filter{% if not viewing_future_date %} active{% endif %}" data-filter="All"><i class="fas fa-globe"></i>All</button>
+                <button class="pill-filter" data-filter="Pending"><i class="fas fa-hourglass-half"></i>Pending</button>
+                <button class="pill-filter" data-filter="Approved"><i class="fas fa-thumbs-up"></i>Approved</button>
+                <button class="pill-filter" data-filter="Cancelled"><i class="fas fa-ban"></i>Cancelled</button>
+                <button class="pill-filter" data-filter="Delivered"><i class="fas fa-circle-check"></i>Delivered</button>
+            </div>
+
+            <div class="search-box">
+                <i class="fas fa-magnifying-glass"></i>
+                <input type="text" id="bookingSearchInput" placeholder="Search customer, phone, driver...">
+            </div>
+
+            <div class="upcoming-wrap">
+                <select id="futureDateSelect" class="pill-filter"
+                        onchange="if(this.value){ window.location.href = '/booking-management?future_date=' + this.value; }">
+                    <option value="">
+                        {% if viewing_future_date %}Future Orders{% else %}Upcoming (15 days){% endif %}
+                    </option>
+                    {% for row in future_dates_summary %}
+                        <option value="{{ row.date }}" {% if viewing_future_date == row.date %}selected{% endif %}>
+                            {{ row.label }} ({{ row.count }}){% if row.has_unseen %} · New{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if has_unseen_future %}
+                    <span class="notif-dot-toolbar" title="New order coming on {{ next_unseen_date }}"></span>
+                {% endif %}
+            </div>
+            {% if viewing_future_date %}
+                <a href="/booking-management" class="back-today"><i class="fas fa-arrow-left"></i>Back to Today</a>
+            {% endif %}
         </div>
         <div class="export-actions">
-            <button class="btn-export" id="exportExcelBtn"><i class="fas fa-file-excel"></i> Excel</button>
-            <button class="btn-export" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> PDF Report</button>
+            <button class="btn-export excel" id="exportExcelBtn"><span class="chip-ic"><i class="fas fa-file-excel"></i></span>Export Excel</button>
+            <button class="btn-export pdf" id="exportPdfBtn"><span class="chip-ic"><i class="fas fa-file-pdf"></i></span>PDF Report</button>
         </div>
     </div>
 
-    <!-- Bookings section -->
-    <div class="bookings-wrapper">
-        <div class="section-title">
-            <h2><i class="fas fa-clipboard-list"></i> Booking Register</h2>
-            <span>{{ bookings|length }} entries</span>
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main-content">
+        <div class="section-head">
+            <h2><i class="fas fa-clipboard-list"></i>
+                {% if viewing_future_date %}Orders for {{ viewing_future_date }}{% else %}Booking Register{% endif %}
+                <span class="count-chip" id="bookingCountBadge">{{ bookings|length }} entries</span>
+            </h2>
+            <div class="legend">
+                <span><i class="fas fa-circle" style="color:var(--amber-600);"></i>Pending</span>
+                <span><i class="fas fa-circle" style="color:var(--blue-600);"></i>Approved</span>
+                <span><i class="fas fa-circle" style="color:var(--green-600);"></i>Delivered</span>
+                <span><i class="fas fa-circle" style="color:var(--red-600);"></i>Cancelled</span>
+            </div>
         </div>
-        <div class="booking-grid" id="bookingGridContainer">
+
+        <div class="ledger-wrap">
             {% if bookings %}
+            <table class="ledger" id="bookingGridContainer">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>#</th>
+                        <th>Customer</th>
+                        <th>Delivery</th>
+                        <th>Quantity</th>
+                        <th>Booked</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
                 {% for booking in bookings %}
-                <div class="booking-card-luxury" data-status="{{ booking.status }}" data-booking-id="{{ booking._id }}">
-                    <div class="slno-column">
-                        {{ loop.index }}
-                    </div>
-                    <div class="card-accent"></div>
-                    <div class="card-body">
-                        <div class="info-columns">
-                            <div class="info-item">
-                                <div class="info-label"><i class="fas fa-user-astronaut"></i> Customer</div>
-                                <div class="info-value">{{ booking.fullname }}</div>
-                                <div class="info-value" style="font-size: 12.5px; font-weight: 400; color: #5c6b7a;">{{ booking.user_email }}</div>
+                    <tr class="booking-card-luxury" data-status="{{ booking.status }}" data-booking-id="{{ booking._id }}">
+                        <td class="status-rail-cell"><div class="status-rail {{ booking.status }}"></div></td>
+                        <td class="rownum">{{ '%02d'|format(loop.index) }}</td>
+                        <td>
+                            <div class="cell-primary">{{ booking.fullname }}</div>
+                            <div class="cell-secondary">{{ booking.user_email }}</div>
+                        </td>
+                        <td class="cell-address">
+                            <div class="cell-primary" title="{{ booking.address }}">{{ booking.address }}</div>
+                            <div class="cell-secondary"><i class="fas fa-phone" style="font-size:9px;"></i> {{ booking.phone }}</div>
+                        </td>
+                        <td>
+                            <div class="qty-value">{{ booking.quantity }} L</div>
+                            <div class="cell-secondary">{{ booking.driver_name or 'Driver: —' }}</div>
+                        </td>
+                        <td>
+                            <div class="booked-time">
+                                {% if booking.created_at %}
+                                <span class="rel" data-ts="{{ booking.created_at.isoformat() }}">{{ booking.created_at.strftime('%d %b') }}</span>
+                                <span class="abs">{{ booking.created_at.strftime('%I:%M %p') }}</span>
+                                {% else %}
+                                <span class="rel">—</span>
+                                {% endif %}
                             </div>
-                            <div class="info-item">
-                                <div class="info-label"><i class="fas fa-location-dot"></i> Delivery</div>
-                                <div class="info-value">{{ booking.address | truncate(35) }}</div>
-                                <div class="info-value" style="font-size: 12.5px;">📞 {{ booking.phone }}</div>
+                        </td>
+                        <td>
+                            <span class="pay-chip" style="background:{% if booking.get('payment_method') == 'UPI' %}var(--blue-100){% else %}#F1F3F4{% endif %}; color:{% if booking.get('payment_method') == 'UPI' %}var(--blue-600){% else %}#495057{% endif %};">
+                                {% if booking.get('payment_method') == 'UPI' %}<i class="fas fa-bolt"></i>UPI{% else %}<i class="fas fa-money-bill-wave"></i>COD{% endif %}
+                            </span>
+                            <div class="pay-status-line">
+                                {% set pstatus = booking.get('payment_status', 'Pending') %}
+                                {% if pstatus == 'Paid (Online)' %}
+                                    <span style="color:var(--green-600);"><i class="fas fa-circle-check"></i> Paid online</span>
+                                {% elif pstatus == 'Submitted - Pending Verification' %}
+                                    <span style="color:var(--amber-600);"><i class="fas fa-hourglass-half"></i> Awaiting verification</span>
+                                {% elif booking.get('payment_method') == 'UPI' %}
+                                    <span style="color:var(--red-600);"><i class="fas fa-clock"></i> Not yet paid</span>
+                                {% else %}
+                                    <span style="color:var(--ink-soft);">Collect on delivery</span>
+                                {% endif %}
                             </div>
-                            <div class="info-item">
-                                <div class="info-label"><i class="fas fa-charging-station"></i> Quantity</div>
-                                <div class="info-value">{{ booking.quantity }} Liters <span style="font-size:12px;">💧</span></div>
-                                <div class="info-value" style="font-size: 12.5px;">🚛 Driver: {{ booking.driver_name }}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label"><i class="fas fa-wallet"></i> Payment</div>
-                                <div class="info-value">
-                                    <span class="badge-new" style="background:{% if booking.get('payment_method') == 'UPI' %}#e0f2fe{% else %}#f1f3f5{% endif %}; color:{% if booking.get('payment_method') == 'UPI' %}#0369a1{% else %}#495057{% endif %};">
-                                        {% if booking.get('payment_method') == 'UPI' %}<i class="fas fa-bolt"></i> UPI{% else %}<i class="fas fa-money-bill-wave"></i> Cash on Delivery{% endif %}
-                                    </span>
-                                </div>
-                                <div class="info-value" style="font-size: 12.5px; margin-top:4px;">
-                                    {% set pstatus = booking.get('payment_status', 'Pending') %}
-                                    {% if pstatus == 'Paid (Online)' %}
-                                        <span style="color:#137a3c;"><i class="fas fa-circle-check"></i> Paid online</span>
-                                    {% elif pstatus == 'Submitted - Pending Verification' %}
-                                        <span style="color:#b45a1b;"><i class="fas fa-hourglass-half"></i> Paid, awaiting verification</span>
-                                    {% elif booking.get('payment_method') == 'UPI' %}
-                                        <span style="color:#ac2c2c;"><i class="fas fa-clock"></i> Not yet paid</span>
-                                    {% else %}
-                                        <span style="color:#5c6b7a;">Collect on delivery</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Status</div>
-                                <div class="info-value">
-                                    <span class="badge-new" style="background: 
-                                        {% if booking.status == 'Pending' %}#fff0e0{% elif booking.status == 'Approved' %}#e0f2fe{% elif booking.status == 'Delivered' %}#e4efff{% else %}#ffe6e6{% endif %}; 
-                                        color: {% if booking.status == 'Pending' %}#b45a1b{% elif booking.status == 'Approved' %}#0369a1{% elif booking.status == 'Delivered' %}#1e5f9e{% else %}#ac2c2c{% endif %};">
-                                        {{ booking.status }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="action-stack">
-                            <!-- PROFESSIONAL FLOW - FIXED: Backend uses "Approved" not "Accepted" -->
-                            <!-- PENDING: Show Approve + Cancel buttons -->
-                            {% if booking.status == "Pending" %}
-                                <button class="action-btn btn-approve"
-                                    onclick="approveBooking('{{ booking._id }}')">
-                                    <i class="fas fa-check-circle"></i>
-                                    Approve
-                                </button>
-                                <button class="action-btn btn-cancel"
-                                    onclick="cancelBooking('{{ booking._id }}')">
-                                    <i class="fas fa-times-circle"></i>
-                                    Cancel
-                                </button>
-                            {% endif %}
-
-                            <!-- APPROVED: Show Assign Driver button (matching backend status "Approved") -->
-                            {% if booking.status == "Approved" %}
-                                <a href="/driver-assignment/{{ booking._id }}"
-                                   class="assign-link">
-                                    <button class="btn-assign-driver">
-                                        <i class="fas fa-truck"></i>
-                                        Assign Driver
+                        </td>
+                        <td>
+                            <span class="status-pill" style="background:
+                                {% if booking.status == 'Pending' %}var(--amber-100){% elif booking.status == 'Approved' %}var(--blue-100){% elif booking.status == 'Delivered' %}var(--green-100){% else %}var(--red-100){% endif %};
+                                color: {% if booking.status == 'Pending' %}var(--amber-600){% elif booking.status == 'Approved' %}var(--blue-600){% elif booking.status == 'Delivered' %}var(--green-600){% else %}var(--red-600){% endif %};">
+                                <i class="fas fa-circle"></i>{{ booking.status }}
+                            </span>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="action-stack">
+                                {% if booking.status == "Pending" %}
+                                    <button class="action-btn btn-approve" onclick="approveBooking('{{ booking._id }}', this)">
+                                        <i class="fas fa-check-circle"></i>Approve
                                     </button>
-                                </a>
-                            {% endif %}
+                                    <button class="action-btn btn-cancel" onclick="cancelBooking('{{ booking._id }}', this)">
+                                        <i class="fas fa-times-circle"></i>Cancel
+                                    </button>
+                                {% endif %}
 
-                            <!-- Details button available for all statuses -->
-                            <button class="action-btn btn-details" onclick="viewDetails('{{ booking._id }}')">
-                                <i class="fas fa-info-circle"></i>
-                                Details
-                            </button>
+                                {% if booking.status == "Approved" %}
+                                    {% if viewing_future_date %}
+                                        <span class="action-btn btn-locked" title="Driver assignment opens on the delivery date">
+                                            <i class="fas fa-lock"></i>Opens {{ booking.delivery_date }}
+                                        </span>
+                                    {% else %}
+                                        <a href="/driver-assignment/{{ booking._id }}" class="assign-link">
+                                            <button class="btn-assign-driver">
+                                                <i class="fas fa-truck"></i>Assign Driver
+                                            </button>
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
 
-                            {% if booking.get('payment_submitted') and not booking.get('payment_processed') %}
-                                <button class="action-btn" style="background:#fff4de; color:#b45a1b; border:1px solid #ffd699;"
-                                    onclick="confirmPayment('{{ booking._id }}', this)">
-                                    <i class="fas fa-hand-holding-dollar"></i>
-                                    Confirm ₹{{ "{:,.0f}".format(booking.get('cash_submitted_amount', booking.get('delivery_fee', 0))) }} Received
+                                <button class="action-btn btn-details" onclick="viewDetails('{{ booking._id }}')">
+                                    <i class="fas fa-info-circle"></i>Details
                                 </button>
-                            {% elif booking.get('payment_processed') %}
-                                <span class="action-btn" style="background:#e6f9ee; color:#137a3c; cursor:default;">
-                                    <i class="fas fa-circle-check"></i> Payment Verified
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+
+                                {% if booking.get('payment_submitted') and not booking.get('payment_processed') %}
+                                    <button class="action-btn btn-confirm-pay"
+                                        onclick="confirmPayment('{{ booking._id }}', this)">
+                                        <i class="fas fa-hand-holding-dollar"></i>Confirm ₹{{ "{:,.0f}".format(booking.get('cash_submitted_amount', booking.get('delivery_fee', 0))) }}
+                                    </button>
+                                {% elif booking.get('payment_processed') %}
+                                    <span class="action-btn btn-verified">
+                                        <i class="fas fa-circle-check"></i>Verified
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
                 {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-                <div class="empty-art">
-                    <i class="fas fa-water" style="font-size: 56px; opacity: 0.5;"></i>
-                    <h3 style="margin-top: 20px;">No water bookings yet</h3>
-                    <p>New hydration requests will appear like magic ✨</p>
+                <div class="empty-ledger">
+                    <i class="fas fa-water"></i>
+                    <h3>No water bookings yet</h3>
+                    <p>New hydration requests will appear here automatically.</p>
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Modal premium -->
+<!-- ================= DETAIL MODAL ================= -->
 <div class="glass-modal" id="detailModal">
     <div class="modal-card">
         <span class="modal-close" onclick="closeDetailModal()">&times;</span>
         <div id="dynamicModalContent">
-            <h3 style="color:#ff7a2c;">Loading...</h3>
+            <h3 style="color:var(--teal-700); font-family:'Space Grotesk',sans-serif;">Loading...</h3>
         </div>
     </div>
 </div>
 
-<script>
-    // ----- FILTERING preserves SL No (cards are filtered but sl no remains visible)
-    const filterPills = document.querySelectorAll('.pill-filter');
-    const bookingCards = document.querySelectorAll('.booking-card-luxury');
+<!-- ================= CONFIRM MODAL (replaces window.confirm) ================= -->
+<div class="glass-modal" id="confirmModal">
+    <div class="result-card confirm-card">
+        <div class="result-icon-ring" id="confirmIconRing"><i class="fas fa-triangle-exclamation"></i></div>
+        <h3 id="confirmTitle">Please confirm</h3>
+        <p id="confirmMessage">Are you sure?</p>
+        <div class="result-card-actions">
+            <button class="confirm-btn-cancel" onclick="closeConfirmModal(false)">Go back</button>
+            <button class="confirm-btn-danger" id="confirmActionBtn" onclick="closeConfirmModal(true)">Confirm</button>
+        </div>
+    </div>
+</div>
 
-    function filterBookings(filterValue) {
+<!-- ================= ACTION RESULT OVERLAY ================= -->
+<div class="result-overlay" id="resultOverlay">
+    <div class="result-card" id="resultCard">
+        <div class="result-icon-ring processing" id="resultIconRing">
+            <i class="fas fa-circle-notch"></i>
+        </div>
+        <h3 id="resultTitle">Processing...</h3>
+        <p id="resultMessage">Please wait a moment.</p>
+        <div class="result-meta" id="resultMeta" style="display:none;"></div>
+        <button class="result-close-btn" id="resultCloseBtn" style="display:none;" onclick="closeResultOverlay()">Done</button>
+    </div>
+</div>
+
+<script>
+    // ================= FILTERING =================
+    const filterPills = document.querySelectorAll('.pill-filter[data-filter]');
+    const bookingCards = document.querySelectorAll('.booking-card-luxury');
+    const searchInputEl = document.getElementById('bookingSearchInput');
+    const countBadge = document.getElementById('bookingCountBadge');
+    let activeStatusFilter = 'All';
+
+    function applyFilters() {
+        const term = (searchInputEl.value || '').trim().toLowerCase();
+        let visibleCount = 0;
         bookingCards.forEach(card => {
             const statusAttr = card.getAttribute('data-status');
-            if (filterValue === 'All' || statusAttr === filterValue) {
-                card.style.display = 'flex';
+            const statusMatch = activeStatusFilter === 'All' || statusAttr === activeStatusFilter;
+            const textMatch = term === '' || card.innerText.toLowerCase().includes(term);
+            if (statusMatch && textMatch) {
+                card.style.display = 'table-row';
+                visibleCount++;
             } else {
                 card.style.display = 'none';
             }
         });
+        if (countBadge) countBadge.innerText = visibleCount + ' entries';
     }
 
     filterPills.forEach(pill => {
         pill.addEventListener('click', () => {
             filterPills.forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
-            const filterVal = pill.getAttribute('data-filter');
-            filterBookings(filterVal);
+            activeStatusFilter = pill.getAttribute('data-filter');
+            applyFilters();
         });
     });
+    if (searchInputEl) searchInputEl.addEventListener('input', applyFilters);
 
-    // API interactions: Approve & Cancel (after approval, backend changes status to "Approved")
-    async function approveBooking(id) {
+    // ================= relative time render =================
+    function renderRelativeTimes() {
+        document.querySelectorAll('.booked-time .rel[data-ts]').forEach(el => {
+            const ts = new Date(el.getAttribute('data-ts'));
+            if (isNaN(ts)) return;
+            const diffMs = Date.now() - ts.getTime();
+            const mins = Math.floor(diffMs / 60000);
+            let label;
+            if (mins < 1) label = 'Just now';
+            else if (mins < 60) label = mins + 'm ago';
+            else if (mins < 1440) label = Math.floor(mins/60) + 'h ago';
+            else label = Math.floor(mins/1440) + 'd ago';
+            el.innerText = label;
+        });
+    }
+    renderRelativeTimes();
+
+    // ================= RESULT OVERLAY HELPERS =================
+    function showProcessing(title, message) {
+        document.getElementById('resultIconRing').className = 'result-icon-ring processing';
+        document.getElementById('resultIconRing').innerHTML = '<i class="fas fa-circle-notch"></i>';
+        document.getElementById('resultTitle').innerText = title;
+        document.getElementById('resultMessage').innerText = message;
+        document.getElementById('resultMeta').style.display = 'none';
+        document.getElementById('resultCloseBtn').style.display = 'none';
+        document.getElementById('resultOverlay').style.display = 'flex';
+    }
+    function showResult(kind, title, message, meta) {
+        const ring = document.getElementById('resultIconRing');
+        if (kind === 'success') {
+            ring.className = 'result-icon-ring success';
+            ring.innerHTML = `<svg class="check-draw" viewBox="0 0 36 36" fill="none">
+                <circle cx="18" cy="18" r="14" stroke="currentColor" stroke-width="2.5"/>
+                <path d="M11 18.5L15.5 23L25 12.5" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`;
+        } else {
+            ring.className = 'result-icon-ring danger';
+            ring.innerHTML = '<i class="fas fa-circle-exclamation"></i>';
+        }
+        document.getElementById('resultTitle').innerText = title;
+        document.getElementById('resultMessage').innerText = message;
+        if (meta) {
+            document.getElementById('resultMeta').innerText = meta;
+            document.getElementById('resultMeta').style.display = 'block';
+        } else {
+            document.getElementById('resultMeta').style.display = 'none';
+        }
+        document.getElementById('resultCloseBtn').style.display = 'inline-flex';
+        document.getElementById('resultOverlay').style.display = 'flex';
+    }
+    function closeResultOverlay(reload) {
+        document.getElementById('resultOverlay').style.display = 'none';
+        if (reload !== false) location.reload();
+    }
+
+    // ================= CONFIRM MODAL HELPERS =================
+    let confirmResolver = null;
+    function askConfirm(title, message, tone) {
+        document.getElementById('confirmTitle').innerText = title;
+        document.getElementById('confirmMessage').innerText = message;
+        const ring = document.getElementById('confirmIconRing');
+        const btn = document.getElementById('confirmActionBtn');
+        ring.className = 'result-icon-ring ' + (tone === 'primary' ? 'processing' : 'danger');
+        ring.innerHTML = tone === 'primary' ? '<i class="fas fa-hand-holding-dollar"></i>' : '<i class="fas fa-triangle-exclamation"></i>';
+        btn.className = tone === 'primary' ? 'confirm-btn-primary' : 'confirm-btn-danger';
+        document.getElementById('confirmModal').style.display = 'flex';
+        return new Promise(resolve => { confirmResolver = resolve; });
+    }
+    function closeConfirmModal(result) {
+        document.getElementById('confirmModal').style.display = 'none';
+        if (confirmResolver) { confirmResolver(result); confirmResolver = null; }
+    }
+
+    // ================= API interactions =================
+    async function approveBooking(id, btn) {
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch spin-ic"></i>Approving';
+        showProcessing('Approving booking', 'Verifying availability and confirming the order with the customer…');
+        const started = Date.now();
         try {
             const resp = await fetch(`/approve-booking/${id}`);
             const data = await resp.json();
-            alert(data.message || '✅ Booking Approved! Driver assignment now available.');
-            location.reload();
-        } catch(e) { alert('Error approving'); }
-    }
-    
-    async function cancelBooking(id) {
-        if(!confirm('Cancel this water delivery?')) return;
-        try {
-            const resp = await fetch(`/cancel-booking/${id}`);
-            const data = await resp.json();
-            alert(data.message || 'Booking cancelled');
-            location.reload();
-        } catch(e) { alert('Error'); }
-    }
-
-    async function confirmPayment(id, btn) {
-        if(!confirm('Confirm that this cash payment has been physically received from the driver?')) return;
-        try {
-            btn.disabled = true;
-            const resp = await fetch(`/confirm-payment/${id}`, { method: 'POST' });
-            const data = await resp.json();
-            alert(data.message || (data.success ? 'Payment confirmed' : 'Failed to confirm payment'));
-            if (data.success) location.reload();
-            else btn.disabled = false;
+            const elapsed = Date.now() - started;
+            const minDelay = Math.max(0, 900 - elapsed);
+            setTimeout(() => {
+                showResult('success', 'Booking approved', data.message || 'The customer has been notified and this order is now ready for driver assignment.', 'Booking ID · ' + id);
+            }, minDelay);
         } catch(e) {
-            alert('Error confirming payment');
+            showResult('error', 'Approval failed', 'Something went wrong while approving this booking. Please try again.');
             btn.disabled = false;
+            btn.innerHTML = originalHtml;
         }
     }
 
-    // Details with modal beauty
+    async function cancelBooking(id, btn) {
+        const ok = await askConfirm('Cancel this delivery?', 'This will cancel the water delivery booking and notify the customer. This action cannot be undone.', 'danger');
+        if (!ok) return;
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-circle-notch spin-ic"></i>Cancelling';
+        try {
+            const resp = await fetch(`/cancel-booking/${id}`);
+            const data = await resp.json();
+            showResult('success', 'Booking cancelled', data.message || 'The booking has been cancelled and the customer notified.');
+        } catch(e) {
+            showResult('error', 'Cancellation failed', 'Something went wrong. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+
+    async function confirmPayment(id, btn) {
+        const ok = await askConfirm('Confirm cash receipt', 'Confirm that this cash payment has been physically received from the driver?', 'primary');
+        if (!ok) return;
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-circle-notch spin-ic"></i>Confirming';
+        try {
+            const resp = await fetch(`/confirm-payment/${id}`, { method: 'POST' });
+            const data = await resp.json();
+            if (data.success) {
+                showResult('success', 'Payment confirmed', data.message || 'The cash payment has been marked as received and verified.');
+            } else {
+                showResult('error', 'Could not confirm payment', data.message || 'Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        } catch(e) {
+            showResult('error', 'Network error', 'Could not reach the server. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+
+    // Details with modal
     async function viewDetails(id) {
         try {
             const response = await fetch(`/api/booking/${id}`);
@@ -754,34 +1007,32 @@
             if(data.success && data.booking) {
                 const b = data.booking;
                 document.getElementById('dynamicModalContent').innerHTML = `
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-                        <div style="background:#ffefe3; width:48px; height:48px; border-radius:60px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-droplet" style="font-size:28px; color:#ff914d;"></i></div>
-                        <h2 style="color:#1f2f3f;">Hydration Insight</h2>
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                        <div style="background:var(--teal-050); width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-droplet" style="font-size:20px; color:var(--teal-700);"></i></div>
+                        <h2 style="color:var(--ink); font-family:'Space Grotesk',sans-serif; font-size:18px;">Booking Details</h2>
                     </div>
-                    <div style="display:grid; gap:14px;">
-                        <p><strong><i class="fas fa-user"></i> Full name:</strong> ${escapeHtml(b.fullname)}</p>
-                        <p><strong><i class="fas fa-envelope"></i> Email:</strong> ${escapeHtml(b.user_email)}</p>
-                        <p><strong><i class="fas fa-phone"></i> Phone:</strong> ${escapeHtml(b.phone)}</p>
-                        <p><strong><i class="fas fa-map-pin"></i> Address:</strong> ${escapeHtml(b.address)}</p>
-                        <p><strong><i class="fas fa-fill-drip"></i> Volume:</strong> ${b.quantity} liters</p>
-                        <p><strong><i class="fas fa-flag-checkered"></i> Status:</strong> <span style="background:#feeedf; padding:4px 14px; border-radius:40px;">${escapeHtml(b.status)}</span></p>
-                        <p><strong><i class="fas fa-id-card"></i> Driver:</strong> ${escapeHtml(b.driver_name || 'unassigned')}</p>
-                        <p><strong><i class="fas fa-truck"></i> Truck:</strong> ${escapeHtml(b.truck_number || '—')}</p>
-                        <p><strong><i class="fas fa-fingerprint"></i> Booking ID:</strong> ${escapeHtml(b._id)}</p>
+                    <div>
+                        <div class="detail-row"><i class="fas fa-user"></i><span class="d-label">Full name</span><span class="d-value">${escapeHtml(b.fullname)}</span></div>
+                        <div class="detail-row"><i class="fas fa-envelope"></i><span class="d-label">Email</span><span class="d-value">${escapeHtml(b.user_email)}</span></div>
+                        <div class="detail-row"><i class="fas fa-phone"></i><span class="d-label">Phone</span><span class="d-value">${escapeHtml(b.phone)}</span></div>
+                        <div class="detail-row"><i class="fas fa-map-pin"></i><span class="d-label">Address</span><span class="d-value">${escapeHtml(b.address)}</span></div>
+                        <div class="detail-row"><i class="fas fa-fill-drip"></i><span class="d-label">Volume</span><span class="d-value">${b.quantity} liters</span></div>
+                        <div class="detail-row"><i class="fas fa-flag-checkered"></i><span class="d-label">Status</span><span class="d-value"><span class="status-pill" style="background:var(--teal-050); color:var(--teal-700);">${escapeHtml(b.status)}</span></span></div>
+                        <div class="detail-row"><i class="fas fa-id-card"></i><span class="d-label">Driver</span><span class="d-value">${escapeHtml(b.driver_name || 'Unassigned')}</span></div>
+                        <div class="detail-row"><i class="fas fa-truck"></i><span class="d-label">Truck</span><span class="d-value">${escapeHtml(b.truck_number || '—')}</span></div>
+                        <div class="detail-row"><i class="fas fa-fingerprint"></i><span class="d-label">Booking ID</span><span class="d-value mono" style="font-size:12px;">${escapeHtml(b._id)}</span></div>
                     </div>
                 `;
                 document.getElementById('detailModal').style.display = 'flex';
             } else {
-                alert('Cannot fetch details');
+                showResult('error', 'Could not load details', 'This booking could not be retrieved.');
             }
         } catch(err) {
-            alert('Server error');
+            showResult('error', 'Server error', 'Could not reach the server. Please try again.');
         }
     }
 
-    function closeDetailModal() {
-        document.getElementById('detailModal').style.display = 'none';
-    }
+    function closeDetailModal() { document.getElementById('detailModal').style.display = 'none'; }
 
     function escapeHtml(str) {
         if(!str) return '';
@@ -793,13 +1044,13 @@
         });
     }
 
-    // ----- EXPORT EXCEL (with S.No column included)
+    // ----- EXPORT EXCEL -----
     document.getElementById('exportExcelBtn').addEventListener('click', async () => {
         try {
             const res = await fetch('/export-bookings');
             let bookingsList = await res.json();
             if(!Array.isArray(bookingsList) || bookingsList.length === 0) {
-                alert('No data for export');
+                showResult('error', 'Nothing to export', 'There is no booking data available for export right now.');
                 return;
             }
             const sheetData = bookingsList.map((b, idx) => ({
@@ -818,46 +1069,42 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'AquaFlow_Bookings');
             XLSX.writeFile(wb, `AquaFlow_Bookings_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`);
-        } catch(e) { alert('Export failed'); }
+        } catch(e) { showResult('error', 'Export failed', 'Could not generate the Excel file.'); }
     });
 
-    // PDF Export with visible serial numbers
+    // PDF Export
     document.getElementById('exportPdfBtn').addEventListener('click', () => {
-        const gridContainer = document.querySelector('.booking-grid');
-        if(!gridContainer || gridContainer.children.length === 0 || (gridContainer.children.length === 1 && gridContainer.children[0].classList?.contains('empty-art'))) {
-            alert('No bookings to export');
+        const tableEl = document.getElementById('bookingGridContainer');
+        if(!tableEl) {
+            showResult('error', 'Nothing to export', 'There are no bookings to export.');
             return;
         }
-        const originalClone = gridContainer.cloneNode(true);
-        const allCardsClone = originalClone.querySelectorAll('.booking-card-luxury');
-        allCardsClone.forEach(card => {
-            card.style.display = 'flex';
-            card.style.marginBottom = '18px';
-            card.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
-            card.style.border = '1px solid #e2e8f0';
-        });
+        const clone = tableEl.cloneNode(true);
+        clone.querySelectorAll('tr').forEach(row => row.style.display = 'table-row');
+        clone.style.width = '100%';
+        clone.style.fontSize = '11px';
         const wrapper = document.createElement('div');
         wrapper.style.padding = '24px';
         wrapper.style.fontFamily = 'Inter, sans-serif';
         wrapper.style.background = '#fff';
         const title = document.createElement('h2');
-        title.innerText = '📄 AquaFlow Booking Report';
-        title.style.color = '#ff6a2c';
-        title.style.borderBottom = '2px solid #ff914d';
+        title.innerText = 'AquaFlow Booking Report';
+        title.style.color = '#0E6672';
+        title.style.borderBottom = '2px solid #0E6672';
         title.style.paddingBottom = '8px';
         title.style.marginBottom = '12px';
         const dateP = document.createElement('p');
         dateP.innerText = `Generated: ${new Date().toLocaleString()}`;
-        dateP.style.marginBottom = '24px';
-        dateP.style.color = '#475569';
+        dateP.style.marginBottom = '20px';
+        dateP.style.color = '#55707A';
         wrapper.appendChild(title);
         wrapper.appendChild(dateP);
-        wrapper.appendChild(originalClone);
-        html2pdf().set({ 
-            margin: 0.5, 
-            filename: `aquaflow_bookings_${Date.now()}.pdf`, 
-            html2canvas: { scale: 2, letterRendering: true }, 
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+        wrapper.appendChild(clone);
+        html2pdf().set({
+            margin: 0.4,
+            filename: `aquaflow_bookings_${Date.now()}.pdf`,
+            html2canvas: { scale: 2, letterRendering: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
         }).from(wrapper).save();
     });
 

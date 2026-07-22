@@ -1,471 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>NeoDispatch | Intelligent Driver Assignment Suite</title>
-    <style>
-        /* ===== RESET & GLOBAL ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#EEF3F4">
+<title>AquaFlow Console | Driver Assignment</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --ink: #0A1A22;
+        --ink-2: #123039;
+        --ink-soft: #55707A;
+        --ink-faint: #93A8AF;
+        --teal-900: #073239;
+        --teal-700: #0E6672;
+        --teal-600: #0E7C86;
+        --teal-500: #17A6B4;
+        --cyan-glow: #26D0C9;
+        --teal-050: #EAF4F5;
+        --teal-100: #DCEEEF;
 
-        body {
-            background: radial-gradient(circle at 10% 30%, #eef2f9, #d9e0ec);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            padding: 2rem 1.8rem;
-            color: #0a1c2f;
-            transition: all 0.2s ease;
-        }
+        --amber-600: #A5690C;
+        --amber-100: #FBF0DC;
+        --green-600: #157A50;
+        --green-100: #E1F5EA;
+        --red-600: #B23B30;
+        --red-100: #FBEAE8;
+        --blue-600: #2C5F9E;
+        --blue-100: #E8EFFA;
+        --orange-600: #C1600F;
+        --orange-100: #FBE9DA;
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #e2e8f0;
-            border-radius: 20px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2c7da0;
-            border-radius: 20px;
-        }
+        --bg: #EEF3F4;
+        --surface: #FFFFFF;
+        --border: #DCE6E8;
+        --border-soft: #E7EEEF;
 
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            flex-wrap: wrap;
-            margin-bottom: 2.2rem;
-            background: rgba(255,255,255,0.45);
-            backdrop-filter: blur(14px);
-            padding: 1.2rem 2rem;
-            border-radius: 48px;
-            box-shadow: 0 12px 28px -8px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.6);
-        }
-        h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #0f2b3d, #1f6392);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -0.3px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        h1::before {
-            content: "🚚";
-            font-size: 2rem;
-            background: none;
-            -webkit-background-clip: unset;
-            color: #1e5a7a;
-        }
-        .stats-panel {
-            display: flex;
-            gap: 1.2rem;
-        }
-        .stat-badge {
-            background: white;
-            border-radius: 60px;
-            padding: 0.4rem 1.2rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
+        --r-lg: 16px;
+        --r-md: 10px;
+        --r-sm: 7px;
+        --r-pill: 999px;
 
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            gap: 1rem;
-        }
-        .search-wrapper {
-            display: flex;
-            gap: 10px;
-            background: white;
-            padding: 0.35rem 0.35rem 0.35rem 1.2rem;
-            border-radius: 60px;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.03);
-            border: 1px solid #eef2ff;
-        }
-        .search-wrapper input {
-            border: none;
-            padding: 0.6rem 0;
-            font-size: 0.9rem;
-            width: 220px;
-            outline: none;
-            background: transparent;
-        }
-        .search-wrapper button {
-            background: #1f6392;
-            border: none;
-            color: white;
-            padding: 0.4rem 1.2rem;
-            border-radius: 40px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .filter-group {
-            display: flex;
-            gap: 12px;
-            background: rgba(255,255,240,0.7);
-            padding: 0.3rem 1rem;
-            border-radius: 60px;
-            backdrop-filter: blur(4px);
-            flex-wrap: wrap;
-        }
-        .filter-group select, .filter-group button {
-            background: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        .primary-btn {
-            background: #0f2b3d;
-            color: white;
-            border: none;
-            padding: 0.6rem 1.4rem;
-            border-radius: 34px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
+        --shadow-xs: 0 1px 2px rgba(10,26,34,.05);
+        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
+        --shadow-md: 0 16px 40px -18px rgba(10,26,34,.28);
+        --shadow-lg: 0 30px 70px -20px rgba(10,26,34,.35);
+    }
 
-        .drivers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 1.8rem;
-            margin-top: 0.8rem;
-        }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
 
-        .driver-card {
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(2px);
-            border-radius: 32px;
-            padding: 1.6rem 1.5rem;
-            transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.7);
-            border: 1px solid rgba(255,255,255,0.6);
-            position: relative;
-            overflow: hidden;
-        }
-        .driver-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 28px 36px -14px rgba(0,32,64,0.2);
-            background: white;
-        }
+    body {
+        background: var(--bg);
+        font-family: 'Inter', system-ui, sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+    }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
 
-        .booking-badge {
-            display: inline-block;
-            background: #eef2ff;
-            padding: 0.2rem 1rem;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #1f6392;
-        }
-        .driver-card h2 {
-            font-size: 1.5rem;
-            margin: 0.75rem 0 0.5rem 0;
-            font-weight: 700;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            flex-wrap: wrap;
-        }
-        .info-row {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
-            margin-top: 0.7rem;
-            padding: 0.4rem 0;
-            border-bottom: 1px dashed #e2edf2;
-        }
-        .info-label {
-            font-weight: 600;
-            width: 120px;
-            font-size: 0.85rem;
-            color: #2c4c6e;
-        }
-        .info-value {
-            font-weight: 500;
-            color: #0a2a3b;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .quantity-meter {
-            background: #e9f0f5;
-            border-radius: 40px;
-            height: 8px;
-            width: 100%;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-        .meter-fill {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #2aa9c9, #1e6f8f);
-            border-radius: 40px;
-            transition: width 0.4s ease;
-        }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #C3D3D6; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--teal-600); }
 
-        .action-btn {
-            background: #f0f4fa;
-            border: none;
-            border-radius: 32px;
-            padding: 0.35rem 1rem;
-            font-size: 0.7rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .reassign-btn {
-            background: #eef2ff;
-            color: #1f6392;
-        }
-        .delete-btn {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-        .toast-message {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background: #1e293b;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 50px;
-            backdrop-filter: blur(10px);
-            font-weight: 500;
-            z-index: 1200;
-            animation: fadeSlide 0.3s ease;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        }
-        @keyframes fadeSlide {
-            from { opacity: 0; transform: translateX(40px);}
-            to { opacity: 1; transform: translateX(0);}
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            background: white;
-            border-radius: 48px;
-            grid-column: 1 / -1;
-        }
-        footer {
-            margin-top: 3rem;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #3b5c7a;
-        }
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
-        @media (max-width: 720px) {
-            body { padding: 1rem; }
-            .drivers-grid { grid-template-columns: 1fr; }
-            .toolbar { flex-direction: column; align-items: stretch; }
-        }
-        
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(6px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            visibility: hidden;
-            opacity: 0;
-            transition: 0.2s;
-        }
-        .modal-overlay.active {
-            visibility: visible;
-            opacity: 1;
-        }
-        .assign-modal {
-            background: white;
-            border-radius: 40px;
-            max-width: 550px;
-            width: 90%;
-            padding: 2rem;
-            box-shadow: 0 30px 40px rgba(0,0,0,0.2);
-        }
-        .assign-modal h3 {
-            font-size: 1.6rem;
-            margin-bottom: 1.2rem;
-        }
-        .assign-modal input, .assign-modal select {
-            width: 100%;
-            padding: 0.8rem;
-            margin: 0.6rem 0;
-            border-radius: 60px;
-            border: 1px solid #cbd5e1;
-            font-size: 0.9rem;
-        }
-        .assign-modal .form-hint {
-            font-size: 0.7rem;
-            color: #4b6a8b;
-            margin-top: -5px;
-            margin-bottom: 12px;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 1.2rem;
-            justify-content: flex-end;
-        }
-        .modal-actions button {
-            padding: 0.6rem 1.4rem;
-            border-radius: 40px;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .driver-stats {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: rgba(255,255,255,0.3);
-            border-radius: 32px;
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-        .driver-stat-card {
-            background: white;
-            padding: 0.5rem 1.5rem;
-            border-radius: 40px;
-            font-weight: 600;
-        }
-        
-        .warning-badge {
-            background: #fef3c7;
-            color: #d97706;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            margin-left: 8px;
-        }
-        
-        .auto-refresh-btn {
-            background: #2c7da0;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        .auto-refresh-btn.off {
-            background: #6b7280;
-        }
+    /* ===== TOP BAR (shared identity with booking console) ===== */
+    .topbar {
+        background: var(--ink);
+        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
+        padding: 0 32px;
+        display: flex; align-items: center; justify-content: space-between;
+        height: 72px; flex-shrink: 0; position: relative; z-index: 30;
+        border-top: 4px solid var(--cyan-glow);
+    }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(155deg, var(--teal-500), var(--teal-700));
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
+    }
+    .brand-mark i { font-size: 17px; color: #fff; }
+    .brand-text h1 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #fff;
+        letter-spacing: -.1px; display: flex; align-items: center; gap: 9px; line-height: 1.1;
+    }
+    .brand-text .tag {
+        font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; font-weight: 600; color: var(--cyan-glow);
+        background: rgba(38,208,201,.12); border: 1px solid rgba(38,208,201,.25);
+        padding: 2.5px 8px; border-radius: var(--r-pill); letter-spacing: .6px; text-transform: uppercase;
+    }
+    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; font-weight: 400; }
 
-        .refresh-spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid white;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            margin-right: 6px;
-        }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .back-console {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+        padding: 8px 16px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+        color: #C7D6DB; font-weight: 600; font-size: 12px; transition: background .15s, color .15s;
+    }
+    .back-console:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .admin-chip {
+        display: flex; align-items: center; gap: 9px;
+        padding: 5px 12px 5px 5px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    }
+    .admin-avatar {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(155deg,#3A5A63,#1B343C);
+        display: flex; align-items: center; justify-content: center;
+        color: #DCEBEE; font-size: 10.5px; font-weight: 700; font-family:'Space Grotesk',sans-serif;
+    }
+    .admin-chip span { font-size: 11.5px; font-weight: 600; color: #D6E4E7; }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+    .flow-line {
+        height: 3px; width: 100%; flex-shrink: 0; position: relative; overflow: hidden;
+        background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900));
+        background-size: 200% 100%; animation: flowMove 5s linear infinite;
+    }
+    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
 
-        .last-updated {
-            font-size: 0.7rem;
-            color: #6b7280;
-            margin-left: 10px;
-        }
-    </style>
+    /* ===== UNIFIED INSTRUMENT STRIP — merges former dual stat panels ===== */
+    .instrument-strip {
+        background: var(--surface); border-bottom: 1px solid var(--border);
+        padding: 0 32px; display: flex; align-items: stretch; flex-wrap: wrap; flex-shrink: 0;
+    }
+    .instrument { display: flex; align-items: center; gap: 11px; padding: 13px 24px 13px 0; margin-right: 24px; border-right: 1px solid var(--border-soft); flex-shrink: 0; }
+    .instrument:last-of-type { border-right: none; margin-right: 0; }
+    .instrument-icon { width: 30px; height: 30px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 12.5px; flex-shrink: 0; }
+    .instrument-icon.total { background: var(--blue-100); color: var(--blue-600); }
+    .instrument-icon.assigned { background: var(--teal-050); color: var(--teal-700); }
+    .instrument-icon.trucks { background: var(--violet-100, #ECE9F9); color: #5B4AA8; }
+    .instrument-icon.drivers { background: var(--green-100); color: var(--green-600); }
+    .instrument-icon.available { background: var(--amber-100); color: var(--amber-600); }
+    .instrument-icon.active { background: var(--orange-100); color: var(--orange-600); }
+    .instrument-copy h4 { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-faint); margin-bottom: 3px; white-space: nowrap; }
+    .instrument-copy .val { font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 600; color: var(--ink); line-height: 1; }
+    .instrument-spacer { flex: 1; }
+    .last-updated { font-size: 11px; color: var(--ink-faint); padding: 13px 0; display: flex; align-items: center; gap: 6px; }
+
+    /* ===== CONTROL BAR ===== */
+    .control-bar {
+        background: var(--surface); border-bottom: 1px solid var(--border);
+        padding: 13px 32px; display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 20;
+    }
+    .search-wrapper {
+        display: flex; gap: 8px; align-items: center;
+        background: var(--bg); padding: 6px 6px 6px 14px; border-radius: var(--r-pill); border: 1px solid var(--border);
+    }
+    .search-wrapper input {
+        border: none; padding: 6px 0; font-size: 12.5px; width: 220px; outline: none; background: transparent;
+        font-family: 'Inter', sans-serif; color: var(--ink);
+    }
+    .search-wrapper input::placeholder { color: var(--ink-faint); }
+    .search-wrapper button {
+        border: none; padding: 7px 16px; border-radius: var(--r-pill); font-weight: 700; font-size: 11.5px; cursor: pointer;
+        font-family: 'Inter', sans-serif; transition: filter .15s;
+    }
+    .search-wrapper button:hover { filter: brightness(0.95); }
+    #searchBtn { background: var(--teal-700); color: white; }
+    #clearSearchBtn { background: var(--border); color: var(--ink-soft); }
+
+    .filter-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filter-group select, .filter-group button {
+        border: 1px solid var(--border); padding: 8px 15px; border-radius: var(--r-pill);
+        font-size: 11.5px; font-weight: 700; cursor: pointer;
+        font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink-soft); transition: all .15s;
+    }
+    .filter-group select:hover, .filter-group button:hover { border-color: var(--teal-600); color: var(--teal-700); }
+    #manualRefreshBtn { background: var(--ink); color: white; border-color: var(--ink); }
+    #manualRefreshBtn:hover { background: var(--teal-700); border-color: var(--teal-700); color: white; }
+    .auto-refresh-btn { background: var(--teal-700) !important; color: white !important; border-color: var(--teal-700) !important; }
+    .auto-refresh-btn.off { background: var(--ink-faint) !important; border-color: var(--ink-faint) !important; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content { flex: 1; padding: 22px 32px 40px; }
+
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+    .section-head h2 { font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 9px; }
+    .section-head h2 i { color: var(--teal-600); font-size: 15px; }
+    .section-hint { font-size: 11.5px; color: var(--ink-faint); display: flex; align-items: center; gap: 7px; }
+    .section-hint i { color: var(--teal-600); }
+
+    /* ===== DISPATCH CARDS (rendered by JS — class names unchanged) ===== */
+    .drivers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 14px;
+    }
+
+    .driver-card {
+        background: var(--surface);
+        border-radius: var(--r-lg);
+        padding: 0;
+        border: 1px solid var(--border);
+        transition: box-shadow .15s, border-color .15s;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-xs);
+    }
+    .driver-card:hover { box-shadow: var(--shadow-sm); border-color: #CBDBDE; }
+
+    /* card header row */
+    .driver-card > div:first-child {
+        padding: 14px 18px 12px;
+        background: #FBFDFD;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .booking-badge {
+        display: inline-block; font-family: 'IBM Plex Mono', monospace;
+        background: var(--teal-050); padding: 3px 11px; border-radius: var(--r-pill);
+        font-size: 10.5px; font-weight: 700; color: var(--teal-700); letter-spacing: .2px;
+    }
+    .driver-card h2 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 16px; margin: 0; padding: 16px 18px 4px; font-weight: 700;
+        display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px;
+        color: var(--ink);
+    }
+    .info-row {
+        display: flex; align-items: baseline; gap: 10px;
+        margin: 0 18px; padding: 8px 0;
+        border-bottom: 1px dashed var(--border-soft);
+        font-size: 12px;
+    }
+    .info-label { font-weight: 700; width: 108px; color: var(--ink-faint); flex-shrink: 0; font-size: 10px; text-transform: uppercase; letter-spacing: .4px; }
+    .info-value { font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; }
+    .quantity-meter { background: var(--border); border-radius: var(--r-pill); height: 6px; width: calc(100% - 36px); margin: 8px 18px 4px; overflow: hidden; }
+    .meter-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--teal-600), var(--cyan-glow)); border-radius: var(--r-pill); transition: width .4s ease; }
+
+    .action-btn {
+        border: none; border-radius: var(--r-pill); padding: 7px 14px;
+        font-size: 11px; font-weight: 700; cursor: pointer;
+        transition: filter .15s, transform .1s; font-family: 'Inter', sans-serif;
+    }
+    .action-btn:active { transform: scale(.96); }
+    .action-btn:hover { filter: brightness(0.95); }
+    .reassign-btn { background: var(--blue-600); color: #fff; }
+    .reassign-btn:hover { background: #234B7D; filter: none; }
+    .delete-btn { background: var(--red-100); color: var(--red-600); }
+
+    .card-footer {
+        display: flex; justify-content: space-between; align-items: center;
+        margin: 14px 18px 16px; flex-wrap: wrap; gap: 8px;
+    }
+
+    .status-select {
+        font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 700;
+        border: 1px solid var(--border); background: var(--bg);
+        color: var(--ink-soft); border-radius: var(--r-pill); padding: 7px 12px;
+    }
+
+    .toast-message {
+        position: fixed; bottom: 26px; right: 26px;
+        background: var(--ink); color: white;
+        padding: 12px 20px; border-radius: var(--r-pill);
+        font-weight: 600; font-size: 13px; z-index: 1200;
+        animation: fadeSlide .3s ease;
+        box-shadow: var(--shadow-lg);
+        display: flex; align-items: center; gap: 10px;
+    }
+    @keyframes fadeSlide { from { opacity:0; transform: translateX(30px);} to { opacity:1; transform: translateX(0);} }
+
+    .empty-state {
+        text-align: center; padding: 60px 20px;
+        background: var(--surface); border-radius: var(--r-lg);
+        grid-column: 1 / -1; border: 1px solid var(--border); color: var(--ink-soft);
+        font-size: 13px;
+    }
+    footer.page-footer {
+        margin-top: 22px; text-align: center;
+        font-size: 11.5px; color: var(--ink-faint);
+        padding-bottom: 4px;
+        display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+    }
+    footer.page-footer i { color: var(--teal-600); }
+
+    @media (max-width: 720px) {
+        .topbar, .instrument-strip, .control-bar, .main-content { padding-left: 16px; padding-right: 16px; }
+        .drivers-grid { grid-template-columns: 1fr; }
+        .control-bar { flex-direction: column; align-items: stretch; }
+        .search-wrapper input { width: 100%; }
+    }
+
+    /* ===== ASSIGN MODAL ===== */
+    .modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(10,26,34,0.6); backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 2000; visibility: hidden; opacity: 0; transition: .2s;
+    }
+    .modal-overlay.active { visibility: visible; opacity: 1; }
+    .assign-modal {
+        background: var(--surface); border-radius: var(--r-lg);
+        max-width: 520px; width: 90%; padding: 28px;
+        box-shadow: var(--shadow-lg);
+        max-height: 90vh; overflow-y: auto;
+        border-top: 4px solid transparent;
+        border-image: linear-gradient(90deg, var(--teal-600), var(--cyan-glow), var(--amber-600)) 1;
+    }
+    .assign-modal-head {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 6px;
+        margin: -28px -28px 6px; padding: 20px 28px 16px;
+        background: linear-gradient(120deg, var(--teal-900), var(--teal-700) 60%, var(--teal-600));
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+    }
+    .assign-modal-icon {
+        width: 40px; height: 40px; border-radius: 11px; background: rgba(255,255,255,.14); color: var(--cyan-glow);
+        display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+        border: 1px solid rgba(255,255,255,.18);
+    }
+    .assign-modal h3 { font-family: 'Space Grotesk', sans-serif; font-size: 18px; color: #fff; font-weight: 700; }
+    .assign-modal p#modalBookingRef {
+        margin: 0 0 18px; font-size: 12.5px; color: var(--ink-soft);
+        background: var(--teal-050); border: 1px solid var(--teal-100);
+        padding: 8px 13px; border-radius: var(--r-md); font-family: 'IBM Plex Mono', monospace;
+    }
+    .assign-modal label { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .4px; display: block; }
+    .assign-modal label .label-sub { text-transform: none; font-weight: 500; color: var(--ink-faint); letter-spacing: 0; font-size: 10.5px; }
+    .assign-modal input, .assign-modal select {
+        width: 100%; padding: 11px 15px; margin: 7px 0 8px;
+        border-radius: var(--r-md); border: 1.5px solid var(--border);
+        font-size: 13px; font-family: 'Inter', sans-serif; color: var(--ink);
+        background: var(--bg); transition: border-color .15s, box-shadow .15s;
+    }
+    .assign-modal input:focus, .assign-modal select:focus { outline: none; border-color: var(--teal-600); box-shadow: 0 0 0 3px rgba(23,166,180,.15); }
+    .assign-modal input.field-teal { border-color: var(--teal-100); background: var(--teal-050); }
+    .assign-modal input.field-teal:focus { border-color: var(--teal-600); background: var(--surface); }
+    .assign-modal input.field-amber { border-color: var(--amber-100); background: #FFFCF5; }
+    .assign-modal input.field-amber:focus { border-color: var(--amber-600); background: var(--surface); }
+    .assign-modal .form-hint { font-size: 11px; color: var(--ink-faint); margin-top: -4px; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+    .chip-btn {
+        border: 1px solid var(--teal-100); background: var(--teal-050); color: var(--teal-700);
+        font-size: 10.5px; font-weight: 700; padding: 5px 11px; border-radius: var(--r-pill);
+        cursor: pointer; font-family: 'Inter', sans-serif; transition: filter .15s, transform .1s;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .chip-btn i { font-size: 10px; }
+    .chip-btn:hover { filter: brightness(0.95); }
+    .chip-btn:active { transform: scale(.95); }
+    .chip-btn.amber { border-color: var(--amber-100); background: #FFF6E6; color: var(--amber-600); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 6px; justify-content: flex-end; }
+    .modal-actions button {
+        padding: 10px 22px; border-radius: var(--r-pill); border: none; cursor: pointer;
+        font-weight: 700; font-size: 12.5px; font-family: 'Inter', sans-serif; transition: filter .15s;
+    }
+    .modal-actions button:hover { filter: brightness(0.95); }
+
+    .warning-badge {
+        background: var(--amber-100); color: var(--amber-600);
+        padding: 2px 9px; border-radius: var(--r-pill); font-size: 10px; margin-left: 6px; font-weight: 700;
+    }
+
+    .refresh-spinner {
+        display: inline-block; width: 12px; height: 12px;
+        border: 2px solid white; border-top-color: transparent;
+        border-radius: 50%; animation: spin .6s linear infinite; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
+<div class="app-shell">
 
-<div class="dashboard-header">
-    <h1>Driver Assignment · NeoDispatch</h1>
-    <div class="stats-panel">
-        <div class="stat-badge"><i>📋</i> Total Bookings: <span id="totalCount">0</span></div>
-        <div class="stat-badge"><i>✅</i> Assigned: <span id="assignedCount">0</span></div>
-        <div class="stat-badge"><i>🚛</i> Active Trucks: <span id="activeTrucksCount">0</span></div>
+    <!-- ================= TOP BAR ================= -->
+    <div class="topbar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fas fa-truck-fast"></i></div>
+            <div class="brand-text">
+                <h1>Driver Assignment <span class="tag">Dispatch</span></h1>
+                <p>Match approved orders to available drivers</p>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <a href="/booking-management" class="back-console"><i class="fas fa-arrow-left"></i>Booking Console</a>
+            <div class="admin-chip">
+                <div class="admin-avatar">A</div>
+                <span>Admin</span>
+            </div>
+        </div>
+    </div>
+    <div class="flow-line"></div>
+
+    <!-- ================= UNIFIED INSTRUMENT STRIP ================= -->
+    <div class="instrument-strip">
+        <div class="instrument">
+            <div class="instrument-icon total"><i class="fas fa-clipboard-list"></i></div>
+            <div class="instrument-copy"><h4>Total Bookings</h4><div class="val" id="totalCount">0</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon assigned"><i class="fas fa-user-check"></i></div>
+            <div class="instrument-copy"><h4>Assigned</h4><div class="val" id="assignedCount">0</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon trucks"><i class="fas fa-truck"></i></div>
+            <div class="instrument-copy"><h4>Active Trucks</h4><div class="val" id="activeTrucksCount">0</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon drivers"><i class="fas fa-user-tie"></i></div>
+            <div class="instrument-copy"><h4>Total Drivers</h4><div class="val" id="totalDriversCount">0</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon available"><i class="fas fa-circle-check"></i></div>
+            <div class="instrument-copy"><h4>Available Trucks</h4><div class="val" id="availableTrucksCount">0</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon active"><i class="fas fa-route"></i></div>
+            <div class="instrument-copy"><h4>Active Runs</h4><div class="val" id="activeAssignmentsCount">0</div></div>
+        </div>
+        <div class="instrument-spacer"></div>
+        <div class="last-updated"><i class="far fa-clock"></i><span id="lastUpdatedLabel">Loading…</span></div>
+    </div>
+
+    <!-- ================= CONTROL BAR ================= -->
+    <div class="control-bar">
+        <div class="search-wrapper">
+            <i class="fas fa-magnifying-glass" style="color:var(--ink-faint); font-size:12px;"></i>
+            <input type="text" id="searchInput" placeholder="Search customer, driver, booking ID..." value="">
+            <button id="searchBtn">Search</button>
+            <button id="clearSearchBtn">Clear</button>
+        </div>
+        <div class="filter-group" id="filterGroup">
+            <select id="quantityFilter">
+                <option value="all">All Water Qty</option>
+                <option value=">3000">Above 3000 L</option>
+                <option value="<3000">Below 3000 L</option>
+            </select>
+            <button id="resetFiltersBtn"><i class="fas fa-rotate-left"></i> Reset</button>
+            <button id="manualRefreshBtn">Refresh Now</button>
+        </div>
+    </div>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main-content">
+        <div class="section-head">
+            <h2><i class="fas fa-diagram-project"></i>Dispatch Board</h2>
+            <div class="section-hint"><i class="fas fa-circle-info"></i>Auto-refreshes every 5 seconds &middot; press <span class="mono">Ctrl/Cmd+K</span> to search</div>
+        </div>
+
+        <div id="driversContainer" class="drivers-grid">
+            <div class="empty-state">
+                Loading bookings from database...
+            </div>
+        </div>
+
+        <footer class="page-footer">
+            <i class="fas fa-circle-info"></i>
+            Driver email is required for the approval workflow &middot; Waiting Driver Approval &rarr; Accept/Reject &middot; Auto-refreshes every 5 seconds
+        </footer>
     </div>
 </div>
 
-<div class="toolbar">
-    <div class="search-wrapper">
-        <input type="text" id="searchInput" placeholder="🔍 Search by customer, driver, booking ID..." value="">
-        <button id="searchBtn">Search</button>
-        <button id="clearSearchBtn" style="background:#cfdfed; color:#1e3a4d;">Clear</button>
-    </div>
-    <div class="filter-group" id="filterGroup">
-        <select id="quantityFilter">
-            <option value="all">All Water Qty</option>
-            <option value=">3000">Above 3000 L</option>
-            <option value="<3000">Below 3000 L</option>
-        </select>
-        <button id="resetFiltersBtn" style="background:#eef2ff;">⟳ Reset</button>
-        <button id="manualRefreshBtn" style="background:#2c7da0; color:white;">🔄 Refresh Now</button>
-    </div>
-</div>
-
-<div id="driversContainer" class="drivers-grid">
-    <div class="empty-state">
-        ⏳ Loading bookings from database...
-    </div>
-</div>
-
-<div class="driver-stats" id="driverStatsPanel">
-    <div class="driver-stat-card">👨‍✈️ Total Drivers: <span id="totalDriversCount">0</span></div>
-    <div class="driver-stat-card">🚛 Available Trucks: <span id="availableTrucksCount">0</span></div>
-    <div class="driver-stat-card">📊 Active Assignments: <span id="activeAssignmentsCount">0</span></div>
-</div>
-
-<!-- MODAL WITH MANDATORY EMAIL CAPTURE -->
+<!-- ================= ASSIGN MODAL (mandatory email capture preserved) ================= -->
 <div id="assignModal" class="modal-overlay">
     <div class="assign-modal">
-        <h3>✍️ Assign Driver & Logistics</h3>
-        <p style="margin-bottom: 12px;" id="modalBookingRef">Booking: --</p>
-        
+        <div class="assign-modal-head">
+            <div class="assign-modal-icon"><i class="fas fa-truck-fast"></i></div>
+            <h3>Assign Driver &amp; Logistics</h3>
+        </div>
+        <p id="modalBookingRef">Booking: --</p>
+
         <input type="hidden" name="driver_email" id="driver_email" value="">
-        
-        <label>👨‍✈️ Select Driver</label>
+
+        <label>Select Driver <span class="label-sub">(sorted nearest-first by real road distance — GPS + OSRM)</span></label>
         <select name="driver_name" id="modalDriverSelect" required>
-            <option value="">-- Choose Driver --</option>
+            <option value="">-- Loading nearby drivers... --</option>
         </select>
-        
-        <div class="form-hint">📧 Driver email will be automatically captured for approval workflow</div>
-        
-        <label>📍 Live Location (admin input)</label>
-        <input type="text" id="modalLiveLocation" placeholder="e.g., Near City Center, En Route to Customer" value="In Transit">
-        
-        <label>⏱️ ETA (minutes or text)</label>
-        <input type="text" id="modalETA" placeholder="e.g., 35 min, 1 hour" value="45 min">
-        
+        <div class="form-hint" id="rankingHint"><i class="fas fa-circle-info"></i>Ranking drivers by live GPS distance…</div>
+
+        <div class="form-hint"><i class="fas fa-circle-info"></i>Driver email is captured automatically for the approval workflow</div>
+
+        <label><i class="fas fa-location-dot" style="color:var(--teal-600); margin-right:5px;"></i>Live Location <span class="label-sub">(auto-computed from the driver's real GPS — you don't type this)</span></label>
+        <input type="text" id="modalLiveLocation" class="field-teal" placeholder="Computed automatically" readonly>
+
+        <label><i class="fas fa-hourglass-half" style="color:var(--amber-600); margin-right:5px;"></i>ETA <span class="label-sub">(real driving time from OSRM road routing — you don't type this)</span></label>
+        <input type="text" id="modalETA" class="field-amber" placeholder="Computed automatically" readonly>
+
         <div class="modal-actions">
-            <button id="modalCancelBtn" style="background:#e2e8f0;">Cancel</button>
-            <button id="modalConfirmBtn" style="background:#1f6392; color:white;">Confirm Assignment</button>
+            <button id="modalCancelBtn" style="background:var(--border); color:var(--ink-soft);">Cancel</button>
+            <button id="modalConfirmBtn" style="background:var(--teal-700); color:white;"><i class="fas fa-check" style="margin-right:6px;"></i>Confirm Assignment</button>
         </div>
     </div>
 </div>
-
-<footer>
-    ⚡ Driver email required for approval workflow | Waiting Driver Approval → Accept/Reject | 🔄 Auto-refreshes every 5 seconds
-</footer>
 
 <script>
     // ============================================================
@@ -506,6 +527,7 @@
     const modalCancelBtn = document.getElementById("modalCancelBtn");
     const driverEmailHidden = document.getElementById("driver_email");
     const manualRefreshBtn = document.getElementById("manualRefreshBtn");
+    const lastUpdatedLabel = document.getElementById("lastUpdatedLabel");
     
     // ============================================================
     // HELPER FUNCTIONS
@@ -516,8 +538,8 @@
         if(existingToast) existingToast.remove();
         const toast = document.createElement("div");
         toast.className = "toast-message";
-        toast.style.backgroundColor = isError ? "#b91c1c" : "#1f6392";
-        toast.innerText = message;
+        toast.style.backgroundColor = isError ? "#B23B30" : "#0A1A22";
+        toast.innerHTML = `<i class="fas ${isError ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i><span>${escapeHtml(message)}</span>`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2800);
     }
@@ -533,6 +555,9 @@
         availableTrucksSpan.innerText = availableDrivers;
         const activeAssignments = bookings.filter(b => b.status === 'On The Way' || b.status === 'Waiting Driver Approval' || (b.driver && b.driver !== "Not Assigned" && b.status !== 'Delivered')).length;
         activeAssignmentsSpan.innerText = activeAssignments;
+        if (lastUpdateTime && lastUpdatedLabel) {
+            lastUpdatedLabel.innerText = "Updated " + lastUpdateTime.toLocaleTimeString();
+        }
     }
     
     function getFilteredBookings() {
@@ -567,6 +592,55 @@
     }
     
     // ============================================================
+    // REAL DISTANCE-BASED ETA (driver's live GPS vs customer's pinned
+    // delivery coordinates) - no fake numbers, only computed when both
+    // points are real and the driver's fix is recent.
+    // ============================================================
+    
+    function haversineKm(lat1, lng1, lat2, lng2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    
+    const LOCATION_STALE_AFTER_MS = 10 * 60 * 1000; // 10 minutes
+    const AVG_CITY_SPEED_KMH = 30;
+    
+    function hasFreshDriverGps(driver) {
+        if (driver.currentLat == null || driver.currentLng == null) return false;
+        if (!driver.locationUpdatedAt) return false;
+        const age = Date.now() - new Date(driver.locationUpdatedAt).getTime();
+        return age >= 0 && age < LOCATION_STALE_AFTER_MS;
+    }
+    
+    // Reverse-geocodes driver coordinates into a readable place name via
+    // OpenStreetMap Nominatim (free, no API key). Small in-memory cache
+    // avoids re-querying for the same coordinates repeatedly.
+    const reverseGeocodeCache = new Map();
+    async function reverseGeocode(lat, lng) {
+        const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+        if (reverseGeocodeCache.has(key)) return reverseGeocodeCache.get(key);
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=16`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await res.json();
+            const addr = data.address || {};
+            const short = addr.road || addr.suburb || addr.neighbourhood || addr.village || addr.town || addr.city_district || addr.city || data.display_name || null;
+            const result = short || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            reverseGeocodeCache.set(key, result);
+            return result;
+        } catch (err) {
+            console.log('Reverse geocode failed', err);
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+    }
+    
+    // ============================================================
     // EMAIL CAPTURE FUNCTIONS
     // ============================================================
     
@@ -578,6 +652,13 @@
         }
     }
     
+    // When re-opening the modal to edit an already-assigned booking, we
+    // programmatically fire a 'change' event just to prime the driver_email
+    // field - that pass should NOT stomp on the real Live Location / ETA
+    // that were already saved for this booking. This flag distinguishes
+    // that internal replay from a genuine driver pick by the admin.
+    let suppressAutoFill = false;
+    
     function emailChangeHandler() {
         const selectEl = document.querySelector("#modalDriverSelect");
         const selectedOption = selectEl.options[selectEl.selectedIndex];
@@ -586,25 +667,64 @@
         if (driverEmailHidden) {
             driverEmailHidden.value = email || "";
             if (email) {
-                console.log(`✅ driver_email set to: ${email}`);
+                console.log(`driver_email set to: ${email}`);
             }
+        }
+        
+        if (suppressAutoFill) return;
+        
+        const driverName = selectEl.value;
+        const selectedDriver = backendDrivers.find(d => d.name === driverName);
+        if (!selectedDriver) return;
+        
+        autoFillFromRealLocation(selectedDriver);
+    }
+    
+    async function autoFillFromRealLocation(selectedDriver) {
+        const booking = bookings.find(b => b.id === activeBookingIdForModal);
+        const driverHasGps = hasFreshDriverGps(selectedDriver);
+        const customerHasCoords = booking && booking.customerLat != null && booking.customerLng != null;
+        
+        if (driverHasGps && customerHasCoords) {
+            // REAL calculation: actual driver GPS vs actual customer pin.
+            const distanceKm = haversineKm(selectedDriver.currentLat, selectedDriver.currentLng, booking.customerLat, booking.customerLng);
+            const etaMin = Math.max(1, Math.round((distanceKm / AVG_CITY_SPEED_KMH) * 60));
+            modalETA.value = `${etaMin} min (${distanceKm.toFixed(1)} km)`;
+            
+            modalLiveLocation.value = "Locating…";
+            const placeName = await reverseGeocode(selectedDriver.currentLat, selectedDriver.currentLng);
+            // Guard against a slower response landing after the admin already
+            // switched to a different driver in the dropdown.
+            if (modalDriverSelect.value === selectedDriver.name) {
+                modalLiveLocation.value = placeName;
+            }
+            showToast(`Live GPS: ${selectedDriver.name} is ${distanceKm.toFixed(1)} km away (~${etaMin} min)`, false);
+            
+        } else {
+            // No real GPS fix yet for this driver (they haven't opened their
+            // dashboard with location sharing on), or this booking has no
+            // pinned customer coordinates (older booking). Be honest about
+            // it instead of presenting a guess as if it were measured.
+            modalLiveLocation.value = "At Warehouse - Preparing Dispatch";
+            modalETA.value = selectedDriver.status === "On Trip" ? "1 hour" : "30 min";
+            
+            const reason = !driverHasGps ? "driver hasn't shared live GPS yet" : "this booking has no saved delivery coordinates";
+            showToast(`Estimated default used — ${reason}. Adjust if needed.`, false);
         }
     }
     
     // ============================================================
-    // CORE DATA FETCHING - THE KEY FIX
+    // CORE DATA FETCHING
     // ============================================================
     
     async function fetchFreshData(showToastOnSuccess = false) {
         try {
-            // Add cache-busting timestamp
             const response = await fetch('/api/latest-bookings?t=' + Date.now());
             const data = await response.json();
             
             if (data.success && data.bookings) {
                 const oldCount = bookings.length;
                 
-                // ✅ CRITICAL: Replace arrays with fresh data from MongoDB
                 bookings = data.bookings;
                 
                 if (data.drivers) {
@@ -613,20 +733,18 @@
                 
                 lastUpdateTime = new Date();
                 
-                // Re-render the UI
                 renderBookings();
                 
-                // Show notification if new bookings were added
                 if (oldCount !== bookings.length && showToastOnSuccess) {
                     const change = bookings.length - oldCount;
                     if (change > 0) {
-                        showToast(`📦 ${change} new booking${change > 1 ? 's' : ''} added! Total: ${bookings.length}`, false);
+                        showToast(`${change} new booking${change > 1 ? 's' : ''} added. Total: ${bookings.length}`, false);
                     } else if (change < 0) {
-                        showToast(`🗑️ ${Math.abs(change)} booking${Math.abs(change) > 1 ? 's' : ''} removed`, false);
+                        showToast(`${Math.abs(change)} booking${Math.abs(change) > 1 ? 's' : ''} removed`, false);
                     }
                 }
                 
-                console.log(`✅ Data refreshed: ${bookings.length} bookings, ${backendDrivers.length} drivers at ${lastUpdateTime.toLocaleTimeString()}`);
+                console.log(`Data refreshed: ${bookings.length} bookings, ${backendDrivers.length} drivers at ${lastUpdateTime.toLocaleTimeString()}`);
                 return true;
             } else {
                 console.error('API returned unsuccessful response:', data);
@@ -652,16 +770,16 @@
             if (isAutoRefreshEnabled) {
                 await fetchFreshData(false);
             }
-        }, 5000); // Refresh every 5 seconds
+        }, 5000);
         
-        console.log("✅ Auto-refresh started (every 5 seconds)");
+        console.log("Auto-refresh started (every 5 seconds)");
     }
     
     function stopAutoRefresh() {
         if (autoRefreshInterval) {
             clearInterval(autoRefreshInterval);
             autoRefreshInterval = null;
-            console.log("⏸️ Auto-refresh stopped");
+            console.log("Auto-refresh stopped");
         }
     }
     
@@ -671,13 +789,11 @@
             const toggleBtn = document.createElement('button');
             toggleBtn.id = 'autoRefreshToggle';
             toggleBtn.className = 'auto-refresh-btn';
-            toggleBtn.innerHTML = '⏸️ Auto: ON';
-            toggleBtn.style.background = '#2c7da0';
-            toggleBtn.style.color = 'white';
+            toggleBtn.innerHTML = '<i class="fas fa-satellite-dish"></i> Auto: ON';
             toggleBtn.onclick = () => {
                 isAutoRefreshEnabled = !isAutoRefreshEnabled;
-                toggleBtn.innerHTML = isAutoRefreshEnabled ? '⏸️ Auto: ON' : '▶️ Auto: OFF';
-                toggleBtn.style.background = isAutoRefreshEnabled ? '#2c7da0' : '#6b7280';
+                toggleBtn.innerHTML = isAutoRefreshEnabled ? '<i class="fas fa-satellite-dish"></i> Auto: ON' : '<i class="fas fa-satellite-dish"></i> Auto: OFF';
+                toggleBtn.classList.toggle('off', !isAutoRefreshEnabled);
                 showToast(`Auto-refresh ${isAutoRefreshEnabled ? 'enabled' : 'disabled'}`, false);
             };
             filterGroup.appendChild(toggleBtn);
@@ -696,14 +812,37 @@
             
             await fetchFreshData(true);
             
-            manualRefreshBtn.innerHTML = '🔄 Refresh Now';
+            manualRefreshBtn.innerHTML = 'Refresh Now';
             manualRefreshBtn.disabled = false;
         });
     }
     
     // ============================================================
-    // RENDER BOOKINGS (Your existing render function, FIXED)
+    // RENDER BOOKINGS
     // ============================================================
+    
+    function computeEtaCountdown(booking) {
+        if(!booking.driverAssignedAt || !booking.eta) return null;
+        if(booking.status === 'Delivered' || booking.status === 'Pending') return null;
+        
+        const match = String(booking.eta).match(/(\d+)\s*(hour|hr|h|min|m)/i);
+        if(!match) return null;
+        
+        const amount = parseInt(match[1], 10);
+        const unit = match[2].toLowerCase();
+        const etaMinutes = unit.startsWith('h') ? amount * 60 : amount;
+        
+        const assignedAt = new Date(booking.driverAssignedAt);
+        if(isNaN(assignedAt.getTime())) return null;
+        
+        const targetTime = new Date(assignedAt.getTime() + etaMinutes * 60000);
+        const minutesLeft = Math.round((targetTime - new Date()) / 60000);
+        
+        if(minutesLeft <= 0) return { text: 'Delivery due now', color: '#B23B30' };
+        if(minutesLeft <= 10) return { text: `Arriving in ~${minutesLeft} min`, color: '#B23B30' };
+        if(minutesLeft <= 25) return { text: `Arriving in ~${minutesLeft} min`, color: '#A5690C' };
+        return { text: `Arriving in ~${minutesLeft} min`, color: '#157A50' };
+    }
     
     function renderBookings() {
         const filtered = getFilteredBookings();
@@ -711,8 +850,9 @@
         if(filtered.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
-                    📭 No bookings found<br>
-                    <small style="color: #6b7280;">Total bookings in system: ${bookings.length}</small>
+                    <i class="fas fa-truck-fast" style="font-size:32px; color:var(--ink-faint); opacity:.5;"></i>
+                    <div style="margin-top:12px;">No bookings found</div>
+                    <small style="color: var(--ink-faint);">Total bookings in system: ${bookings.length}</small>
                 </div>`;
             updateStats();
             return;
@@ -720,58 +860,66 @@
         
         const cardsHtml = filtered.map(booking => {
             const fillPercent = Math.min(100, (booking.waterQuantity / 10000) * 100);
-            let statusColor = "#6b7280";
+            let statusColor = "#8CA0A9";
             let statusBadge = booking.status || "Pending";
-            if(booking.status === 'Delivered') statusColor = "#0f6e3f";
-            else if(booking.status === 'On The Way') statusColor = "#d97706";
-            else if(booking.status === 'Waiting Driver Approval') statusColor = "#ea580c";
-            else if(booking.status === 'Approved') statusColor = "#2c7da0";
+            if(booking.status === 'Delivered') statusColor = "#157A50";
+            else if(booking.status === 'On The Way') statusColor = "#A5690C";
+            else if(booking.status === 'Waiting Driver Approval') statusColor = "#C1600F";
+            else if(booking.status === 'Approved') statusColor = "#2C5F9E";
             
             const showEmailWarning = !booking.driverEmail && booking.driver && booking.driver !== "Not Assigned";
+            const etaCountdown = computeEtaCountdown(booking);
             
             return `
                 <div class="driver-card" data-id="${booking.id}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span class="booking-badge">${escapeHtml(booking.bookingRef)}</span>
-                        <span style="font-size:0.7rem; background:#eef2ff; border-radius:40px; padding:0.2rem 0.8rem;">🚛 ${escapeHtml(booking.truckNumber || 'Not Assigned')}</span>
+                        <span style="font-size:10.5px; font-weight:700; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 11px; color:var(--ink-soft);"><i class="fas fa-truck" style="margin-right:4px;"></i>${escapeHtml(booking.truckNumber || 'Not Assigned')}</span>
                     </div>
-                    <h2>${escapeHtml(booking.customer)} <span style="font-size:0.85rem; font-weight:400;">📞 ${escapeHtml(booking.phone || '—')}</span></h2>
+                    <h2>${escapeHtml(booking.customer)} <span style="font-size:0.75rem; font-weight:500; color:var(--ink-soft);">${escapeHtml(booking.phone || '—')}</span></h2>
                     <div class="info-row">
-                        <span class="info-label">👨‍✈️ Driver</span>
-                        <span class="info-value">${escapeHtml(booking.driver && booking.driver !== "Not Assigned" ? booking.driver : '🔹 Unassigned')}
-                        ${showEmailWarning ? '<span class="warning-badge">⚠️ Missing Email!</span>' : ''}
+                        <span class="info-label">Driver</span>
+                        <span class="info-value">${escapeHtml(booking.driver && booking.driver !== "Not Assigned" ? booking.driver : 'Unassigned')}
+                        ${showEmailWarning ? '<span class="warning-badge">Missing email</span>' : ''}
                         </span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">📧 Driver Email</span>
+                        <span class="info-label">Driver Email</span>
                         <span class="info-value">${escapeHtml(booking.driverEmail || '—')}</span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">📍 Live Location</span>
-                        <span class="info-value">📍 ${escapeHtml(booking.liveLocation || '—')}</span>
+                        <span class="info-label"><i class="fas fa-location-dot" style="color:var(--teal-600);"></i> Location</span>
+                        <span class="info-value"><span style="background:var(--teal-050); color:var(--teal-700); padding:3px 11px; border-radius:20px; font-size:11px; font-weight:600;">${escapeHtml(booking.liveLocation || '—')}</span></span>
                     </div>
+                    ${etaCountdown ? `
                     <div class="info-row">
-                        <span class="info-label">💧 Water Quantity</span>
-                        <span class="info-value">${Number(booking.waterQuantity).toLocaleString()} Liters</span>
+                        <span class="info-label"><i class="fas fa-hourglass-half" style="color:${etaCountdown.color};"></i> ETA</span>
+                        <span class="info-value"><span style="background:${etaCountdown.color}1A; color:${etaCountdown.color}; padding:3px 11px; border-radius:20px; font-size:11px; font-weight:700;">${escapeHtml(etaCountdown.text)}</span></span>
+                    </div>` : ''}
+                    <div class="info-row" style="border-bottom:none;">
+                        <span class="info-label">Water Qty</span>
+                        <span class="info-value mono">${Number(booking.waterQuantity).toLocaleString()} L</span>
                     </div>
                     <div class="quantity-meter">
                         <div class="meter-fill" style="width: ${fillPercent}%;"></div>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">📅 Status</span>
-                        <span class="info-value"><span style="background:${statusColor}; padding:0.2rem 1rem; border-radius:30px; color:white; font-size:0.75rem;">${escapeHtml(statusBadge)}</span></span>
+                    <div class="info-row" style="border-bottom:none; margin-top:4px;">
+                        <span class="info-label">Status</span>
+                        <span class="info-value"><span style="background:${statusColor}1A; color:${statusColor}; padding:3px 12px; border-radius:20px; font-size:10.5px; font-weight:700;">${escapeHtml(statusBadge)}</span></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap:wrap; gap:8px;">
-                        <select class="status-select" data-id="${booking.id}" style="padding:6px; border-radius:40px; background:#f3f4f6;">
+                    <div class="card-footer">
+                        <select class="status-select" data-id="${booking.id}">
                             <option value="">Update Status</option>
                             <option value="Pending" ${booking.status === "Pending" ? "selected" : ""}>Pending</option>
-                            <option value="Waiting Driver Approval" ${booking.status === "Waiting Driver Approval" ? "selected" : ""}>⏳ Waiting Driver Approval</option>
+                            <option value="Waiting Driver Approval" ${booking.status === "Waiting Driver Approval" ? "selected" : ""}>Waiting Driver Approval</option>
                             <option value="Approved" ${booking.status === "Approved" ? "selected" : ""}>Approved</option>
                             <option value="On The Way" ${booking.status === "On The Way" ? "selected" : ""}>On The Way</option>
                             <option value="Delivered" ${booking.status === "Delivered" ? "selected" : ""}>Delivered</option>
                         </select>
-                        <button class="action-btn reassign-btn" data-id="${booking.id}">🔄 Assign/Edit</button>
-                        <button class="action-btn delete-btn" data-id="${booking.id}">🗑️ Delete</button>
+                        <div style="display:flex; gap:8px;">
+                            <button class="action-btn reassign-btn" data-id="${booking.id}"><i class="fas fa-rotate"></i> Assign/Edit</button>
+                            <button class="action-btn delete-btn" data-id="${booking.id}"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -779,7 +927,6 @@
         
         container.innerHTML = cardsHtml;
         
-        // Re-attach event listeners
         document.querySelectorAll('.reassign-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.getAttribute('data-id');
@@ -811,35 +958,83 @@
     // MODAL FUNCTIONS
     // ============================================================
     
+    // Ranked drivers for the currently-open booking, keyed by Mongo _id -
+    // populated from /api/gps/nearest-drivers (real OSRM road distance).
+    let rankedDriversForModal = [];
+
+    async function loadRankedDrivers(bookingId) {
+        const hint = document.getElementById("rankingHint");
+        modalDriverSelect.innerHTML = '<option value="">-- Loading nearby drivers... --</option>';
+        modalLiveLocation.value = "";
+        modalETA.value = "";
+
+        try {
+            const res = await fetch(`/api/gps/nearest-drivers/${bookingId}`);
+            const data = await res.json();
+
+            if (!data.success || !data.drivers || data.drivers.length === 0) {
+                modalDriverSelect.innerHTML = '<option value="">-- No online drivers with live GPS available --</option>';
+                if (hint) hint.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${data.message || 'No online driver currently has a live GPS fix.'}`;
+                rankedDriversForModal = [];
+                return;
+            }
+
+            rankedDriversForModal = data.drivers;
+            modalDriverSelect.innerHTML = '<option value="">-- Choose Driver --</option>';
+
+            data.drivers.forEach((driver, idx) => {
+                const option = document.createElement("option");
+                option.value = driver.id;
+                option.setAttribute("data-email", driver.email);
+                const staleTag = driver.stale ? ' (GPS stale)' : '';
+                const movingTag = driver.moving_status === 'Stopped' ? ' · Stopped' : '';
+                const label = idx === 0
+                    ? `⭐ ${driver.name} — ${driver.distance_km} km · ~${driver.eta_min} min (Nearest Driver Recommended)`
+                    : `${driver.name} — ${driver.distance_km} km · ~${driver.eta_min} min${movingTag}${staleTag}`;
+                option.textContent = label;
+                modalDriverSelect.appendChild(option);
+            });
+
+            if (hint) {
+                hint.innerHTML = `<i class="fas fa-route"></i> ${data.drivers.length} online driver(s) ranked by real road distance (OSRM). Nearest: ${data.drivers[0].name} — ${data.drivers[0].distance_km} km.`;
+            }
+
+            // Auto-select the nearest driver and fill Live Location / ETA
+            // from the real routing result - admin can still override by
+            // picking someone else from the dropdown.
+            modalDriverSelect.value = data.drivers[0].id;
+            applyRankedDriverToFields(data.drivers[0]);
+            if (driverEmailHidden) driverEmailHidden.value = data.drivers[0].email || "";
+
+        } catch (err) {
+            console.log("Nearest-driver ranking failed", err);
+            modalDriverSelect.innerHTML = '<option value="">-- Could not load drivers --</option>';
+            if (hint) hint.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Could not reach the routing service. Try again.';
+        }
+    }
+
+    function applyRankedDriverToFields(driver) {
+        modalLiveLocation.value = `${driver.distance_km} km from customer (live GPS)`;
+        modalETA.value = `${driver.eta_min} min`;
+    }
+
+    modalDriverSelect.addEventListener("change", () => {
+        const driver = rankedDriversForModal.find(d => d.id === modalDriverSelect.value);
+        if (!driver) return;
+        if (driverEmailHidden) driverEmailHidden.value = driver.email || "";
+        applyRankedDriverToFields(driver);
+    });
+
     function openAssignModal(bookingId) {
         const booking = bookings.find(b => b.id === bookingId);
         if(!booking) return;
         activeBookingIdForModal = bookingId;
         modalBookingRefSpan.innerText = `Booking: ${booking.bookingRef} | Customer: ${booking.customer}`;
-        
-        modalDriverSelect.innerHTML = '<option value="">-- Choose Driver --</option>';
-        backendDrivers.forEach(driver => {
-            const option = document.createElement("option");
-            option.value = driver.name;
-            option.setAttribute("data-email", driver.email);
-            const statusIcon = driver.status === 'Available' ? '✅' : (driver.status === 'On Trip' ? '🚛' : '⏸️');
-            option.textContent = `${statusIcon} ${driver.name} - ${driver.truck} (${driver.status || 'Available'})`;
-            if(booking.driver === driver.name) option.selected = true;
-            modalDriverSelect.appendChild(option);
-        });
-        
+
         if(driverEmailHidden) driverEmailHidden.value = "";
-        
-        modalLiveLocation.value = booking.liveLocation && booking.liveLocation !== "Not Set" ? booking.liveLocation : "In Transit";
-        modalETA.value = booking.eta && booking.eta !== "—" ? booking.eta : "45 min";
-        
-        attachDriverEmailCapture();
-        
-        if (booking.driver && booking.driver !== "Not Assigned") {
-            const event = new Event('change');
-            modalDriverSelect.dispatchEvent(event);
-        }
-        
+
+        loadRankedDrivers(bookingId);
+
         modalOverlay.classList.add("active");
     }
     
@@ -852,65 +1047,55 @@
     async function confirmAssignment() {
         if(!activeBookingIdForModal) return;
         
-        const selectedDriverName = modalDriverSelect.value;
-        if(!selectedDriverName) {
+        const selectedDriverId = modalDriverSelect.value;
+        if(!selectedDriverId) {
             showToast("Please select a driver", true);
             return;
         }
         
-        const selectedDriver = backendDrivers.find(d => d.name === selectedDriverName);
+        const selectedDriver = rankedDriversForModal.find(d => d.id === selectedDriverId);
         if(!selectedDriver) {
-            showToast("Driver not found in database", true);
+            showToast("Driver not found in ranking — please reopen this dialog", true);
             return;
         }
         
-        const driverEmail = driverEmailHidden ? driverEmailHidden.value : "";
-        
-        if(!driverEmail || driverEmail === "") {
-            showToast("❌ CRITICAL ERROR: Driver email missing! Cannot assign without email.", true);
-            return;
-        }
-        
-        const liveLocation = modalLiveLocation.value.trim() || "In Transit";
-        const eta = modalETA.value.trim() || "45 min";
-        
-        showToast(`📨 Assigning driver ${selectedDriverName}...`, false);
-        
-        const formData = new URLSearchParams();
-        formData.append("driver_name", selectedDriver.name);
-        formData.append("driver_phone", selectedDriver.phone);
-        formData.append("driver_email", driverEmail);
-        formData.append("truck_number", selectedDriver.truck);
-        formData.append("live_location", liveLocation);
-        formData.append("ETA", eta);
-        formData.append("status", "Waiting Driver Approval");
+        const originalBtnHtml = modalConfirmBtn.innerHTML;
+        modalConfirmBtn.disabled = true;
+        modalConfirmBtn.innerHTML = '<span class="refresh-spinner"></span> Assigning...';
+        showToast(`Assigning driver ${selectedDriver.name}...`, false);
         
         try {
-            const response = await fetch(`/assign-driver/${activeBookingIdForModal}`, {
+            // Admin sends ONLY the driver id. The server fetches the
+            // driver's real GPS + the customer's GPS, calls OSRM, and
+            // fills location/distance/ETA/route itself.
+            const response = await fetch(`/api/gps/auto-assign/${activeBookingIdForModal}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: formData.toString()
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ driver_id: selectedDriverId })
             });
+            const result = await response.json();
             
-            if(response.ok || response.redirected) {
-                showToast(`✅ Driver ${selectedDriver.name} assigned! Waiting for driver approval.`);
-                await fetchFreshData(true); // Refresh data immediately
+            if(result.success) {
+                showToast(`Driver ${selectedDriver.name} assigned — ${result.distance_km} km, ~${result.eta_min} min. Waiting for driver approval.`);
+                await fetchFreshData(true);
                 closeModal();
             } else {
-                const errorText = await response.text();
-                showToast(`Assignment failed: ${errorText.substring(0, 100)}`, true);
+                showToast(`Assignment failed: ${result.message || 'Unknown error'}`, true);
             }
         } catch(err) {
             showToast("Network error while assigning", true);
+        } finally {
+            modalConfirmBtn.disabled = false;
+            modalConfirmBtn.innerHTML = originalBtnHtml;
         }
     }
     
     function deleteBooking(bookingId, bookingRef) {
-        if(confirm(`❗ Delete booking ${bookingRef} permanently from database?`)) {
+        if(confirm(`Delete booking ${bookingRef} permanently from database?`)) {
             fetch(`/delete-booking/${bookingId}`, { method: "GET" })
             .then(async () => {
-                showToast(`🗑️ Booking ${bookingRef} deleted`);
-                await fetchFreshData(true); // Refresh data immediately
+                showToast(`Booking ${bookingRef} deleted`);
+                await fetchFreshData(true);
             })
             .catch(() => showToast("Delete failed", true));
         }
@@ -927,8 +1112,8 @@
         .then(res => res.json())
         .then(async (data) => {
             if(data.success) {
-                showToast(`📌 Status changed to ${newStatus}`);
-                await fetchFreshData(true); // Refresh data immediately
+                showToast(`Status changed to ${newStatus}`);
+                await fetchFreshData(true);
             } else {
                 showToast("Status update failed", true);
             }
@@ -971,14 +1156,12 @@
     // ============================================================
     
     async function initialize() {
-        // Show loading state
-        container.innerHTML = '<div class="empty-state"><span class="refresh-spinner" style="border-color: #2c7da0; border-top-color: transparent;"></span> Loading from database...</div>';
+        container.innerHTML = '<div class="empty-state"><span class="refresh-spinner" style="border-color: var(--teal-600); border-top-color: transparent;"></span> Loading from database...</div>';
         
-        // Fetch fresh data from MongoDB API
         const success = await fetchFreshData(true);
         
         if (!success) {
-            container.innerHTML = '<div class="empty-state">❌ Failed to load data. Please check your connection and refresh.</div>';
+            container.innerHTML = '<div class="empty-state">Failed to load data. Please check your connection and refresh.</div>';
         }
     }
     
@@ -990,6 +1173,20 @@
     modalConfirmBtn.addEventListener("click", confirmAssignment);
     modalCancelBtn.addEventListener("click", closeModal);
     modalOverlay.addEventListener("click", (e) => { if(e.target === modalOverlay) closeModal(); });
+    
+    document.querySelectorAll(".chip-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetId = btn.getAttribute("data-target");
+            const value = btn.getAttribute("data-value");
+            const targetInput = document.getElementById(targetId);
+            if(targetInput) {
+                targetInput.value = value;
+                targetInput.focus();
+            }
+        });
+    });
+    
+    searchInput.addEventListener("keydown", (e) => { if(e.key === "Enter") performSearch(); });
     
     document.addEventListener("keydown", (e) => {
         if((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -1008,14 +1205,13 @@
     startAutoRefresh();
     addAutoRefreshToggle();
     
-    // Optional: Refresh when tab becomes visible again
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             fetchFreshData(false);
         }
     });
     
-    console.log("✅ NeoDispatch fully initialized - Auto-refresh every 5 seconds");
+    console.log("AquaFlow Dispatch fully initialized - Auto-refresh every 5 seconds");
 </script>
 </body>
 </html>

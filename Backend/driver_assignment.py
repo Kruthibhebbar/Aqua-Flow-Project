@@ -4,7 +4,8 @@ from flask import (
     url_for,
     session,
     request,
-    jsonify
+    jsonify,
+    flash
 )
 
 from bson.objectid import ObjectId
@@ -352,6 +353,17 @@ def init_driver_assignment(
             "_id": ObjectId(booking_id)
         })
 
+        # A future-dated booking can't be assigned yet - guard the
+        # actual write, not just the page that links to it.
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        if booking and booking.get("delivery_date", "") > today_str:
+            flash(
+                f"This order is scheduled for {booking.get('delivery_date')} "
+                "- driver assignment opens on that date.",
+                "warning"
+            )
+            return redirect(url_for("booking_management"))
+
         # =====================================================
         # UPDATE DATABASE
         # =====================================================
@@ -547,6 +559,19 @@ Please login to your driver portal to ACCEPT or REJECT this request.
 
         })
 
+        # A booking scheduled for a future date can't be assigned to a
+        # driver yet - it only becomes assignable once its delivery
+        # date actually arrives and it lands on the main booking
+        # management screen.
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        if booking and booking.get("delivery_date", "") > today_str:
+            flash(
+                f"This order is scheduled for {booking.get('delivery_date')} "
+                "- driver assignment opens on that date.",
+                "warning"
+            )
+            return redirect(url_for("booking_management"))
+
         drivers = list(
             drivers_collection.find({
                 "approval_status": "Approved",
@@ -614,6 +639,9 @@ Please login to your driver portal to ACCEPT or REJECT this request.
                         "status": booking.get("status", "Pending"),
                         "liveLocation": booking.get("live_location", "Not Set"),
                         "eta": booking.get("ETA", "—"),
+                        "driverAssignedAt": booking.get("driver_assigned_at").isoformat() if booking.get("driver_assigned_at") else None,
+                        "customerLat": booking.get("latitude"),
+                        "customerLng": booking.get("longitude"),
                         "created_at": booking.get("created_at", datetime.now()).isoformat() if booking.get("created_at") else None
                     })
                 except Exception as e:
@@ -639,7 +667,10 @@ Please login to your driver portal to ACCEPT or REJECT this request.
                         "email": driver.get("email", driver_name.lower().replace(" ", ".") + "@transit.com"),
                         "truck": driver.get("truck_number", "Not Assigned"),
                         "status": driver.get("status", "Available"),
-                        "currentLocation": driver.get("current_location", "Depot")
+                        "currentLocation": driver.get("current_location", "Depot"),
+                        "currentLat": driver.get("current_lat"),
+                        "currentLng": driver.get("current_lng"),
+                        "locationUpdatedAt": driver.get("location_updated_at").isoformat() if driver.get("location_updated_at") else None
                     })
             except Exception as e:
                 print(f"⚠️ Error fetching drivers: {e}")

@@ -244,6 +244,27 @@ This OTP is valid for 10 minutes.
                 session.pop("driver_otp", None)
                 session.pop("otp_generated_at", None)
                 print("OTP VERIFIED SUCCESSFULLY!")
+
+                # Save the real GPS fix captured on the OTP page (if the
+                # driver allowed location access) as their starting position -
+                # this is what lets the live map / admin ETA calculation
+                # start from the driver's actual location instead of a
+                # random/stale one.
+                driver_lat = request.form.get("driver_lat")
+                driver_lng = request.form.get("driver_lng")
+                if driver_lat and driver_lng:
+                    try:
+                        drivers_collection.update_one(
+                            {"email": session["driver_email"]},
+                            {"$set": {
+                                "current_lat": float(driver_lat),
+                                "current_lng": float(driver_lng),
+                                "location_updated_at": datetime.now()
+                            }}
+                        )
+                    except (TypeError, ValueError):
+                        pass
+
                 return redirect(url_for("driver_dashboard"))
             else:
                 print("OTP VERIFICATION FAILED!")

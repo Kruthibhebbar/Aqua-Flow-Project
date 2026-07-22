@@ -931,6 +931,21 @@ let onlineStatusBadge = $('#onlineStatusBadge');
 
 availabilityToggle.change(function() {
     const newStatus = this.checked ? 'Online' : 'Offline';
+
+    // Going online requires a live GPS fix - this toggle can no longer
+    // set Online on its own (see the GPS engine below, which is the
+    // only thing that flips this to Online, right after a real fix).
+    if (newStatus === 'Online' && typeof hasLocationPermission !== 'undefined' && !hasLocationPermission) {
+        availabilityToggle.prop('checked', false);
+        showToast('Location Permission Required — please allow location access in your browser to go online.', 'danger');
+        return;
+    }
+
+    if (newStatus === 'Offline' && typeof gpsTickInterval !== 'undefined' && gpsTickInterval) {
+        clearInterval(gpsTickInterval);
+        gpsTickInterval = null;
+    }
+
     showLoading();
     
     $.ajax({
@@ -957,102 +972,191 @@ availabilityToggle.change(function() {
     });
 });
 
-// Leaflet Map with REAL-TIME GPS tracking - only for an ACCEPTED / in-progress
-// delivery. If the driver hasn't accepted an order yet, #deliveryMap is not
-// rendered at all, so we skip map setup entirely.
-var updateInterval = null;
+// =====================================================================
+// REAL-TIME GPS ENGINE
+// One unified pipeline: navigator.geolocation.watchPosition() keeps a
+// continuous fix; a hard 5-second ticker pushes {lat, lng, accuracy,
+// speed, heading, timestamp} to /api/gps/update no matter whether this
+// driver has an active delivery or is just idle/online. The server
+// decides arrival/deviation/idle status - this page just displays it.
+// No manual location entry anywhere in this flow.
+// =====================================================================
+
+var GPS_PING_MS = 5000;
 var geoWatchId = null;
+var gpsTickInterval = null;
+var trackPollInterval = null;
+var latestFix = null;          // last raw GeolocationPosition
+var hasLocationPermission = false;
+var bestAccuracySoFar = Infinity;
+
 {% if current_delivery_order %}
 var CURRENT_BOOKING_ID = "{{ current_delivery_order._id }}";
-
-// Destination marker — uses the REAL location the customer pinned on the
-// map when booking (booking.latitude / booking.longitude). Falls back to
-// a rough city-center estimate only for older bookings made before the
-// map picker existed and have no coordinates saved.
 {% if current_delivery_order.latitude and current_delivery_order.longitude %}
 var destLat = {{ current_delivery_order.latitude }};
 var destLng = {{ current_delivery_order.longitude }};
 {% else %}
-var destLat = 12.9352;
-var destLng = 77.6245;
+var destLat = null;
+var destLng = null;
 {% endif %}
 
-// Start the map centered on the destination until we get a real GPS fix,
-// so it never opens on a random/wrong city.
-var map = L.map('deliveryMap').setView([destLat, destLng], 13);
+var map = L.map('deliveryMap').setView([destLat || 12.9352, destLng || 77.6245], 13);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
 }).addTo(map);
 
-var destMarker = L.marker([destLat, destLng]).addTo(map)
-    .bindPopup("<strong>📍 Delivery Point</strong><br>{{ current_delivery_order.address|truncate(60)|e }}");
+var destMarker = (destLat !== null) ? L.marker([destLat, destLng]).addTo(map)
+    .bindPopup("<strong>📍 Delivery Point</strong><br>{{ current_delivery_order.address|truncate(60)|e }}") : null;
 
 var driverMarker = null;
+var accuracyCircle = null;
 var routeLine = null;
-var lastPushedAt = 0;
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+// Pulls the server-computed REAL road route (OSRM) + dynamic ETA/distance
+// for this booking every 5s - this is what actually drives the ETA chip,
+// not client-side straight-line math.
+async function pollBookingTrack() {
+    try {
+        const res = await fetch(`/api/gps/track/${CURRENT_BOOKING_ID}`);
+        const data = await res.json();
+        if (!data.success) return;
+
+        if (data.driver_lat != null && data.driver_lng != null) {
+            if (!driverMarker) {
+                driverMarker = L.marker([data.driver_lat, data.driver_lng]).addTo(map)
+                    .bindPopup('<strong>📍 Your Live Location</strong>');
+            } else {
+                driverMarker.setLatLng([data.driver_lat, data.driver_lng]);
+            }
+        }
+
+        if (data.route_geometry && data.route_geometry.length > 1) {
+            if (routeLine) map.removeLayer(routeLine);
+            routeLine = L.polyline(data.route_geometry, { color: '#2d7aff', weight: 5, opacity: 0.8 }).addTo(map);
+            if (driverMarker && destMarker) {
+                map.fitBounds(data.route_geometry, { padding: [50, 50] });
+            }
+        }
+
+        if (data.eta_min != null) {
+            $('#etaTracker').html(`<i class="fa-regular fa-hourglass-half"></i> ETA: ${data.eta_min} min (${data.distance_remaining_km} km road distance)`);
+        } else if (!hasLocationPermission) {
+            $('#etaTracker').html('<i class="fa-solid fa-triangle-exclamation"></i> Enable location');
+        }
+
+        if (data.arrived) {
+            $('#etaTracker').html('<i class="fa-solid fa-flag-checkered"></i> Arrived at destination');
+            clearInterval(trackPollInterval);
+        }
+
+        if (data.route_deviated && typeof showToast === 'function') {
+            showToast('You appear to have moved off the planned route.', 'warning');
+        }
+    } catch (e) {
+        console.log('Track poll failed', e);
+    }
 }
+trackPollInterval = setInterval(pollBookingTrack, GPS_PING_MS);
+pollBookingTrack();
+{% endif %}
 
 function handleDriverPosition(pos) {
+    hasLocationPermission = true;
+    latestFix = pos;
+
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
+    const accuracy = pos.coords.accuracy || 9999;
+    bestAccuracySoFar = Math.min(bestAccuracySoFar, accuracy);
 
+    {% if current_delivery_order %}
     if (!driverMarker) {
-        driverMarker = L.marker([lat, lng]).addTo(map)
-            .bindPopup('<strong>📍 Your Live Location</strong>').openPopup();
-        routeLine = L.polyline([[lat, lng], [destLat, destLng]], {
-            color: '#2d7aff', weight: 4, dashArray: '8,8', opacity: 0.75
-        }).addTo(map);
-        map.fitBounds([[lat, lng], [destLat, destLng]], { padding: [50, 50] });
+        driverMarker = L.marker([lat, lng]).addTo(map).bindPopup('<strong>📍 Your Live Location</strong>').openPopup();
+        if (destLat !== null) map.fitBounds([[lat, lng], [destLat, destLng]], { padding: [50, 50] });
     } else {
         driverMarker.setLatLng([lat, lng]);
-        routeLine.setLatLngs([[lat, lng], [destLat, destLng]]);
     }
-
-    const distanceKm = haversineKm(lat, lng, destLat, destLng);
-    const etaMin = Math.max(1, Math.round((distanceKm / 30) * 60)); // ~30 km/h avg city speed
-    $('#etaTracker').html(`<i class="fa-regular fa-hourglass-half"></i> ETA: ${etaMin} min (${distanceKm.toFixed(1)} km)`);
-
-    // Push the real position to the server (throttled) so the customer's
-    // tracking page can plot the same live location.
-    const now = Date.now();
-    if (now - lastPushedAt > 8000) {
-        lastPushedAt = now;
-        fetch(`/api/update-driver-location/${CURRENT_BOOKING_ID}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat, lng })
-        }).catch(err => console.log('Location push failed', err));
+    if (!accuracyCircle) {
+        accuracyCircle = L.circle([lat, lng], { radius: accuracy, color: '#2d7aff', weight: 1, fillOpacity: 0.08 }).addTo(map);
+    } else {
+        accuracyCircle.setLatLng([lat, lng]);
+        accuracyCircle.setRadius(accuracy);
     }
+    {% endif %}
+
+    // First successful fix this page load -> GPS is live -> flip Online
+    // automatically (Step 2 of the workflow: Offline -> Online happens
+    // the moment GPS starts, no manual step required).
+    if (!gpsTickInterval) {
+        setDriverOnlineUI(true);
+        gpsTickInterval = setInterval(sendGpsTick, GPS_PING_MS);
+        sendGpsTick(); // fire immediately instead of waiting a full 5s
+    }
+}
+
+function sendGpsTick() {
+    if (!latestFix) return;
+    const c = latestFix.coords;
+    fetch('/api/gps/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            lat: c.latitude,
+            lng: c.longitude,
+            accuracy: c.accuracy,
+            speed: c.speed,
+            heading: c.heading,
+            timestamp: new Date().toISOString(),
+            internet_status: navigator.onLine ? 'online' : 'offline'
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data && data.arrived && typeof showToast === 'function') {
+            showToast("You've arrived at the customer's location 📍", 'success');
+        }
+    })
+    .catch(err => console.log('GPS push failed', err));
 }
 
 function handleDriverPositionError(err) {
     console.warn('Geolocation error:', err);
-    $('#etaTracker').html('<i class="fa-solid fa-triangle-exclamation"></i> Enable location');
-    if (!driverMarker && typeof showToast === 'function') {
-        showToast('Please allow location access in your browser so the map can show your real position.', 'warning');
+    hasLocationPermission = false;
+    setDriverOnlineUI(false);
+    if (gpsTickInterval) { clearInterval(gpsTickInterval); gpsTickInterval = null; }
+    $('#etaTracker').html('<i class="fa-solid fa-triangle-exclamation"></i> Location Permission Required');
+    if (typeof showToast === 'function') {
+        showToast('Location Permission Required — please allow location access to go online and receive deliveries.', 'danger');
     }
 }
 
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(handleDriverPosition, handleDriverPositionError, {
-        enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+// Reflects the automatic GPS-driven online/offline state onto the same
+// toggle/badge the manual switch used to control.
+function setDriverOnlineUI(isOnline) {
+    const newStatus = isOnline ? 'Online' : 'Offline';
+    $.ajax({
+        url: '/api/driver-status',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ status: newStatus })
     });
+    const toggle = $('#availabilityToggle');
+    if (toggle.length) toggle.prop('checked', isOnline);
+    $('#statusText').text(newStatus);
+    $('#onlineStatusBadge').removeClass('bg-success bg-secondary').addClass(isOnline ? 'bg-success' : 'bg-secondary')
+        .html(`<i class="fa-regular fa-circle"></i> ${newStatus}`);
+}
+
+// STEP 1: Request location before the dashboard is usable for deliveries.
+// Uses watchPosition ONLY (never getCurrentPosition alone), continuously
+// monitoring the driver's real position for as long as this page is open.
+if (navigator.geolocation) {
     geoWatchId = navigator.geolocation.watchPosition(handleDriverPosition, handleDriverPositionError, {
         enableHighAccuracy: true, timeout: 15000, maximumAge: 5000
     });
 } else {
     handleDriverPositionError({ message: 'Geolocation not supported by this browser' });
 }
-{% endif %}
 
 // Earnings Chart
 const ctx = document.getElementById('earningsChart')?.getContext('2d');
@@ -1183,6 +1287,10 @@ $(document).on('click', '.reject-order-btn', function() {
 
 // Step 2: Start delivery using POST fetch (fix for GET vs POST)
 $(document).on('click', '.start-delivery-btn', function() {
+    if (typeof hasLocationPermission !== 'undefined' && !hasLocationPermission) {
+        showToast('Location Permission Required — enable GPS location before starting a delivery.', 'danger');
+        return;
+    }
     const orderId = $(this).attr('data-id');
     if (!orderId) return;
     showLoading();

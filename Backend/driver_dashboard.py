@@ -641,6 +641,48 @@ def init_driver_dashboard(
             return jsonify({"success": False, "message": "Error updating location"}), 500
 
     # =====================================================
+    # PUSH DRIVER'S REAL GPS LOCATION WHILE IDLE (no active
+    # booking yet) - stored on the driver's own record so the
+    # admin's assign-driver screen can compute a genuine
+    # distance-based ETA the moment a driver is selected,
+    # instead of only after they're already assigned.
+    # =====================================================
+
+    @app.route("/api/update-idle-location", methods=["POST"])
+    @driver_login_required
+    def update_idle_location():
+        try:
+            data = request.get_json(silent=True) or {}
+            lat = data.get("lat")
+            lng = data.get("lng")
+
+            if lat is None or lng is None:
+                return jsonify({"success": False, "message": "lat/lng required"}), 400
+
+            try:
+                lat = float(lat)
+                lng = float(lng)
+            except (TypeError, ValueError):
+                return jsonify({"success": False, "message": "lat/lng must be numbers"}), 400
+
+            _drivers_collection.update_one(
+                {"email": session["driver_email"]},
+                {
+                    "$set": {
+                        "current_lat": lat,
+                        "current_lng": lng,
+                        "location_updated_at": datetime.now()
+                    }
+                }
+            )
+
+            return jsonify({"success": True})
+
+        except Exception as e:
+            logger.error(f"Update idle location error: {str(e)}")
+            return jsonify({"success": False, "message": "Error updating location"}), 500
+
+    # =====================================================
     # ACCEPT BOOKING (driver dashboard - single source of truth)
     # =====================================================
 

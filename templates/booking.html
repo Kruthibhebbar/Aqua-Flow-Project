@@ -703,6 +703,11 @@ function setMinDate() {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     dateInput.setAttribute('min', `${yyyy}-${mm}-${dd}`);
+    // Delivery can be booked at most 15 days out.
+    let maxDate = new Date(today);
+    maxDate.setDate(today.getDate() + 15);
+    const maxDateStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth()+1).padStart(2,'0')}-${String(maxDate.getDate()).padStart(2,'0')}`;
+    dateInput.setAttribute('max', maxDateStr);
     let tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
     const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
@@ -788,8 +793,14 @@ function validateForm() {
         const selectedDate = new Date(dateVal);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const maxAllowed = new Date(today);
+        maxAllowed.setDate(today.getDate() + 15);
         if (selectedDate < today) {
             document.getElementById('dateError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Delivery date cannot be in the past';
+            dateInput.classList.add('invalid-field');
+            isValid = false;
+        } else if (selectedDate > maxAllowed) {
+            document.getElementById('dateError').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Delivery date can be at most 15 days from today';
             dateInput.classList.add('invalid-field');
             isValid = false;
         }
