@@ -11,6 +11,6 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping app
+      - name: Ping app + database health
         run: |
-          curl -s -o /dev/null -w "Status: %{http_code}\n" https://aqua-flow-project.onrender.com
+          curl -s -w "\nStatus: %{http_code}\n" https://aqua-flow-project.onrender.com/healthz

@@ -85,8 +85,19 @@ app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
 mail = Mail(app)
 
 # ================= DATABASE =================
+# Explicit timeouts matter here: with none set, PyMongo's default is to
+# retry for up to 30 SECONDS before giving up on a single query. On Render's
+# free tier - where the outbound IP is dynamic - if that IP ever falls
+# outside MongoDB Atlas's Network Access allow-list, every single
+# DB-touching request (login included) hangs for ~30s and then fails,
+# which is exactly what "times out after some time when I try to login"
+# looks like from the outside. These timeouts turn that into a fast,
+# visible error instead of a silent multi-second hang.
 client = pymongo.MongoClient(
-    os.getenv("MONGO_URI")
+    os.getenv("MONGO_URI"),
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=5000,
+    socketTimeoutMS=10000
 )
 
 db = client["aquaflow"]
@@ -197,6 +208,20 @@ init_gps_engine(
 @app.route('/')
 def home():
     return render_template('index.html')
+
+# ================= HEALTH CHECK =================
+# Pings both the web process AND the actual database connection - the
+# keepalive workflow hits this instead of "/" so a broken Mongo Atlas
+# connection (e.g. Render's IP falling outside the Atlas allow-list) shows
+# up as a failing ping in GitHub Actions instead of silently only showing
+# up when a real driver/customer tries to log in.
+@app.route('/healthz')
+def healthz():
+    try:
+        client.admin.command('ping')
+        return jsonify({"status": "ok", "db": "connected"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "db": "unreachable", "detail": str(e)}), 503
 
 # ================= LOGIN =================
 @app.route('/login', methods=['GET', 'POST'])

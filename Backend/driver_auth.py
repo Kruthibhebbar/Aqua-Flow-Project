@@ -119,9 +119,16 @@ def init_driver_auth(
             email = request.form.get("email").strip().lower()
             password = request.form.get("password")
 
-            driver = drivers_collection.find_one({
-                "email": email
-            })
+            try:
+                driver = drivers_collection.find_one({
+                    "email": email
+                })
+            except Exception as e:
+                # With the 5s Mongo timeout set in app.py, a DB outage now
+                # surfaces here quickly and clearly instead of the request
+                # hanging for ~30s and then failing with no explanation.
+                print(f"driver_login DB error: {e}")
+                return "We couldn't reach the database right now. Please try again in a moment.", 503
 
             if not driver:
                 return "Invalid email"
