@@ -21,11 +21,20 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             background: #f7f9fd;
             font-family: 'Inter', 'Poppins', sans-serif;
             overflow-x: hidden;
             color: #071132;
+        }
+
+        #how-it-works,
+        #features {
+            scroll-margin-top: 100px;
         }
 
         /* ===== EXPANDED FULL-WIDTH NAVBAR (no side gaps) ===== */
@@ -53,12 +62,20 @@
         }
 
         .logo-icon {
-            width: 38px;
-            height: 48px;
-            background: linear-gradient(145deg, #4b7dff, #1d5cff);
-            border-radius: 55% 45% 65% 35%;
-            transform: rotate(8deg);
-            box-shadow: 0 6px 12px rgba(53, 101, 255, 0.25);
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            background: linear-gradient(145deg, #4b7dff, #123fc9);
+            border-radius: 12px;
+            box-shadow: 0 6px 14px rgba(29, 66, 189, 0.28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon i {
+            color: #ffffff;
+            font-size: 19px;
         }
 
         .logo-area h1 {
@@ -119,6 +136,43 @@
 
         .active-btn:hover {
             background: linear-gradient(105deg, #5580ff, #2f64ff);
+        }
+
+        /* ===== MOBILE HAMBURGER TOGGLE (hidden on desktop) ===== */
+        .mobile-menu-toggle {
+            display: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1.2px solid #eef2ff;
+            background: #ffffff;
+            color: #1d3fbf;
+            font-size: 18px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .mobile-menu-toggle:hover {
+            border-color: #b9ccff;
+            box-shadow: 0 6px 14px rgba(53, 101, 255, 0.12);
+        }
+
+        .mobile-nav-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(7, 17, 50, 0.35);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .mobile-nav-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         /* Hero section: FULL LEFT SIDE, NO LEFT SPACE, background merged with Image.png */
@@ -426,6 +480,122 @@
             font-weight: 800;
         }
 
+        /* ===== HOW IT WORKS SECTION ===== */
+        .how-it-works-wrap {
+            background: #f7f9fd;
+            padding: 90px 5% 100px;
+            text-align: center;
+        }
+
+        .how-eyebrow {
+            color: #3565ff;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .how-title {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #061132;
+            margin-bottom: 50px;
+        }
+
+        .how-title span {
+            color: #3565ff;
+        }
+
+        .how-steps {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .how-step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 16px;
+        }
+
+        .how-step-icon {
+            width: 76px;
+            height: 76px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.7rem;
+            margin-bottom: 22px;
+            box-shadow: 0 12px 24px rgba(7, 17, 50, 0.08);
+            position: relative;
+        }
+
+        .how-step-icon .step-num {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #061132;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #f7f9fd;
+        }
+
+        .how-step-1 .how-step-icon { background: #eef0ff; color: #4f5ce8; }
+        .how-step-2 .how-step-icon { background: #e9f9f1; color: #16a05e; }
+        .how-step-3 .how-step-icon { background: #fff2e6; color: #e07a1f; }
+        .how-step-4 .how-step-icon { background: #eaf1ff; color: #2c5bff; }
+
+        .how-step h4 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #061132;
+            margin-bottom: 8px;
+        }
+
+        .how-step p {
+            font-size: 0.92rem;
+            color: #4a5578;
+            line-height: 1.5;
+            max-width: 220px;
+        }
+
+        .how-connector {
+            flex: 0 0 auto;
+            width: 60px;
+            height: 2px;
+            background-image: linear-gradient(to right, #b9ccff 50%, transparent 50%);
+            background-size: 10px 2px;
+            margin-top: 38px;
+        }
+
+        @media (max-width: 900px) {
+            .how-steps {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 36px;
+            }
+            .how-connector {
+                display: none;
+            }
+            .how-step {
+                padding: 0;
+            }
+        }
+
         @media (max-width: 1150px) {
             .hero-modern {
                 flex-direction: column;
@@ -483,6 +653,55 @@
                 background-position: 95% 50%;
             }
         }
+
+        /* ===== MOBILE NAV: collapse into hamburger + slide-down panel ===== */
+        @media (max-width: 768px) {
+            .navbar-custom {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 6%;
+                flex-wrap: nowrap;
+            }
+
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
+            .nav-buttons {
+                display: none;
+                position: fixed;
+                top: 68px;
+                right: 4%;
+                left: 4%;
+                flex-direction: column;
+                align-items: stretch;
+                background: #ffffff;
+                border-radius: 20px;
+                padding: 14px;
+                gap: 8px;
+                box-shadow: 0 24px 48px rgba(7, 17, 50, 0.18);
+                border: 1px solid #eef2ff;
+                z-index: 999;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+
+            .nav-buttons.open {
+                display: flex;
+            }
+
+            .nav-buttons .nav-btn {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 12px 16px;
+                border-radius: 12px;
+            }
+
+            .mobile-nav-backdrop.show {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -490,10 +709,14 @@
     <!-- ===== FULL-WIDTH EXPANDED NAVBAR (no container gaps) ===== -->
     <div class="navbar-custom">
         <div class="logo-area">
-            <div class="logo-icon"></div>
+            <div class="logo-icon"><i class="fa-solid fa-droplet"></i></div>
             <h1>Aqua<span>Flow</span></h1>
         </div>
-        <div class="nav-buttons">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-expanded="false">
+            <i class="fa-solid fa-bars" id="menuIcon"></i>
+        </button>
+        <div class="nav-buttons" id="navButtons">
+            <a href="#how-it-works" class="nav-btn"><i class="fa-regular fa-circle-question"></i> How It Works</a>
             {% if session.user_email %}
                 <a href="/dashboard" class="nav-btn"><i class="fa-solid fa-gauge"></i> Dashboard</a>
                 <a href="/logout" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout ({{ session.user_name }})</a>
@@ -507,6 +730,7 @@
             <a href="/driver-login" class="nav-btn"><i class="fa-regular fa-user"></i> Driver Login</a>
         </div>
     </div>
+    <div class="mobile-nav-backdrop" id="mobileNavBackdrop"></div>
 
     <!-- ===== HERO SECTION: FULL LEFT SIDE, background merged with Image.png (via pseudo-element) ===== -->
     <section class="hero-modern">
@@ -541,6 +765,37 @@
             <div class="bubble-item" style="width: 12px; height: 12px; bottom: 25%; right: 30%; animation-duration: 3s;"></div>
         </div>
     </section>
+
+    <!-- ===== HOW IT WORKS SECTION ===== -->
+    <div class="how-it-works-wrap" id="how-it-works">
+        <div class="how-eyebrow">How It Works</div>
+        <div class="how-title">Simple Steps. <span>Seamless Delivery.</span></div>
+        <div class="how-steps">
+            <div class="how-step how-step-1">
+                <div class="how-step-icon"><i class="fa-regular fa-calendar-check"></i><span class="step-num">1</span></div>
+                <h4>Book Tanker</h4>
+                <p>Choose your tank size, address & preferred delivery time.</p>
+            </div>
+            <div class="how-connector"></div>
+            <div class="how-step how-step-2">
+                <div class="how-step-icon"><i class="fa-solid fa-user-check"></i><span class="step-num">2</span></div>
+                <h4>Driver Assigned</h4>
+                <p>We instantly assign the nearest verified driver to you.</p>
+            </div>
+            <div class="how-connector"></div>
+            <div class="how-step how-step-3">
+                <div class="how-step-icon"><i class="fa-solid fa-location-crosshairs"></i><span class="step-num">3</span></div>
+                <h4>Live Tracking</h4>
+                <p>Track your tanker in real-time on the map, every step of the way.</p>
+            </div>
+            <div class="how-connector"></div>
+            <div class="how-step how-step-4">
+                <div class="how-step-icon"><i class="fa-solid fa-shield-halved"></i><span class="step-num">4</span></div>
+                <h4>Delivery Complete</h4>
+                <p>Safe, verified delivery straight to your doorstep.</p>
+            </div>
+        </div>
+    </div>
 
     <!-- FEATURE SECTION -->
     <div class="features-wrap" id="features">
@@ -658,7 +913,58 @@
         }
 
         document.addEventListener('DOMContentLoaded', createParticles);
-        console.log("AquaFlow: full-width navbar, hero expanded, background image merged, edges faded — rating stat pill removed");
+
+        // mobile hamburger menu toggle
+        const menuToggle = document.getElementById('mobileMenuToggle');
+        const navButtons = document.getElementById('navButtons');
+        const navBackdrop = document.getElementById('mobileNavBackdrop');
+        const menuIcon = document.getElementById('menuIcon');
+
+        function closeMobileMenu() {
+            navButtons.classList.remove('open');
+            navBackdrop.classList.remove('show');
+            menuToggle.setAttribute('aria-expanded', 'false');
+            menuIcon.classList.remove('fa-xmark');
+            menuIcon.classList.add('fa-bars');
+        }
+
+        function openMobileMenu() {
+            navButtons.classList.add('open');
+            navBackdrop.classList.add('show');
+            menuToggle.setAttribute('aria-expanded', 'true');
+            menuIcon.classList.remove('fa-bars');
+            menuIcon.classList.add('fa-xmark');
+        }
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                if (navButtons.classList.contains('open')) {
+                    closeMobileMenu();
+                } else {
+                    openMobileMenu();
+                }
+            });
+        }
+
+        if (navBackdrop) {
+            navBackdrop.addEventListener('click', closeMobileMenu);
+        }
+
+        // close mobile menu after a nav link is tapped
+        if (navButtons) {
+            navButtons.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', closeMobileMenu);
+            });
+        }
+
+        // close mobile menu automatically if window resizes back to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeMobileMenu();
+            }
+        });
+
+        console.log("AquaFlow: full-width navbar, hero expanded, background image merged, edges faded, How It Works section added, mobile hamburger nav enabled");
     </script>
 </body>
 </html>
