@@ -32,8 +32,12 @@
             color: #071132;
         }
 
+        #home,
+        #about,
+        #services,
         #how-it-works,
-        #features {
+        #features,
+        #contact {
             scroll-margin-top: 100px;
         }
 
@@ -47,7 +51,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 5%;
+            padding: 10px 1.5%;
             box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(53, 101, 255, 0.1);
             transition: all 0.3s ease;
             position: sticky;
@@ -98,26 +102,80 @@
             gap: 10px;
         }
 
+        .nav-links-group {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+        }
+
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-weight: 600;
+            font-size: 14.5px;
+            color: #33406b;
+            text-decoration: none;
+            padding: 6px 2px;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .nav-link i {
+            font-size: 13px;
+            color: #93a1cc;
+            transition: 0.2s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active-link {
+            color: #2c4cff;
+        }
+
+        .nav-link:hover i,
+        .nav-link.active-link i {
+            color: #2c4cff;
+        }
+
+        .nav-link.active-link {
+            border-bottom-color: #2c4cff;
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 24px;
+            background: #e3e8f7;
+        }
+
+        .nav-actions-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+        }
+
         .nav-btn {
-            padding: 8px 20px;
+            padding: 7px 13px;
             border-radius: 40px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 12.5px;
             border: 1.2px solid #eef2ff;
             background: white;
             color: #2c4cff;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             cursor: pointer;
             transition: 0.25s ease;
             font-family: 'Inter', sans-serif;
             letter-spacing: -0.2px;
             text-decoration: none;
+            white-space: nowrap;
         }
 
         .nav-btn i {
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .nav-btn:hover {
@@ -223,6 +281,10 @@
             z-index: 3;
             padding-left: 5%;
             position: relative;
+        }
+
+        .hero-mobile-image {
+            display: none;
         }
 
         /* ensure no left gap */
@@ -596,11 +658,173 @@
             }
         }
 
-        @media (max-width: 1150px) {
+        /* ===== ABOUT SECTION ===== */
+        .about-wrap {
+            background: #ffffff;
+            padding: 90px 5%;
+        }
+
+        .about-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .about-inner p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: #37456e;
+            max-width: 760px;
+            margin: 0 auto 40px;
+        }
+
+        .about-stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 36px;
+        }
+
+        .about-stat {
+            background: #f7f9fd;
+            border: 1px solid #eef2ff;
+            border-radius: 20px;
+            padding: 22px 34px;
+            min-width: 180px;
+        }
+
+        .about-stat .num {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #2c5bff;
+            display: block;
+        }
+
+        .about-stat .label {
+            font-size: 0.9rem;
+            color: #4a5578;
+            font-weight: 600;
+        }
+
+        /* ===== SERVICES SECTION ===== */
+        .services-wrap {
+            background: linear-gradient(145deg, #f5f9ff, #ffffff);
+            padding: 90px 5%;
+            text-align: center;
+        }
+
+        .services-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 36px;
+            margin-top: 50px;
+            max-width: 1150px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 26px;
+            padding: 32px 26px;
+            width: 260px;
+            text-align: left;
+            border: 1px solid #eef2ff;
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.03);
+            transition: 0.25s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-6px);
+            border-color: #cddeff;
+            box-shadow: 0 24px 38px rgba(53, 101, 255, 0.1);
+        }
+
+        .service-card .service-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(145deg, #4674ff, #123fc9);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+        }
+
+        .service-card h4 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #061132;
+        }
+
+        .service-card p {
+            font-size: 0.92rem;
+            color: #4a5578;
+            line-height: 1.5;
+        }
+
+        /* ===== CONTACT SECTION ===== */
+        .contact-wrap {
+            background: #ffffff;
+            padding: 90px 5% 100px;
+            text-align: center;
+        }
+
+        .contact-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 28px;
+            margin-top: 50px;
+            max-width: 950px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .contact-card {
+            background: #f7f9fd;
+            border: 1px solid #eef2ff;
+            border-radius: 22px;
+            padding: 30px 26px;
+            width: 260px;
+        }
+
+        .contact-card .contact-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            background: #eaf1ff;
+            color: #2c5bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin: 0 auto 16px;
+        }
+
+        .contact-card h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #061132;
+        }
+
+        .contact-card p {
+            font-size: 0.92rem;
+            color: #4a5578;
+            margin: 0;
+        }
+
+        @media (max-width: 1260px) {
             .hero-modern {
                 flex-direction: column;
                 align-items: flex-start;
-                padding: 40px 5% 60px;
+                min-height: auto;
+                padding: 40px 5% 50px;
             }
             .hero-left {
                 max-width: 100%;
@@ -629,6 +853,9 @@
         }
 
         @media (max-width: 700px) {
+            .hero-modern {
+                padding-bottom: 40px;
+            }
             .hero-title {
                 font-size: 42px;
             }
@@ -646,11 +873,20 @@
                 padding: 6px 20px;
                 font-size: 0.85rem;
             }
+            /* hide the faint full-bleed background bottle on small screens
+               and show a clean standalone image instead (see .hero-mobile-image) */
             .hero-modern::before {
-                opacity: 0.2;
-                width: 80%;
-                background-size: 55%;
-                background-position: 95% 50%;
+                display: none;
+            }
+            .hero-right {
+                display: none;
+            }
+            .hero-mobile-image {
+                display: block;
+                width: 150px;
+                max-width: 55%;
+                height: auto;
+                margin: 22px auto 6px;
             }
         }
 
@@ -691,6 +927,32 @@
                 display: flex;
             }
 
+            .nav-links-group,
+            .nav-actions-group {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                gap: 6px;
+            }
+
+            .nav-divider {
+                width: 100%;
+                height: 1px;
+                margin: 4px 0;
+            }
+
+            .nav-link {
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                border-bottom: none;
+                background: #f7f9fd;
+            }
+
+            .nav-link.active-link {
+                background: #eef2ff;
+            }
+
             .nav-buttons .nav-btn {
                 width: 100%;
                 justify-content: flex-start;
@@ -716,24 +978,33 @@
             <i class="fa-solid fa-bars" id="menuIcon"></i>
         </button>
         <div class="nav-buttons" id="navButtons">
-            <a href="#how-it-works" class="nav-btn"><i class="fa-regular fa-circle-question"></i> How It Works</a>
-            {% if session.user_email %}
-                <a href="/dashboard" class="nav-btn"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-                <a href="/logout" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout ({{ session.user_name }})</a>
-            {% else %}
-                <a href="/login" class="nav-btn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
-                <a href="/signup" class="nav-btn"><i class="fa-solid fa-user-plus"></i> Signup</a>
-            {% endif %}
-            <a href="/admin-login" class="nav-btn"><i class="fa-solid fa-shield-halved"></i> Admin</a>
-            <a href="{{ '/booking' if session.user_email else '/login' }}" class="nav-btn active-btn"><i class="fa-regular fa-calendar-check"></i> Book Tanker</a>
-            <a href="/driver-register" class="nav-btn"><i class="fa-solid fa-truck"></i> Become a Driver</a>
-            <a href="/driver-login" class="nav-btn"><i class="fa-regular fa-user"></i> Driver Login</a>
+            <div class="nav-links-group">
+                <a href="#home" class="nav-link active-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="#about" class="nav-link"><i class="fa-regular fa-circle-user"></i> About</a>
+                <a href="#services" class="nav-link"><i class="fa-solid fa-list-check"></i> Services</a>
+                <a href="#how-it-works" class="nav-link"><i class="fa-regular fa-circle-question"></i> How It Works</a>
+                <a href="#contact" class="nav-link"><i class="fa-regular fa-envelope"></i> Contact</a>
+            </div>
+            <div class="nav-divider"></div>
+            <div class="nav-actions-group">
+                {% if session.user_email %}
+                    <a href="/dashboard" class="nav-btn"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+                    <a href="/logout" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout ({{ session.user_name }})</a>
+                {% else %}
+                    <a href="/login" class="nav-btn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+                    <a href="/signup" class="nav-btn"><i class="fa-solid fa-user-plus"></i> Signup</a>
+                {% endif %}
+                <a href="/admin-login" class="nav-btn"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+                <a href="{{ '/booking' if session.user_email else '/login' }}" class="nav-btn active-btn"><i class="fa-regular fa-calendar-check"></i> Book Tanker</a>
+                <a href="/driver-register" class="nav-btn"><i class="fa-solid fa-truck"></i> Become a Driver</a>
+                <a href="/driver-login" class="nav-btn"><i class="fa-regular fa-user"></i> Driver Login</a>
+            </div>
         </div>
     </div>
     <div class="mobile-nav-backdrop" id="mobileNavBackdrop"></div>
 
     <!-- ===== HERO SECTION: FULL LEFT SIDE, background merged with Image.png (via pseudo-element) ===== -->
-    <section class="hero-modern">
+    <section class="hero-modern" id="home">
         <div id="particles-container"></div>
         <div class="hero-left">
             <div class="badge-tag">
@@ -751,6 +1022,7 @@
             <a href="{{ '/booking' if session.user_email else '/login' }}" class="book-primary-btn">
                 <i class="fa-regular fa-calendar-check"></i> Book Now
             </a>
+            <img src="{{ url_for('static', filename='Image.png') }}" alt="AquaFlow water bottle" class="hero-mobile-image">
             <div class="trust-stats">
                 <div class="stat-pill"><i class="fa-solid fa-truck"></i> 10,000+ Deliveries</div>
                 <div class="stat-pill"><i class="fa-regular fa-clock"></i> 24/7 Emergency</div>
@@ -765,6 +1037,48 @@
             <div class="bubble-item" style="width: 12px; height: 12px; bottom: 25%; right: 30%; animation-duration: 3s;"></div>
         </div>
     </section>
+
+    <!-- ===== ABOUT SECTION ===== -->
+    <div class="about-wrap" id="about">
+        <div class="about-inner">
+            <div class="how-eyebrow">About Us</div>
+            <div class="how-title">Who <span>We Are</span></div>
+            <p>AquaFlow is an online water tanker booking and tracking platform built to make water delivery fast, transparent and reliable. From booking to doorstep delivery, every step is tracked in real-time so you always know when your water is arriving.</p>
+            <div class="about-stats">
+                <div class="about-stat"><span class="num">10,000+</span><span class="label">Deliveries Completed</span></div>
+                <div class="about-stat"><span class="num">24/7</span><span class="label">Emergency Support</span></div>
+                <div class="about-stat"><span class="num">100%</span><span class="label">ISO Certified Water</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SERVICES SECTION ===== -->
+    <div class="services-wrap" id="services">
+        <div class="how-eyebrow">Services</div>
+        <div class="how-title">What We <span>Offer</span></div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon"><i class="fa-solid fa-house-chimney"></i></div>
+                <h4>Residential Delivery</h4>
+                <p>On-demand water tanker delivery for homes and apartments, booked in a few taps.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fa-solid fa-building"></i></div>
+                <h4>Bulk & Commercial Supply</h4>
+                <p>Reliable large-volume water supply for offices, construction sites & businesses.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                <h4>Emergency Delivery</h4>
+                <p>Round-the-clock emergency water delivery when you need it most.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                <h4>Scheduled Subscription</h4>
+                <p>Set up recurring deliveries on a schedule that fits your routine.</p>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== HOW IT WORKS SECTION ===== -->
     <div class="how-it-works-wrap" id="how-it-works">
@@ -816,6 +1130,29 @@
                 <div class="feature-icon"><i class="fa-solid fa-hand-holding-droplet"></i></div>
                 <h3>Safe & Pure</h3>
                 <p>ISO certified water, quality tested for 100% safe drinking water.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CONTACT SECTION ===== -->
+    <div class="contact-wrap" id="contact">
+        <div class="how-eyebrow">Contact</div>
+        <div class="how-title">Get In <span>Touch</span></div>
+        <div class="contact-grid">
+            <div class="contact-card">
+                <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
+                <h4>Call Us</h4>
+                <p>+91 63619 62280</p>
+            </div>
+            <div class="contact-card">
+                <div class="contact-icon"><i class="fa-regular fa-envelope"></i></div>
+                <h4>Email Us</h4>
+                <p>aquaflowproject@gmail.com</p>
+            </div>
+            <div class="contact-card">
+                <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
+                <h4>Visit Us</h4>
+                <p>Your City, State, India</p>
             </div>
         </div>
     </div>
