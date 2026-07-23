@@ -2,51 +2,515 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>AquaFlow - Online Water Tanker Booking & Tracking | Premium Water Delivery</title>
 
-    <!-- Google Fonts: Poppins + Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Google Fonts: Poppins + Inter mix for premium feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Front page styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='front.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f7f9fd;
+            font-family: 'Inter', 'Poppins', sans-serif;
+            overflow-x: hidden;
+            color: #071132;
+        }
+
+        /* ===== EXPANDED FULL-WIDTH NAVBAR (no side gaps) ===== */
+        .navbar-custom {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            margin: 0;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 5%;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(53, 101, 255, 0.1);
+            transition: all 0.3s ease;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 48px;
+            background: linear-gradient(145deg, #4b7dff, #1d5cff);
+            border-radius: 55% 45% 65% 35%;
+            transform: rotate(8deg);
+            box-shadow: 0 6px 12px rgba(53, 101, 255, 0.25);
+        }
+
+        .logo-area h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #071132;
+            letter-spacing: -0.4px;
+            margin: 0;
+        }
+
+        .logo-area span {
+            color: #3d67ff;
+        }
+
+        /* button groups */
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1.2px solid #eef2ff;
+            background: white;
+            color: #2c4cff;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.25s ease;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.2px;
+            text-decoration: none;
+        }
+
+        .nav-btn i {
+            font-size: 13px;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(53, 101, 255, 0.12);
+            border-color: #b9ccff;
+            background: #ffffff;
+        }
+
+        .active-btn {
+            background: linear-gradient(105deg, #4674ff, #255cff);
+            color: white;
+            border: none;
+            box-shadow: 0 6px 14px rgba(53, 101, 255, 0.2);
+        }
+
+        .active-btn:hover {
+            background: linear-gradient(105deg, #5580ff, #2f64ff);
+        }
+
+        /* Hero section: FULL LEFT SIDE, NO LEFT SPACE, background merged with Image.png */
+        .hero-modern {
+            width: 100%;
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 40px 5% 60px 0;
+            position: relative;
+            gap: 0;
+            overflow: hidden;
+            background: linear-gradient(115deg, rgba(247, 249, 253, 0.95) 0%, rgba(247, 249, 253, 0.85) 100%);
+        }
+
+        /* UPDATED: Image shifted to the left side, edges faded into background */
+        .hero-modern::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 48%;
+            height: 100%;
+            background-image: url("{{ url_for('static', filename='Image.png') }}");
+            background-repeat: no-repeat;
+            background-size: contain;
+            background-position: right 40px center;
+            opacity: 1;
+            pointer-events: none;
+            z-index: 0;
+
+            /* NEW: fade the edges of the image into the page background so
+               there is no visible hard rectangular border */
+            -webkit-mask-image:
+                linear-gradient(to right, transparent 0%, black 30%, black 70%, transparent 100%),
+                linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-composite: source-in;
+            mask-image:
+                linear-gradient(to right, transparent 0%, black 30%, black 70%, transparent 100%),
+                linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            mask-composite: intersect;
+        }
+
+        .hero-left {
+            flex: 1;
+            max-width: 58%;
+            z-index: 3;
+            padding-left: 5%;
+            position: relative;
+        }
+
+        /* ensure no left gap */
+        .badge-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(237, 242, 255, 0.95);
+            backdrop-filter: blur(4px);
+            padding: 8px 22px;
+            border-radius: 60px;
+            color: #3565ff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            border: 1px solid rgba(53, 101, 255, 0.25);
+        }
+
+        .hero-title {
+            font-size: 68px;
+            line-height: 1.1;
+            font-weight: 800;
+            color: #061132;
+            letter-spacing: -2px;
+            margin-bottom: 18px;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, #2c5bff, #0a3bca);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .line-accent {
+            width: 90px;
+            height: 4px;
+            background: linear-gradient(90deg, #3565ff, #9bb9ff);
+            border-radius: 4px;
+            margin: 18px 0 28px 0;
+        }
+
+        .hero-text {
+            font-size: 1.35rem;
+            line-height: 1.5;
+            color: #1e2f4e;
+            margin-bottom: 36px;
+            font-weight: 500;
+            max-width: 90%;
+        }
+
+        .book-primary-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 42px;
+            background: linear-gradient(115deg, #4674ff, #255cff);
+            border: none;
+            border-radius: 60px;
+            color: white;
+            font-size: 1.35rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 18px 32px rgba(53, 101, 255, 0.35);
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .book-primary-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 24px 40px rgba(53, 101, 255, 0.45);
+            color: white;
+        }
+
+        /* stats row - bigger and more prominent */
+        .trust-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            margin-top: 40px;
+        }
+
+        .stat-pill {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(6px);
+            padding: 10px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0a1a42;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(53, 101, 255, 0.25);
+            transition: all 0.2s;
+        }
+
+        .stat-pill i {
+            color: #3565ff;
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* right side subtle elements but no obstruction */
+        .hero-right {
+            flex: 0.8;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: flex-end;
+            pointer-events: none;
+        }
+
+        .glass-circle {
+            display: none;
+        }
+
+        .water-image {
+            display: none;
+        }
+
+        /* particle container */
+        #particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .water-particle {
+            position: absolute;
+            background: rgba(77, 125, 255, 0.3);
+            border-radius: 60% 40% 50% 50%;
+            backdrop-filter: blur(3px);
+            pointer-events: none;
+            z-index: 2;
+            animation: floatParticle linear infinite;
+        }
+
+        @keyframes floatParticle {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.5;
+            }
+            90% {
+                opacity: 0.2;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .bubble-item {
+            position: absolute;
+            background: rgba(125, 160, 255, 0.4);
+            border-radius: 50%;
+            backdrop-filter: blur(2px);
+            animation: bubbleFloat 4s infinite ease-in-out;
+            z-index: 2;
+        }
+
+        @keyframes bubbleFloat {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translateY(-22px) scale(1.1);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 0.5;
+            }
+        }
+
+        /* features section slightly bigger text as needed */
+        .features-wrap {
+            background: linear-gradient(145deg, #ffffff, #f5f9ff);
+            padding: 80px 5%;
+            text-align: center;
+            margin-top: 0;
+            border-radius: 48px 48px 0 0;
+        }
+
+        .section-title {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: #061132;
+            margin-bottom: 20px;
+        }
+
+        .features-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 45px;
+            margin-top: 55px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 32px;
+            padding: 34px 28px;
+            width: 300px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.03);
+            transition: all 0.25s ease;
+            border: 1px solid #eef2ff;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: #cddeff;
+            box-shadow: 0 28px 40px rgba(53, 101, 255, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            background: linear-gradient(145deg, #2c5bff, #0f3fcf);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 18px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+        }
+
+        /* cta premium */
+        .cta-premium {
+            background: linear-gradient(120deg, #0f2b6d, #0a1e52);
+            margin: 30px 5% 0 5%;
+            border-radius: 56px;
+            padding: 60px 40px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .cta-premium h2 {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        @media (max-width: 1150px) {
+            .hero-modern {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 40px 5% 60px;
+            }
+            .hero-left {
+                max-width: 100%;
+                padding-left: 0;
+            }
+            .hero-title {
+                font-size: 52px;
+            }
+            .hero-modern::before {
+                opacity: 0.3;
+                background-position: 90% 50%;
+                width: 70%;
+                background-size: 65%;
+            }
+            .trust-stats {
+                justify-content: flex-start;
+            }
+            .navbar-custom {
+                padding: 10px 5%;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .nav-buttons {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .hero-title {
+                font-size: 42px;
+            }
+            .book-primary-btn {
+                font-size: 1.1rem;
+                padding: 14px 32px;
+            }
+            .hero-text {
+                font-size: 1.1rem;
+            }
+            .section-title {
+                font-size: 2rem;
+            }
+            .stat-pill {
+                padding: 6px 20px;
+                font-size: 0.85rem;
+            }
+            .hero-modern::before {
+                opacity: 0.2;
+                width: 80%;
+                background-size: 55%;
+                background-position: 95% 50%;
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- ===== NAVBAR ===== -->
+    <!-- ===== FULL-WIDTH EXPANDED NAVBAR (no container gaps) ===== -->
     <div class="navbar-custom">
-        <div class="nav-inner">
-            <div class="logo-area">
-                <div class="logo-icon"></div>
-                <h1>Aqua<span>Flow</span></h1>
-            </div>
-
-            <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-
-            <div class="nav-buttons" id="navButtons">
-                {% if session.user_email %}
-                    <a href="/dashboard" class="nav-btn"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-                    <a href="/logout" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout ({{ session.user_name }})</a>
-                {% else %}
-                    <a href="/login" class="nav-btn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
-                    <a href="/signup" class="nav-btn"><i class="fa-solid fa-user-plus"></i> Signup</a>
-                {% endif %}
-                <a href="/admin-login" class="nav-btn"><i class="fa-solid fa-shield-halved"></i> Admin</a>
-                <a href="{{ '/booking' if session.user_email else '/login' }}" class="nav-btn active-btn"><i class="fa-regular fa-calendar-check"></i> Book Tanker</a>
-                <a href="/driver-register" class="nav-btn"><i class="fa-solid fa-truck"></i> Become a Driver</a>
-                <a href="/driver-login" class="nav-btn"><i class="fa-regular fa-user"></i> Driver Login</a>
-            </div>
+        <div class="logo-area">
+            <div class="logo-icon"></div>
+            <h1>Aqua<span>Flow</span></h1>
+        </div>
+        <div class="nav-buttons">
+            {% if session.user_email %}
+                <a href="/dashboard" class="nav-btn"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+                <a href="/logout" class="nav-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout ({{ session.user_name }})</a>
+            {% else %}
+                <a href="/login" class="nav-btn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+                <a href="/signup" class="nav-btn"><i class="fa-solid fa-user-plus"></i> Signup</a>
+            {% endif %}
+            <a href="/admin-login" class="nav-btn"><i class="fa-solid fa-shield-halved"></i> Admin</a>
+            <a href="{{ '/booking' if session.user_email else '/login' }}" class="nav-btn active-btn"><i class="fa-regular fa-calendar-check"></i> Book Tanker</a>
+            <a href="/driver-register" class="nav-btn"><i class="fa-solid fa-truck"></i> Become a Driver</a>
+            <a href="/driver-login" class="nav-btn"><i class="fa-regular fa-user"></i> Driver Login</a>
         </div>
     </div>
 
-    <!-- ===== HERO ===== -->
+    <!-- ===== HERO SECTION: FULL LEFT SIDE, background merged with Image.png (via pseudo-element) ===== -->
     <section class="hero-modern">
+        <div id="particles-container"></div>
         <div class="hero-left">
             <div class="badge-tag">
                 <i class="fa-solid fa-bolt"></i> Fast • Smart • Reliable
@@ -57,7 +521,7 @@
             </h1>
             <div class="line-accent"></div>
             <p class="hero-text">
-                Book water tankers online and track your delivery in real-time.
+                Book water tankers online and track your delivery in real-time.<br>
                 Fast, smart & reliable water delivery at your doorstep.
             </p>
             <a href="{{ '/booking' if session.user_email else '/login' }}" class="book-primary-btn">
@@ -67,42 +531,21 @@
                 <div class="stat-pill"><i class="fa-solid fa-truck"></i> 10,000+ Deliveries</div>
                 <div class="stat-pill"><i class="fa-regular fa-clock"></i> 24/7 Emergency</div>
                 <div class="stat-pill"><i class="fa-solid fa-tint"></i> ISO Certified</div>
+                <!-- 4.9 ★ Rating stat pill removed -->
             </div>
         </div>
-
-        <!-- Signature element: live-tracking preview card. Replaces the old
-             bottle/tanker image (no raster asset - nothing to load in
-             frame-by-frame, renders instantly at any connection speed). -->
         <div class="hero-right">
-            <div class="tracker-card">
-                <div class="tracker-card__top">
-                    <span class="tracker-card__live"><span class="dot"></span> LIVE</span>
-                    <span class="tracker-card__eta">ETA 12 min</span>
-                </div>
-                <div class="tracker-card__truck">
-                    <div class="tracker-card__icon"><i class="fa-solid fa-truck-droplet"></i></div>
-                    <div>
-                        <h4>Tanker #A7 en route</h4>
-                        <p>2,000L • Approaching your area</p>
-                    </div>
-                </div>
-                <div class="tracker-route">
-                    <span class="node"></span>
-                    <span class="bar"><span></span></span>
-                    <span class="node end"></span>
-                </div>
-                <div class="tracker-labels">
-                    <span>Depot</span>
-                    <span>Your doorstep</span>
-                </div>
-            </div>
+            <!-- decorative bubbles only -->
+            <div class="bubble-item" style="width: 16px; height: 16px; top: 20%; right: 12%; animation-duration: 3.5s;"></div>
+            <div class="bubble-item" style="width: 24px; height: 24px; top: 45%; right: 20%; animation-duration: 4.2s;"></div>
+            <div class="bubble-item" style="width: 12px; height: 12px; bottom: 25%; right: 30%; animation-duration: 3s;"></div>
         </div>
     </section>
 
-    <!-- ===== FEATURES ===== -->
+    <!-- FEATURE SECTION -->
     <div class="features-wrap" id="features">
         <div class="section-title">Why Choose <span style="color:#3565ff;">AquaFlow</span>?</div>
-        <div class="section-rule"></div>
+        <div style="width: 80px; height: 4px; background: #3565ff; margin: 0 auto 20px; border-radius: 4px;"></div>
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon"><i class="fa-solid fa-map-location-dot"></i></div>
@@ -122,43 +565,100 @@
         </div>
     </div>
 
-    <!-- ===== CTA ===== -->
+    <!-- CTA SECTION (footer removed, bottom margin adjusted) -->
     <div class="cta-premium">
         <h2><i class="fa-regular fa-calendar-check"></i> Ready for Fast & Reliable Water Delivery?</h2>
-        <p>Join thousands of happy customers — instant booking & tracking available.</p>
-        <a href="{{ '/booking' if session.user_email else '/login' }}" id="ctaBookBtn" class="cta-btn">
-            <i class="fa-regular fa-calendar-check"></i> Book Your Tanker Now
-        </a>
+        <p style="margin-top: 15px; font-size: 1.2rem;">Join thousands of happy customers — instant booking & tracking available.</p>
+        <a href="{{ '/booking' if session.user_email else '/login' }}" id="ctaBookBtn" style="background: white; color:#0a1e52; border: none; margin-top: 28px; padding: 14px 38px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; text-decoration: none; display: inline-block;"><i class="fa-regular fa-calendar-check me-2"></i> Book Your Tanker Now</a>
     </div>
 
+    <!-- FOOTER SECTION COMPLETELY REMOVED (no footer, no copyright, no contact info, no links) -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    </script>
+
     <script>
-        // Mobile hamburger menu
-        const navToggle = document.getElementById('navToggle');
-        const navButtons = document.getElementById('navButtons');
-        navToggle.addEventListener('click', () => {
-            const isOpen = navButtons.classList.toggle('open');
-            navToggle.setAttribute('aria-expanded', isOpen);
-            navToggle.innerHTML = isOpen
-                ? '<i class="fa-solid fa-xmark"></i>'
-                : '<i class="fa-solid fa-bars"></i>';
+        // Create floating water particles
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            if (!container) return;
+
+            const particleCount = 30;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'water-particle';
+
+                const size = Math.random() * 55 + 18;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+
+                const duration = Math.random() * 14 + 10;
+                particle.style.animation = `floatParticle ${duration}s linear infinite`;
+                particle.style.animationDelay = Math.random() * 12 + 's';
+
+                container.appendChild(particle);
+            }
+        }
+
+        // navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('.navbar-custom');
+            if (window.scrollY > 30) {
+                nav.style.background = 'rgba(255, 255, 255, 1)';
+                nav.style.boxShadow = '0 8px 28px rgba(0,0,0,0.08)';
+            } else {
+                nav.style.background = 'rgba(255, 255, 255, 0.98)';
+                nav.style.boxShadow = '0 8px 28px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(53,101,255,0.1)';
+            }
         });
 
-        // Close menu after tapping a link (mobile)
-        navButtons.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                navButtons.classList.remove('open');
-                navToggle.setAttribute('aria-expanded', false);
-                navToggle.innerHTML = '<i class="fa-solid fa-bars"></i>';
+        // Smooth scroll for any anchor links that might exist
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
             });
         });
 
-        // Navbar shadow/background on scroll
-        window.addEventListener('scroll', () => {
-            const nav = document.querySelector('.navbar-custom');
-            nav.style.boxShadow = window.scrollY > 30
-                ? '0 8px 28px rgba(0,0,0,0.08)'
-                : '0 8px 28px rgba(0,0,0,0.05), 0 1px 0 rgba(53,101,255,0.1)';
+        // stat pills interaction
+        const statPills = document.querySelectorAll('.stat-pill');
+        statPills.forEach(pill => {
+            pill.addEventListener('mouseenter', () => {
+                pill.style.transform = 'translateY(-3px)';
+                pill.style.transition = '0.2s';
+            });
+            pill.addEventListener('mouseleave', () => {
+                pill.style.transform = 'translateY(0)';
+            });
         });
+
+        // extra bubbles on hero right
+        const heroRight = document.querySelector('.hero-right');
+        if (heroRight) {
+            for (let i = 0; i < 6; i++) {
+                let extraBubble = document.createElement('div');
+                extraBubble.className = 'bubble-item';
+                let size = Math.random() * 20 + 8;
+                extraBubble.style.width = size + 'px';
+                extraBubble.style.height = size + 'px';
+                extraBubble.style.position = 'absolute';
+                extraBubble.style.left = Math.random() * 70 + 20 + '%';
+                extraBubble.style.top = Math.random() * 80 + '%';
+                extraBubble.style.animationDuration = (Math.random() * 5 + 3) + 's';
+                extraBubble.style.opacity = '0.6';
+                heroRight.appendChild(extraBubble);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', createParticles);
+        console.log("AquaFlow: full-width navbar, hero expanded, background image merged, edges faded — rating stat pill removed");
     </script>
 </body>
 </html>
