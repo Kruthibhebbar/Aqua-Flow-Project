@@ -1,3 +1,17 @@
+"""
+PERF: optional helper to compress/resize uploaded images (driver photos,
+payment proof screenshots) after they're saved to disk.
+
+Design goals:
+- Never breaks the upload flow: any failure (missing Pillow, corrupt
+  image, unsupported format) is swallowed and the original saved file
+  is left exactly as it was.
+- Same filename/path in, same filename/path out - callers and templates
+  that reference the stored path don't need any changes.
+- Only touches actual raster image extensions; PDFs and anything else
+  are left alone.
+"""
+
 import os
 
 _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
