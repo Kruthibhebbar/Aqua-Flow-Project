@@ -14,6 +14,7 @@ from datetime import datetime
 import os
 import bcrypt
 from mail_utils import send_mail_capped
+from image_utils import compress_image_file
 
 
 def init_driver_auth(
@@ -70,6 +71,7 @@ def init_driver_auth(
             photo_path = f"static/uploads/drivers/{filename}"
 
             photo.save(photo_path)
+            compress_image_file(photo_path)  # PERF: shrink for faster page loads (safe no-op on failure)
 
             hashed_password = bcrypt.hashpw(
                 password.encode("utf-8"),

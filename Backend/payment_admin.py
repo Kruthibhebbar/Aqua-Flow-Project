@@ -1,36 +1,3 @@
-"""
-payment_admin.py
-=================
-
-Real driver -> company cash reconciliation.
-
-The business reality this models:
-
-    Customer pays the DRIVER in cash (or UPI to the driver's own
-    number) at the doorstep. That money is not the driver's - it
-    belongs to the company - so the driver has to physically send it
-    on to the company's own bank/UPI account and prove they did it.
-    Admin then checks the transaction reference / screenshot against
-    their real bank statement and approves it.
-
-This module owns:
-    - the company's bank/UPI details (a single settings document that
-      the admin can edit from the Driver Management page, and that is
-      shown to every driver on their dashboard so they know exactly
-      where to send the money)
-    - the admin-side verification of each payment a driver submits
-      (approve -> money is considered received, driver's pending
-      balance drops; reject -> driver is told to resubmit)
-    - small helper functions (imported by driver_dashboard.py and
-      driver_management.py) that compute how much a given driver still
-      owes the company right now.
-
-The actual "driver submits a payment" endpoint lives in
-driver_dashboard.py (submit_collected_payment) since it needs the
-driver-login decorator and driver session context - this file only
-saves the uploaded screenshot for it via `save_payment_screenshot()`.
-"""
-
 import os
 import re
 import uuid
@@ -258,7 +225,15 @@ def save_payment_screenshot(app, file_storage):
     os.makedirs(target_dir, exist_ok=True)
 
     filename = f"{uuid.uuid4().hex}{ext}"
-    file_storage.save(os.path.join(target_dir, filename))
+    saved_path = os.path.join(target_dir, filename)
+    file_storage.save(saved_path)
+
+    if ext != ".pdf":
+        try:
+            from image_utils import compress_image_file
+            compress_image_file(saved_path)  # PERF: shrink for faster admin page loads (safe no-op on failure)
+        except Exception:
+            pass
 
     return f"{_UPLOAD_SUBDIR}/{filename}".replace("\\", "/")
 

@@ -68,12 +68,32 @@ app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USERNAME")
 
 # ================= CACHE FIX =================
+# PERF: previously this applied "no-cache, no-store" to EVERY response,
+# including static files (CSS/JS/images), so the browser re-downloaded
+# them on every page load. Static assets are now allowed to cache in the
+# browser; dynamic/session pages keep the original no-cache behaviour
+# unchanged so login/dashboard freshness is unaffected.
 @app.after_request
 def add_header(response):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+    if request.path.startswith('/static/'):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
+
+# ================= RESPONSE COMPRESSION =================
+# PERF: gzip/br-compresses HTML/JSON/CSS/JS responses before sending them
+# over the wire. Purely additive - no route/behaviour changes, just
+# smaller responses. Wrapped in try/except so a missing dependency
+# (e.g. before `pip install -r requirements.txt` is re-run) can never
+# crash the app.
+try:
+    from flask_compress import Compress
+    Compress(app)
+except ImportError:
+    pass
 
 # ================= MAIL CONFIG =================
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -121,6 +141,34 @@ transactions_collection = db["transactions"]
 # tracking_history  = every GPS point ever received (replay / analytics / ML)
 driver_locations_collection = db["driver_locations"]
 tracking_history_collection = db["tracking_history"]
+
+# ================= PERF: INDEXES =================
+# PERF: these mirror the fields routes actually query/sort by across the
+# app (login, dashboards, booking lookups, driver lookups, notifications,
+# GPS tracking, payments). create_index() is a no-op if the index already
+# exists, so this is safe to run on every startup and never changes what
+# any query returns - it only makes matching documents faster to find.
+# Wrapped in try/except so a transient DB hiccup at boot never prevents
+# the app (and gunicorn) from starting.
+try:
+    users_collection.create_index("email")
+    bookings_collection.create_index("user_email")
+    bookings_collection.create_index("driver_email")
+    bookings_collection.create_index("status")
+    bookings_collection.create_index("payment_status")
+    bookings_collection.create_index("created_at")
+    drivers_collection.create_index("email")
+    drivers_collection.create_index("phone")
+    notifications_collection.create_index("user_email")
+    notifications_collection.create_index("driver_email")
+    notifications_collection.create_index("read")
+    notifications_collection.create_index("created_at")
+    driver_locations_collection.create_index("driver_id")
+    tracking_history_collection.create_index("driver_id")
+    transactions_collection.create_index("driver_email")
+    transactions_collection.create_index("status")
+except Exception as e:
+    print("Index creation skipped (non-fatal):", e)
 
 init_driver_assignment(
     app,

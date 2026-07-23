@@ -23,4 +23,4 @@ WORKDIR /app/Backend
 
 # gunicorn is already in requirements.txt — use it instead of app.run()
 # app.py defines "app = Flask(...)" so the module:variable is app:app
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60 app:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 60 --preload app:app"]
