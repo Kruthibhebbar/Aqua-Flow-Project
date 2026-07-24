@@ -923,6 +923,20 @@
                 margin-top: 20px;
                 width: 100%;
             }
+            /* the 90-100px top/bottom padding on these sections is what was
+               showing up as a big blank strip right after the hero (e.g.
+               before "About Us") — tighten it for mobile only. */
+            .about-wrap,
+            .services-wrap {
+                padding: 40px 5%;
+            }
+            .how-it-works-wrap,
+            .contact-wrap {
+                padding: 40px 5% 50px;
+            }
+            .features-wrap {
+                padding: 48px 5%;
+            }
             /* hide the faint full-bleed background bottle on small screens
                and show a clean standalone image instead (see .hero-mobile-image) */
             .hero-modern::before {
