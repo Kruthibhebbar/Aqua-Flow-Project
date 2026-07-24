@@ -854,6 +854,19 @@
         @media (max-width: 700px) {
             .hero-modern {
                 padding: 12px 6% 14px;
+                /* Hard guarantee: the hero can never be taller than the
+                   visible screen (minus the navbar), so the next section
+                   physically cannot peek through — regardless of how tall
+                   the real webfont renders compared to any test render.
+                   Content is centered inside this fixed box; if it's ever
+                   a touch too tall for a given device, it clips evenly
+                   top/bottom instead of pushing the About section into view. */
+                height: calc(100vh - 68px);
+                height: calc(100dvh - 68px);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
             .badge-tag {
                 padding: 5px 14px;
