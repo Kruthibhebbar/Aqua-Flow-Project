@@ -853,29 +853,25 @@
 
         @media (max-width: 768px) {
             .hero-modern {
-                /* The hero now sizes itself with flexbox instead of a fixed
-                   height or clipped overflow. min-height gives it the full
-                   screen (below the 68px navbar) to work with; the flex
-                   column inside (.hero-left) then distributes the content
-                   within that space using a single flexible gap (see the
-                   margin-top:auto on .hero-mobile-image below), so the
-                   section naturally ends right after the feature badges
-                   with no leftover blank area, and never needs to clip. */
+                /* Let the hero be driven by its own content instead of a
+                   forced 100vh/100dvh box — that fixed-height + centered
+                   flex was what produced the large dead zone under the
+                   content on real devices. Height now follows the content,
+                   so there's no leftover empty space before the next
+                   section, while generous vertical padding still lets the
+                   hero comfortably occupy the first screenful. */
                 width: 100%;
-                min-height: calc(100vh - 68px);
-                min-height: calc(100dvh - 68px);
+                min-height: auto;
                 height: auto;
                 overflow: visible;
                 display: flex;
                 flex-direction: column;
-                padding: 20px 20px 16px;
+                justify-content: flex-start;
+                padding: 28px 20px 14px;
             }
             .hero-left {
-                display: flex;
-                flex-direction: column;
                 max-width: 100%;
                 width: 100%;
-                height: 100%;
                 padding-left: 0;
                 padding-right: 0;
             }
@@ -883,35 +879,30 @@
                 padding: 6px 16px;
                 font-size: 0.78rem;
                 margin-bottom: 14px;
-                flex-shrink: 0;
             }
             .hero-title {
                 font-size: 34px;
                 line-height: 1.16;
                 letter-spacing: -0.5px;
                 margin-bottom: 12px;
-                flex-shrink: 0;
             }
             .line-accent {
                 margin: 0 0 16px 0;
                 width: 60px;
                 height: 3px;
-                flex-shrink: 0;
-            }
-            .hero-text {
-                font-size: 1rem;
-                line-height: 1.5;
-                margin-bottom: 22px;
-                max-width: 100%;
-                flex-shrink: 0;
             }
             .book-primary-btn {
                 width: 100%;
                 justify-content: center;
                 font-size: 1.05rem;
                 padding: 16px 24px;
-                margin-bottom: 0;
-                flex-shrink: 0;
+                margin-bottom: 4px;
+            }
+            .hero-text {
+                font-size: 1rem;
+                line-height: 1.5;
+                margin-bottom: 22px;
+                max-width: 100%;
             }
             .section-title {
                 font-size: 2rem;
@@ -929,9 +920,24 @@
             }
             .trust-stats {
                 gap: 10px;
-                margin-top: 0;
+                margin-top: 20px;
                 width: 100%;
-                flex-shrink: 0;
+            }
+            /* the 90-100px top/bottom padding on these sections is what was
+               showing up as a big blank strip right after the hero (e.g.
+               before "About Us") — tighten it for mobile only. */
+            .about-wrap {
+                padding: 0 5% 40px;
+            }
+            .services-wrap {
+                padding: 40px 5%;
+            }
+            .how-it-works-wrap,
+            .contact-wrap {
+                padding: 40px 5% 50px;
+            }
+            .features-wrap {
+                padding: 48px 5%;
             }
             /* hide the faint full-bleed background bottle on small screens
                and show a clean standalone image instead (see .hero-mobile-image) */
@@ -943,20 +949,11 @@
             }
             .hero-mobile-image {
                 display: block;
-                /* ~40% larger than before, per the request to make it feel
-                   like the hero's centerpiece instead of floating small */
-                width: 215px;
-                max-width: 62%;
+                /* ~35% larger than the previous 115px baseline */
+                width: 155px;
+                max-width: 48%;
                 height: auto;
-                flex-shrink: 0;
-                /* margin-top: auto is the ONE flexible gap in this column —
-                   it soaks up whatever vertical space is left after the
-                   text/button above, pushing the image + the feature
-                   badges down as a tight, glued-together pair that lands
-                   flush with the bottom of the hero. Left/right auto keeps
-                   it centered. No fixed spacer margins needed above or
-                   below it. */
-                margin: auto auto 12px;
+                margin: 14px auto 6px;
                 filter: drop-shadow(0 12px 14px rgba(30, 60, 150, 0.18));
 
                 /* fade the image's own square edges so the circular backdrop
@@ -972,6 +969,9 @@
            without any dead space, while keeping the larger image/button
            from the 768px step above. */
         @media (max-width: 576px) {
+            .hero-modern {
+                padding: 20px 16px 10px;
+            }
             .hero-title {
                 font-size: 30px;
                 margin-bottom: 10px;
@@ -991,13 +991,13 @@
                 font-size: 1rem;
             }
             .hero-mobile-image {
-                /* ~40% larger than the previous 90px baseline */
-                width: 165px;
-                max-width: 58%;
-                margin: auto auto 10px;
+                /* ~35% larger than the previous 90px baseline */
+                width: 122px;
+                max-width: 44%;
+                margin: 10px auto 4px;
             }
             .trust-stats {
-                margin-top: 0;
+                margin-top: 14px;
                 gap: 8px;
             }
             .stat-pill {
