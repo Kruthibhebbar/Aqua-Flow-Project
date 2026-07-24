@@ -851,63 +851,77 @@
             }
         }
 
-        @media (max-width: 700px) {
+        @media (max-width: 768px) {
             .hero-modern {
-                padding: 12px 6% 14px;
-                /* Hard guarantee: the hero can never be taller than the
-                   visible screen (minus the navbar), so the next section
-                   physically cannot peek through — regardless of how tall
-                   the real webfont renders compared to any test render.
-                   Content is centered inside this fixed box; if it's ever
-                   a touch too tall for a given device, it clips evenly
-                   top/bottom instead of pushing the About section into view. */
-                height: calc(100vh - 68px);
-                height: calc(100dvh - 68px);
-                overflow: hidden;
+                /* Let the hero be driven by its own content instead of a
+                   forced 100vh/100dvh box — that fixed-height + centered
+                   flex was what produced the large dead zone under the
+                   content on real devices. Height now follows the content,
+                   so there's no leftover empty space before the next
+                   section, while generous vertical padding still lets the
+                   hero comfortably occupy the first screenful. */
+                width: 100%;
+                min-height: auto;
+                height: auto;
+                overflow: visible;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: flex-start;
+                padding: 28px 20px 36px;
+            }
+            .hero-left {
+                max-width: 100%;
+                width: 100%;
+                padding-left: 0;
+                padding-right: 0;
             }
             .badge-tag {
-                padding: 5px 14px;
-                font-size: 0.72rem;
-                margin-bottom: 8px;
+                padding: 6px 16px;
+                font-size: 0.78rem;
+                margin-bottom: 14px;
             }
             .hero-title {
-                font-size: 28px;
-                line-height: 1.15;
+                font-size: 34px;
+                line-height: 1.16;
                 letter-spacing: -0.5px;
-                margin-bottom: 6px;
+                margin-bottom: 12px;
             }
             .line-accent {
-                margin: 0 0 8px 0;
-                width: 50px;
+                margin: 0 0 16px 0;
+                width: 60px;
                 height: 3px;
             }
             .book-primary-btn {
-                font-size: 0.92rem;
-                padding: 10px 24px;
-                margin-bottom: 0;
+                width: 100%;
+                justify-content: center;
+                font-size: 1.05rem;
+                padding: 16px 24px;
+                margin-bottom: 4px;
             }
             .hero-text {
-                font-size: 0.85rem;
-                line-height: 1.35;
-                margin-bottom: 10px;
+                font-size: 1rem;
+                line-height: 1.5;
+                margin-bottom: 22px;
+                max-width: 100%;
             }
             .section-title {
                 font-size: 2rem;
             }
             .stat-pill {
-                padding: 4px 12px;
-                font-size: 0.68rem;
+                padding: 8px 16px;
+                font-size: 0.82rem;
+                flex: 1 1 auto;
+                justify-content: center;
+                text-align: center;
             }
             .stat-pill i {
-                margin-right: 5px;
-                font-size: 0.8rem;
+                margin-right: 8px;
+                font-size: 0.95rem;
             }
             .trust-stats {
-                gap: 6px;
-                margin-top: 8px;
+                gap: 10px;
+                margin-top: 20px;
+                width: 100%;
             }
             /* hide the faint full-bleed background bottle on small screens
                and show a clean standalone image instead (see .hero-mobile-image) */
@@ -919,10 +933,11 @@
             }
             .hero-mobile-image {
                 display: block;
-                width: 115px;
-                max-width: 36%;
+                /* ~35% larger than the previous 115px baseline */
+                width: 155px;
+                max-width: 48%;
                 height: auto;
-                margin: 4px auto 0;
+                margin: 14px auto 6px;
                 filter: drop-shadow(0 12px 14px rgba(30, 60, 150, 0.18));
 
                 /* fade the image's own square edges so the circular backdrop
@@ -934,41 +949,44 @@
         }
 
         /* Extra-tight spacing for smaller/older phones (iPhone SE/5 class,
-           ~375px and under) so the whole hero still fits on one screen
-           without scrolling. */
-        @media (max-width: 380px) {
+           ~576px and under) so the hero stays compact and content-hugging
+           without any dead space, while keeping the larger image/button
+           from the 768px step above. */
+        @media (max-width: 576px) {
             .hero-modern {
-                padding: 10px 6% 10px;
+                padding: 22px 16px 28px;
             }
             .hero-title {
-                font-size: 24px;
-                margin-bottom: 4px;
+                font-size: 30px;
+                margin-bottom: 10px;
             }
             .hero-text {
-                font-size: 0.78rem;
-                margin-bottom: 8px;
+                font-size: 0.92rem;
+                margin-bottom: 18px;
             }
             .badge-tag {
-                margin-bottom: 6px;
+                margin-bottom: 10px;
             }
             .line-accent {
-                margin: 0 0 6px 0;
+                margin: 0 0 12px 0;
             }
             .book-primary-btn {
-                padding: 8px 20px;
-                font-size: 0.85rem;
+                padding: 15px 20px;
+                font-size: 1rem;
             }
             .hero-mobile-image {
-                width: 90px;
-                margin: 4px auto 0;
+                /* ~35% larger than the previous 90px baseline */
+                width: 122px;
+                max-width: 44%;
+                margin: 10px auto 4px;
             }
             .trust-stats {
-                margin-top: 6px;
-                gap: 5px;
+                margin-top: 14px;
+                gap: 8px;
             }
             .stat-pill {
-                padding: 3px 10px;
-                font-size: 0.62rem;
+                padding: 7px 14px;
+                font-size: 0.75rem;
             }
         }
 
