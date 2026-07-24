@@ -268,23 +268,33 @@
             background-image: url("{{ url_for('static', filename='images/aquaflow-truck-hero.webp') }}");
             background-repeat: no-repeat;
             background-size: clamp(560px, 44vw, 680px) auto;
-            background-position: right 90px center;
+            /* nudged ~40px to the right (was "right 90px") - vertical
+               position (center) is untouched */
+            background-position: right 50px center;
             opacity: 1;
             pointer-events: none;
             z-index: 0;
             /* soft, natural drop shadow only - no hard edges/box */
             filter: drop-shadow(0 22px 30px rgba(20, 50, 130, 0.16));
+            /* crisper edges: stops the browser from softening/blurring the
+               transparent PNG/WebP when it's composited as a background
+               layer, so the cab/mirrors/wheels stay sharp instead of fuzzy */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            backface-visibility: hidden;
+            transform: translateZ(0);
 
-            /* Fade only right at the true edges of the box (not into the
-               truck itself) so the soft blend no longer blurs/crops the
-               cab or mirrors. */
+            /* Fade only right at the very edges of the box (2%/98% instead
+               of 10%/90%) so the mask can no longer eat into the truck's
+               own edges (cab corners, mirrors, front wheel) and crop or
+               blur them - it only blends the box boundary into the page. */
             -webkit-mask-image:
-                linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%),
-                linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+                linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%),
+                linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%);
             -webkit-mask-composite: source-in;
             mask-image:
-                linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%),
-                linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+                linear-gradient(to right, transparent 0%, black 2%, black 98%, transparent 100%),
+                linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%);
             mask-composite: intersect;
         }
 
@@ -888,27 +898,27 @@
             .badge-tag {
                 padding: 6px 16px;
                 font-size: 0.78rem;
-                margin-bottom: 14px;
+                margin-bottom: 18px;
                 flex-shrink: 0;
             }
             .hero-title {
                 font-size: 34px;
-                line-height: 1.16;
-                letter-spacing: -0.5px;
-                margin-bottom: 16px;
+                line-height: 1.24;
+                letter-spacing: -0.3px;
+                margin-bottom: 10px;
                 flex-shrink: 0;
             }
             .line-accent {
-                margin: 8px 0 20px 0;
+                margin: 2px 0 18px 0;
                 width: 60px;
                 height: 3px;
                 flex-shrink: 0;
             }
             .hero-text {
                 font-size: 1rem;
-                line-height: 1.55;
-                margin-bottom: 22px;
-                max-width: 100%;
+                line-height: 1.65;
+                margin-bottom: 26px;
+                max-width: 32ch;
                 flex-shrink: 0;
             }
             .book-primary-btn {
@@ -965,12 +975,20 @@
                    bleeds the (now bigger) image into the hero's side
                    padding — evenly, so it stays perfectly centered — 
                    without causing horizontal overflow/scroll. */
-                margin: auto -20px 12px;
-                transform: translateY(-14px);
+                margin: auto -20px 6px;
+                /* shifted up an extra ~20px (from -14px) to close the gap
+                   to the Book Now button above */
+                transform: translateY(-34px);
                 /* soft, natural drop shadow only - no hard edges/box; the
                    image already has a transparent background so no masking
                    is needed to blend it into the page */
                 filter: drop-shadow(0 14px 16px rgba(20, 50, 130, 0.16));
+            }
+            /* pulled up to hug the truck image (which is itself shifted up
+               via transform above), closing the empty gap that would
+               otherwise open up beneath it */
+            .trust-stats {
+                margin-top: -20px;
             }
         }
 
@@ -981,17 +999,20 @@
         @media (max-width: 576px) {
             .hero-title {
                 font-size: 30px;
-                margin-bottom: 10px;
+                line-height: 1.24;
+                margin-bottom: 8px;
             }
             .hero-text {
                 font-size: 0.92rem;
-                margin-bottom: 18px;
+                line-height: 1.6;
+                margin-bottom: 20px;
+                max-width: 30ch;
             }
             .badge-tag {
-                margin-bottom: 10px;
+                margin-bottom: 14px;
             }
             .line-accent {
-                margin: 0 0 12px 0;
+                margin: 0 0 14px 0;
             }
             .book-primary-btn {
                 padding: 15px 20px;
@@ -1000,13 +1021,17 @@
             .hero-mobile-image {
                 width: 92%;
                 max-width: 92%;
-                margin: auto auto 10px;
+                margin: auto auto 4px;
                 margin-left: auto;
                 margin-right: auto;
-                transform: translateY(-12px);
+                /* shifted up an extra ~20px (from -12px) to sit closer to
+                   the Book Now button */
+                transform: translateY(-30px);
             }
             .trust-stats {
-                margin-top: 0;
+                /* pulled up to hug the (now higher) truck image, so the
+                   badges sit close beneath it instead of leaving a gap */
+                margin-top: -18px;
                 gap: 8px;
             }
             .stat-pill {
