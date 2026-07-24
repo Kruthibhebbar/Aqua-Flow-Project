@@ -849,14 +849,6 @@
             .trust-stats {
                 justify-content: flex-start;
             }
-            .navbar-custom {
-                padding: 10px 5%;
-                flex-direction: column;
-                gap: 12px;
-            }
-            .nav-buttons {
-                justify-content: center;
-            }
         }
 
         @media (max-width: 700px) {
@@ -890,15 +882,27 @@
             }
             .hero-mobile-image {
                 display: block;
-                width: 150px;
-                max-width: 55%;
+                width: 210px;
+                max-width: 62%;
                 height: auto;
-                margin: 22px auto 6px;
+                margin: 14px auto 4px;
+                filter: drop-shadow(0 18px 22px rgba(30, 60, 150, 0.18));
+
+                /* fade the image's own square edges so the circular backdrop
+                   baked into the photo blends into the page instead of
+                   showing as a hard box */
+                -webkit-mask-image: radial-gradient(circle at center, black 55%, transparent 78%);
+                mask-image: radial-gradient(circle at center, black 55%, transparent 78%);
             }
         }
 
-        /* ===== MOBILE NAV: collapse into hamburger + slide-down panel ===== */
-        @media (max-width: 768px) {
+        /* ===== MOBILE/TABLET NAV: collapse into hamburger + slide-down panel.
+           Raised from 768px to 1400px — below that width there isn't reliably
+           enough room for the logo + all nav links + all action buttons on
+           one line (especially once logged in, when Dashboard + a long
+           "Logout (name)" button are added), so rather than letting it
+           half-wrap awkwardly we hand the whole range to the hamburger. ===== */
+        @media (max-width: 1400px) {
             .navbar-custom {
                 flex-direction: row;
                 align-items: center;
@@ -1303,7 +1307,7 @@
 
         // close mobile menu automatically if window resizes back to desktop
         window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
+            if (window.innerWidth > 1400) {
                 closeMobileMenu();
             }
         });

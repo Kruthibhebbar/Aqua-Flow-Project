@@ -105,15 +105,6 @@ app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
 
 mail = Mail(app)
 
-# ================= DATABASE =================
-# Explicit timeouts matter here: with none set, PyMongo's default is to
-# retry for up to 30 SECONDS before giving up on a single query. On Render's
-# free tier - where the outbound IP is dynamic - if that IP ever falls
-# outside MongoDB Atlas's Network Access allow-list, every single
-# DB-touching request (login included) hangs for ~30s and then fails,
-# which is exactly what "times out after some time when I try to login"
-# looks like from the outside. These timeouts turn that into a fast,
-# visible error instead of a silent multi-second hang.
 client = pymongo.MongoClient(
     os.getenv("MONGO_URI"),
     serverSelectionTimeoutMS=5000,
@@ -130,9 +121,6 @@ notifications_collection = db["notifications"]
 drivers_collection = db["drivers"]
 earnings_collection = db["earnings"]
 
-# Company bank / UPI details (singleton doc) - where drivers deposit
-# cash they collected from customers, and the ledger of every
-# driver -> admin payment submission (transaction id, screenshot, status).
 settings_collection = db["settings"]
 transactions_collection = db["transactions"]
 
@@ -140,16 +128,7 @@ transactions_collection = db["transactions"]
 # driver_locations = latest known fix per driver (fast reads)
 # tracking_history  = every GPS point ever received (replay / analytics / ML)
 driver_locations_collection = db["driver_locations"]
-tracking_history_collection = db["tracking_history"]
-
-# ================= PERF: INDEXES =================
-# PERF: these mirror the fields routes actually query/sort by across the
-# app (login, dashboards, booking lookups, driver lookups, notifications,
-# GPS tracking, payments). create_index() is a no-op if the index already
-# exists, so this is safe to run on every startup and never changes what
-# any query returns - it only makes matching documents faster to find.
-# Wrapped in try/except so a transient DB hiccup at boot never prevents
-# the app (and gunicorn) from starting.
+tracking_history_collection = db["tracking_history"]  
 try:
     users_collection.create_index("email")
     bookings_collection.create_index("user_email")
