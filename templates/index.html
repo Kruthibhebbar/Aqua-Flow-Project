@@ -267,8 +267,8 @@
             height: 100%;
             background-image: url("{{ url_for('static', filename='images/aquaflow-truck-hero.webp') }}");
             background-repeat: no-repeat;
-            background-size: clamp(420px, 32vw, 520px) auto;
-            background-position: right 40px center;
+            background-size: clamp(480px, 38vw, 600px) auto;
+            background-position: right 110px center;
             opacity: 1;
             pointer-events: none;
             z-index: 0;
@@ -948,12 +948,13 @@
             }
             .hero-mobile-image {
                 display: block;
-                /* AquaFlow truck: sized to ~78% of the available width so it
-                   reads as the hero's centerpiece without feeling oversized */
-                width: 78%;
-                max-width: 78%;
+                /* AquaFlow truck: enlarged so it reads as a bold centerpiece */
+                width: 94%;
+                max-width: 94%;
                 height: auto;
                 flex-shrink: 0;
+                margin-left: auto;
+                margin-right: auto;
                 /* margin-top: auto is the ONE flexible gap in this column —
                    it soaks up whatever vertical space is left after the
                    text/button above, pushing the image + the feature
@@ -993,9 +994,11 @@
                 font-size: 1rem;
             }
             .hero-mobile-image {
-                width: 75%;
-                max-width: 75%;
+                width: 92%;
+                max-width: 92%;
                 margin: auto auto 10px;
+                margin-left: auto;
+                margin-right: auto;
             }
             .trust-stats {
                 margin-top: 0;
