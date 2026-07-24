@@ -263,12 +263,12 @@
             position: absolute;
             top: 0;
             right: 0;
-            width: 48%;
+            width: 64%;
             height: 100%;
             background-image: url("{{ url_for('static', filename='images/aquaflow-truck-hero.webp') }}");
             background-repeat: no-repeat;
-            background-size: clamp(480px, 38vw, 600px) auto;
-            background-position: right 110px center;
+            background-size: clamp(560px, 44vw, 680px) auto;
+            background-position: right 170px center;
             opacity: 1;
             pointer-events: none;
             z-index: 0;
@@ -948,21 +948,23 @@
             }
             .hero-mobile-image {
                 display: block;
-                /* AquaFlow truck: enlarged so it reads as a bold centerpiece */
-                width: 94%;
-                max-width: 94%;
+                /* AquaFlow truck: enlarged to a bold, near-full-width centerpiece.
+                   Bleeds into the hero's 20px side padding (via negative margins)
+                   instead of overflowing the viewport, so it reads bigger without
+                   causing horizontal scroll. */
+                width: calc(100% + 40px);
+                max-width: calc(100% + 40px);
                 height: auto;
                 flex-shrink: 0;
-                margin-left: auto;
-                margin-right: auto;
                 /* margin-top: auto is the ONE flexible gap in this column —
                    it soaks up whatever vertical space is left after the
                    text/button above, pushing the image + the feature
                    badges down as a tight, glued-together pair that lands
-                   flush with the bottom of the hero. Left/right auto keeps
-                   it centered. No fixed spacer margins needed above or
-                   below it. */
-                margin: auto auto 12px;
+                   flush with the bottom of the hero. The -20px left/right
+                   bleeds the (now bigger) image into the hero's side
+                   padding — evenly, so it stays perfectly centered — 
+                   without causing horizontal overflow/scroll. */
+                margin: auto -20px 12px;
                 /* soft, natural drop shadow only - no hard edges/box; the
                    image already has a transparent background so no masking
                    is needed to blend it into the page */
