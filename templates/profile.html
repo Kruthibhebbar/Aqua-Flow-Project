@@ -21,7 +21,8 @@
 
         body{
             background:#f3f8ff;
-            min-height:100vh;
+            height:100vh;
+            overflow:hidden;
             padding:30px;
             color:#1e293b;
         }
@@ -29,6 +30,9 @@
         .container{
             max-width:1400px;
             margin:auto;
+            height:100%;
+            display:flex;
+            flex-direction:column;
         }
 
         .top-bar{
@@ -36,6 +40,7 @@
             justify-content:space-between;
             align-items:center;
             margin-bottom:25px;
+            flex:none;
         }
 
         .logo{
@@ -56,6 +61,47 @@
             display:grid;
             grid-template-columns:350px 1fr;
             gap:25px;
+            align-items:stretch;
+            flex:1;
+            min-height:0;
+        }
+
+        .flash-msg{ flex:none; }
+
+        .right-panel{
+            height:100%;
+            overflow-y:auto;
+            padding-right:6px;
+            padding-bottom:6px;
+        }
+
+        /* Slim, matching scrollbar for both independently-scrolling panes,
+           replacing the default thick OS scrollbar. */
+        .left-card::-webkit-scrollbar,
+        .right-panel::-webkit-scrollbar{
+            width:7px;
+        }
+
+        .left-card::-webkit-scrollbar-track,
+        .right-panel::-webkit-scrollbar-track{
+            background:transparent;
+        }
+
+        .left-card::-webkit-scrollbar-thumb,
+        .right-panel::-webkit-scrollbar-thumb{
+            background:#c7d2e3;
+            border-radius:20px;
+        }
+
+        .left-card::-webkit-scrollbar-thumb:hover,
+        .right-panel::-webkit-scrollbar-thumb:hover{
+            background:#aab8cf;
+        }
+
+        .left-card,
+        .right-panel{
+            scrollbar-width:thin;
+            scrollbar-color:#c7d2e3 transparent;
         }
 
         .card{
@@ -66,9 +112,9 @@
         }
 
         .left-card{
-            position:sticky;
-            top:20px;
-            height:fit-content;
+            position:relative;
+            height:100%;
+            overflow-y:auto;
         }
 
         .profile-header{
@@ -97,17 +143,6 @@
             font-size:14px;
             opacity:0.9;
             margin-top:5px;
-        }
-
-        .membership{
-            margin-top:15px;
-            display:inline-block;
-            background:gold;
-            color:#111;
-            padding:6px 18px;
-            border-radius:30px;
-            font-size:14px;
-            font-weight:600;
         }
 
         /* NEW EDIT PROFILE BUTTON CSS */
@@ -163,21 +198,27 @@
 
         .stats-grid{
             display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-            gap:20px;
+            grid-template-columns:repeat(5,1fr);
+            gap:14px;
         }
 
         .stat-card{
             background:linear-gradient(135deg,#0077ff,#00c6ff);
             color:white;
-            border-radius:25px;
-            padding:25px;
+            border-radius:20px;
+            padding:18px 12px;
             text-align:center;
+            min-width:0;
         }
 
         .stat-card h1{
-            font-size:40px;
-            margin-bottom:10px;
+            font-size:30px;
+            margin-bottom:8px;
+            white-space:nowrap;
+        }
+
+        .stat-card p{
+            font-size:13px;
         }
 
         .main-card{
@@ -231,8 +272,21 @@
 
         @media(max-width:950px){
 
+            body{
+                height:auto;
+                overflow:visible;
+            }
+
+            .container{
+                height:auto;
+                display:block;
+            }
+
             .profile-layout{
                 grid-template-columns:1fr;
+                flex:none;
+                min-height:0;
+                display:block;
             }
 
             .detail-grid{
@@ -241,8 +295,152 @@
 
             .left-card{
                 position:relative;
+                height:auto;
+                max-height:none;
+                overflow-y:visible;
+                margin-bottom:25px;
             }
 
+            .right-panel{
+                height:auto;
+                max-height:none;
+                overflow-y:visible;
+                padding-right:0;
+                padding-bottom:0;
+            }
+
+            .stats-grid{
+                grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+            }
+
+        }
+
+        .avatar-wrap{
+            position:relative;
+            width:130px;
+            height:130px;
+            margin:0 auto;
+        }
+
+        .avatar-wrap img{
+            width:130px;
+            height:130px;
+            border-radius:50%;
+            object-fit:cover;
+            border:5px solid white;
+            background:white;
+            display:block;
+        }
+
+        .avatar-edit{
+            position:absolute;
+            bottom:2px;
+            right:2px;
+            width:38px;
+            height:38px;
+            border-radius:50%;
+            background:#0077ff;
+            border:3px solid white;
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+            font-size:14px;
+            transition:0.2s;
+        }
+
+        .avatar-edit:hover{
+            background:#0056b3;
+            transform:scale(1.06);
+        }
+
+        .member-since{
+            margin-top:12px;
+            font-size:13px;
+            opacity:0.85;
+        }
+
+        .flash-msg{
+            max-width:1400px;
+            margin:0 auto 18px;
+            padding:14px 18px;
+            border-radius:14px;
+            font-weight:600;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+        }
+
+        .flash-msg.success{ background:#dcfce7; color:#15803d; }
+        .flash-msg.danger{ background:#fee2e2; color:#b91c1c; }
+
+        .flash-msg button{
+            background:none;
+            border:none;
+            font-size:18px;
+            cursor:pointer;
+            color:inherit;
+        }
+
+        .next-delivery-card{
+            background:linear-gradient(135deg,#0F2C59,#1B4B91 55%,#2E7BC4);
+            color:white;
+            border-radius:25px;
+            padding:25px;
+            margin-bottom:25px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:20px;
+            flex-wrap:wrap;
+        }
+
+        .next-delivery-card .label{
+            color:rgba(255,255,255,0.75);
+            font-weight:600;
+            font-size:13px;
+            text-transform:uppercase;
+            letter-spacing:0.5px;
+        }
+
+        .next-delivery-card h3{
+            font-size:22px;
+            margin:6px 0;
+        }
+
+        .next-delivery-card p{
+            color:rgba(255,255,255,0.85);
+            font-size:14px;
+        }
+
+        .next-delivery-card .nd-status{
+            background:rgba(255,255,255,0.18);
+            border:1px solid rgba(255,255,255,0.3);
+            padding:6px 16px;
+            border-radius:30px;
+            font-weight:600;
+            font-size:13px;
+            white-space:nowrap;
+        }
+
+        .next-delivery-empty{
+            background:white;
+            border-radius:25px;
+            padding:25px;
+            margin-bottom:25px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:20px;
+            flex-wrap:wrap;
+            box-shadow:0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .next-delivery-empty p{
+            color:#64748b;
+            font-weight:500;
         }
 
     </style>
@@ -250,6 +448,17 @@
 <body>
 
 <div class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-msg {{ 'danger' if category == 'danger' else 'success' }}">
+            <span>{{ message }}</span>
+            <button type="button" onclick="this.parentElement.remove()">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <div class="top-bar">
 
@@ -269,15 +478,20 @@
 
             <div class="profile-header">
 
-                {% if user.profile_image %}
+                <form action="{{ url_for('upload_profile_photo') }}" method="POST" enctype="multipart/form-data" id="photoForm">
+                    <div class="avatar-wrap">
+                        {% if user.profile_image %}
+                            <img src="{{ user.profile_image }}" alt="Profile">
+                        {% else %}
+                            <img src="https://ui-avatars.com/api/?background=ffffff&color=0077ff&name={{ user.name|urlencode }}&size=200" alt="Profile">
+                        {% endif %}
 
-                    <img src="{{ user.profile_image }}" alt="Profile">
-
-                {% else %}
-
-                    <img src="https://ui-avatars.com/api/?background=ffffff&color=0077ff&name={{ user.name|urlencode }}&size=200" alt="Profile">
-
-                {% endif %}
+                        <label for="photoInput" class="avatar-edit" title="Change photo">
+                            <i class="fa-solid fa-camera"></i>
+                        </label>
+                        <input type="file" id="photoInput" name="photo" accept="image/png,image/jpeg,image/webp" hidden onchange="document.getElementById('photoForm').submit()">
+                    </div>
+                </form>
 
                 <div class="profile-name">
                     {{ user.name }}
@@ -287,9 +501,11 @@
                     {{ user.email }}
                 </div>
 
-                <div class="membership">
-                    {{ user.membership or "Premium" }}
+                {% if user.created_at %}
+                <div class="member-since">
+                    Member since {{ user.created_at.strftime('%b %Y') }}
                 </div>
+                {% endif %}
 
                 <!-- NEW EDIT PROFILE BUTTON -->
 
@@ -382,7 +598,32 @@
 
         <!-- RIGHT SIDE -->
 
-        <div>
+        <div class="right-panel">
+
+            <!-- NEXT DELIVERY (real, computed from actual bookings) -->
+
+            {% if next_delivery %}
+            <div class="next-delivery-card">
+                <div>
+                    <div class="label">Next Delivery</div>
+                    <h3>{{ next_delivery.delivery_date }}</h3>
+                    <p><i class="fa-solid fa-location-dot"></i> {{ next_delivery.address }}</p>
+                </div>
+                <div class="nd-status">{{ next_delivery.status }}</div>
+            </div>
+            {% else %}
+            <div class="next-delivery-empty">
+                <div>
+                    <div class="label" style="color:#64748b;">Next Delivery</div>
+                    <p>No upcoming deliveries scheduled right now.</p>
+                </div>
+                <a href="/booking">
+                    <button style="padding:10px 18px;border:none;border-radius:30px;background:#0077ff;color:white;cursor:pointer;font-weight:600;">
+                        Book Now
+                    </button>
+                </a>
+            </div>
+            {% endif %}
 
             <!-- STATS -->
 
@@ -408,6 +649,11 @@
                     <p>Active Orders</p>
                 </div>
 
+                <div class="stat-card">
+                    <h1>{{ "{:,}".format(total_liters or 0) }}</h1>
+                    <p>Liters Delivered</p>
+                </div>
+
             </div>
 
             <!-- MAIN INFO -->
@@ -418,6 +664,9 @@
                     <i class="fa-solid fa-water"></i>
                     Water Booking Preferences
                 </div>
+                <p style="color:#94a3b8;font-size:13px;margin-top:-14px;margin-bottom:20px;">
+                    Set these from <a href="{{ url_for('edit_profile') }}" style="color:#0077ff;font-weight:600;">Edit Profile</a> — they'll prefill your next booking.
+                </p>
 
                 <div class="detail-grid">
 

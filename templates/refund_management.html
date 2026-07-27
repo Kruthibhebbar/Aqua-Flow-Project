@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>AquaFlow Console | Refund Management</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --ink: #0A1A22; --ink-2: #123039; --ink-soft: #55707A; --ink-faint: #93A8AF;
+        --teal-900: #073239; --teal-700: #0E6672; --teal-600: #0E7C86;
+        --amber-600: #A5690C; --amber-100: #FBF0DC;
+        --green-600: #157A50; --green-100: #E1F5EA;
+        --red-600: #B23B30; --red-100: #FBEAE8;
+        --bg: #EEF3F4; --surface: #FFFFFF; --border: #DCE6E8; --border-soft: #E7EEEF;
+        --r-lg: 18px; --r-pill: 999px;
+        --shadow-xs: 0 2px 8px rgba(10,26,34,0.05);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); padding: 32px 4%; }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .page-head h1 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--teal-900);
+        display: flex; align-items: center; gap: 10px;
+    }
+    .back-link { text-decoration: none; color: var(--ink-soft); font-weight: 600; font-size: 13.5px; display: inline-flex; align-items: center; gap: 6px; }
+    .back-link:hover { color: var(--teal-700); }
+
+    .flash-msg { padding: 12px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; margin-bottom: 18px; }
+    .flash-success { background: var(--green-100); color: var(--green-600); }
+    .flash-danger { background: var(--red-100); color: var(--red-600); }
+
+    .card { background: var(--surface); border-radius: var(--r-lg); padding: 24px; box-shadow: var(--shadow-xs); margin-bottom: 22px; }
+    .card h2 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--teal-700); margin-bottom: 18px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint); padding: 10px 12px; border-bottom: 1px solid var(--border-soft); }
+    tbody td { padding: 14px 12px; font-size: 13.5px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+
+    .amount-refund { font-weight: 700; color: var(--teal-700); }
+    .amount-fee { font-size: 11.5px; color: var(--ink-faint); }
+
+    .status-pill { padding: 4px 10px; border-radius: var(--r-pill); font-size: 11.5px; font-weight: 700; }
+    .status-requested { background: var(--amber-100); color: var(--amber-600); }
+    .status-completed { background: var(--green-100); color: var(--green-600); }
+    .status-rejected { background: var(--red-100); color: var(--red-600); }
+
+    .row-actions { display: flex; gap: 6px; }
+    .row-actions form { display: inline; }
+    .action-btn { border: none; padding: 7px 14px; border-radius: var(--r-pill); font-weight: 700; font-size: 11.5px; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-approve { background: var(--green-100); color: var(--green-600); }
+    .btn-approve:hover { background: #CFEEDD; }
+    .btn-reject { background: var(--red-100); color: var(--red-600); }
+    .btn-reject:hover { background: #F7D9D5; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--ink-faint); }
+    .empty-state i { font-size: 28px; margin-bottom: 10px; display: block; }
+</style>
+</head>
+<body>
+
+    <div class="page-head">
+        <h1><i class="fas fa-rotate-left"></i> Refund Management</h1>
+        <a href="/admin-dashboard" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <h2>Pending Refund Requests</h2>
+        {% if requested_refunds %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Booking</th>
+                    <th>Customer</th>
+                    <th>Refund Amount</th>
+                    <th>Requested</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in requested_refunds %}
+                <tr>
+                    <td>#{{ b._id|string|truncate(8, True, '') }}</td>
+                    <td>{{ b.fullname }}<br><span style="color:var(--ink-faint); font-size:12px;">{{ b.user_email }}</span></td>
+                    <td>
+                        <div class="amount-refund">₹{{ "{:,.0f}".format(b.refund_amount) }}</div>
+                        {% if b.cancellation_fee %}
+                        <div class="amount-fee">₹{{ "{:,.0f}".format(b.cancellation_fee) }} cancellation fee applied</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ b.refund_requested_at.strftime('%d %b %Y') if b.get('refund_requested_at') else '—' }}</td>
+                    <td>
+                        <div class="row-actions">
+                            <form method="POST" action="/approve-refund/{{ b._id }}">
+                                <button type="submit" class="action-btn btn-approve">Approve</button>
+                            </form>
+                            <form method="POST" action="/reject-refund/{{ b._id }}" onsubmit="return confirm('Reject this refund request?');">
+                                <button type="submit" class="action-btn btn-reject">Reject</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-circle-check"></i>
+            No pending refund requests right now.
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Recently Resolved</h2>
+        {% if resolved_refunds %}
+        <table>
+            <thead>
+                <tr><th>Booking</th><th>Customer</th><th>Amount</th><th>Status</th><th>Resolved</th></tr>
+            </thead>
+            <tbody>
+                {% for b in resolved_refunds %}
+                <tr>
+                    <td>#{{ b._id|string|truncate(8, True, '') }}</td>
+                    <td>{{ b.fullname }}</td>
+                    <td>₹{{ "{:,.0f}".format(b.refund_amount) }}</td>
+                    <td>
+                        {% if b.refund_status == 'Completed' %}
+                            <span class="status-pill status-completed">Completed</span>
+                        {% else %}
+                            <span class="status-pill status-rejected">Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ b.refund_completed_at.strftime('%d %b %Y') if b.get('refund_completed_at') else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-clock-rotate-left"></i>
+            Nothing resolved yet.
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

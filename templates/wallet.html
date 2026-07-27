@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wallet | AquaFlow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+        body{background:#eef3f9;min-height:100vh;padding:32px 16px;color:#1f2d3d;}
+        .container{max-width:640px;margin:auto;}
+        .back-link{display:inline-block;margin-bottom:14px;color:#2d7aff;text-decoration:none;font-size:.9rem;}
+        h1{font-size:1.5rem;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+
+        .flash{padding:12px 16px;border-radius:12px;font-size:.85rem;font-weight:600;margin-bottom:16px;}
+        .flash-success{background:#d4f4e2;color:#1e9e5a;}
+        .flash-danger{background:#fbdada;color:#c0392b;}
+
+        .balance-card{background:linear-gradient(135deg,#2d7aff,#1a5fd6);color:#fff;border-radius:20px;padding:28px;margin-bottom:22px;box-shadow:0 10px 25px rgba(45,122,255,.25);}
+        .balance-label{font-size:.85rem;opacity:.85;margin-bottom:6px;}
+        .balance-value{font-size:2.4rem;font-weight:700;}
+
+        .card{background:#fff;border-radius:16px;padding:22px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:20px;}
+        .card h2{font-size:1.05rem;margin-bottom:14px;}
+
+        .recharge-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+        .recharge-form label{font-size:.82rem;font-weight:600;color:#495057;display:block;margin-bottom:6px;}
+        .recharge-form input{padding:10px 12px;border-radius:10px;border:1.5px solid #dee2e6;font-size:.95rem;width:180px;}
+        .recharge-form button{background:linear-gradient(135deg,#2d7aff,#1a5fd6);color:#fff;border:none;padding:11px 20px;border-radius:10px;font-weight:600;cursor:pointer;}
+
+        .quick-amounts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+        .quick-amounts button{background:#f0f4fa;border:1px solid #dee2e6;padding:6px 14px;border-radius:999px;font-size:.8rem;font-weight:600;color:#2d7aff;cursor:pointer;}
+
+        table{width:100%;border-collapse:collapse;font-size:.88rem;}
+        th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #eef1f4;}
+        th{color:#6b7684;font-weight:600;font-size:.78rem;text-transform:uppercase;}
+        .amt-pos{color:#1e9e5a;font-weight:700;}
+        .amt-neg{color:#c0392b;font-weight:700;}
+        .empty{color:#9aa5b1;font-size:.88rem;padding:14px 0;text-align:center;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="{{ url_for('history') }}" class="back-link"><i class="fa-solid fa-arrow-left me-1"></i> Back</a>
+    <h1><i class="fa-solid fa-wallet"></i> My Wallet</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="balance-card">
+        <div class="balance-label">Wallet Balance</div>
+        <div class="balance-value">₹{{ "{:,.0f}".format(wallet_balance) }}</div>
+    </div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-plus-circle me-2"></i>Recharge Wallet</h2>
+        <form class="recharge-form" method="POST" action="{{ url_for('recharge_wallet') }}">
+            <div>
+                <label for="amount">Amount (₹)</label>
+                <input type="number" id="amount" name="amount" min="1" step="1" required>
+            </div>
+            <button type="submit"><i class="fa-solid fa-bolt me-1"></i> Recharge</button>
+        </form>
+        <div class="quick-amounts">
+            <button type="button" onclick="document.getElementById('amount').value=200">₹200</button>
+            <button type="button" onclick="document.getElementById('amount').value=500">₹500</button>
+            <button type="button" onclick="document.getElementById('amount').value=1000">₹1000</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-clock-rotate-left me-2"></i>Transaction History</h2>
+        {% if history %}
+        <table>
+            <thead><tr><th>Date</th><th>Type</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for h in history %}
+                <tr>
+                    <td>{{ h.created_at.strftime('%d %b %Y, %I:%M %p') if h.created_at else '-' }}</td>
+                    <td>
+                        {% if h.type == 'recharge' %}Recharge
+                        {% elif h.type == 'booking_payment' %}Used on Booking
+                        {% elif h.type == 'refund_to_wallet' %}Refunded to Wallet
+                        {% else %}{{ h.type }}{% endif %}
+                    </td>
+                    <td class="{{ 'amt-pos' if h.amount >= 0 else 'amt-neg' }}">
+                        {{ '+' if h.amount >= 0 else '' }}₹{{ "{:,.0f}".format(h.amount) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No wallet activity yet.</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

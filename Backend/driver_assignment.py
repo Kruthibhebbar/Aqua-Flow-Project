@@ -262,7 +262,7 @@ def init_driver_assignment(
 
         recent_bookings = list(
 
-            bookings_collection.find()
+            bookings_collection.find({"status": {"$ne": "Awaiting Payment"}})
 
             .sort("created_at", -1)
 
@@ -360,6 +360,18 @@ def init_driver_assignment(
             flash(
                 f"This order is scheduled for {booking.get('delivery_date')} "
                 "- driver assignment opens on that date.",
+                "warning"
+            )
+            return redirect(url_for("booking_management"))
+
+        # An online-payment booking must actually be paid before a driver
+        # goes out for it. Cash On Delivery bookings are exempt - they're
+        # expected to still be unpaid at this stage by design.
+        if booking and booking.get("payment_method") != "Cash on Delivery" \
+                and booking.get("payment_status") != "Paid (Online)":
+            flash(
+                "This booking hasn't been paid for yet - a driver can only "
+                "be assigned once payment is completed (or it's Cash on Delivery).",
                 "warning"
             )
             return redirect(url_for("booking_management"))
@@ -606,7 +618,7 @@ Please login to your driver portal to ACCEPT or REJECT this request.
         
         try:
             # Fetch latest bookings
-            bookings = list(bookings_collection.find().sort("created_at", -1))
+            bookings = list(bookings_collection.find({"status": {"$ne": "Awaiting Payment"}}).sort("created_at", -1))
             print(f"✅ Found {len(bookings)} bookings in MongoDB")
             
             # Convert bookings for JSON response (FIXED)

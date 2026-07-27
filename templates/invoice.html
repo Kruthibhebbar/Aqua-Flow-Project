@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ booking_id[-6:] }} | AquaFlow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+        body{background:#eef3f9;min-height:100vh;padding:32px 16px;display:flex;flex-direction:column;align-items:center;}
+
+        .toolbar{max-width:640px;width:100%;display:flex;justify-content:flex-end;margin-bottom:14px;}
+        .download-btn{background:#2d7aff;color:#fff;border:none;padding:11px 22px;border-radius:999px;font-weight:600;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+        .download-btn:hover{background:#1f66e0;}
+
+        .invoice{background:#fff;max-width:640px;width:100%;border-radius:16px;padding:40px;box-shadow:0 10px 25px rgba(0,0,0,.06);}
+
+        .inv-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #eef1f4;}
+        .brand{font-size:1.4rem;font-weight:700;color:#1f2d3d;}
+        .brand span{color:#2d7aff;}
+        .inv-meta{text-align:right;font-size:.82rem;color:#8b95a3;}
+        .inv-title{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#2d7aff;margin-bottom:4px;}
+
+        .grid-two{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:26px;}
+        .block-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#9aa5b1;margin-bottom:6px;}
+        .block-value{font-size:.92rem;color:#1f2d3d;line-height:1.5;}
+        .block-value strong{display:block;font-size:.98rem;margin-bottom:2px;}
+
+        table{width:100%;border-collapse:collapse;margin-bottom:22px;}
+        thead th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#9aa5b1;padding:8px 0;border-bottom:1.5px solid #eef1f4;}
+        thead th:last-child{text-align:right;}
+        tbody td{padding:10px 0;font-size:.9rem;color:#3a4451;border-bottom:1px solid #f4f6f8;}
+        tbody td:last-child{text-align:right;font-weight:600;}
+
+        .totals{margin-left:auto;width:220px;}
+        .t-row{display:flex;justify-content:space-between;font-size:.88rem;padding:5px 0;color:#6b7684;}
+        .t-row.grand{font-size:1.15rem;font-weight:700;color:#1f2d3d;border-top:2px solid #eef1f4;margin-top:6px;padding-top:10px;}
+
+        .footer-note{margin-top:30px;padding-top:18px;border-top:1px solid #eef1f4;font-size:.78rem;color:#9aa5b1;text-align:center;}
+
+        .timeline{margin-top:30px;padding-top:22px;border-top:1px solid #eef1f4;}
+        .timeline-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#9aa5b1;margin-bottom:16px;}
+        .tl-item{display:flex;gap:12px;padding-bottom:16px;position:relative;}
+        .tl-item:not(:last-child)::before{content:'';position:absolute;left:9px;top:20px;bottom:0;width:2px;background:#eef1f4;}
+        .tl-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:#fff;}
+        .tl-dot.done{background:#1a9c5a;}
+        .tl-dot.pending{background:#dfe4ea;}
+        .tl-label{font-size:.88rem;font-weight:600;color:#1f2d3d;}
+        .tl-label.pending-label{color:#b6bec7;}
+        .tl-time{font-size:.76rem;color:#9aa5b1;margin-top:1px;}
+        @media print { .timeline{page-break-inside:avoid;} }
+
+        .txn-id{font-family:'IBM Plex Mono',monospace;}
+
+        @media print {
+            body{background:#fff;padding:0;}
+            .toolbar{display:none;}
+            .invoice{box-shadow:none;border-radius:0;max-width:100%;}
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button class="download-btn" onclick="window.print()"><i class="fa-solid fa-download"></i> Download PDF</button>
+    </div>
+
+    <div class="invoice">
+        <div class="inv-head">
+            <div class="brand">Aqua<span>Flow</span></div>
+            <div class="inv-meta">
+                <div class="inv-title">Invoice</div>
+                Booking ID: {{ booking_id }}
+            </div>
+        </div>
+
+        <div class="grid-two">
+            <div>
+                <div class="block-label">Billed To</div>
+                <div class="block-value">
+                    <strong>{{ booking.fullname }}</strong>
+                    {{ booking.address }}<br>
+                    {{ booking.phone }}<br>
+                    {{ booking.user_email }}
+                </div>
+            </div>
+            <div>
+                <div class="block-label">Payment Details</div>
+                <div class="block-value">
+                    Payment ID: <span class="txn-id">{{ booking.get('payment_id') or booking.get('razorpay_payment_id') or '—' }}</span><br>
+                    Method: {{ booking.get('payment_method', '—') }}<br>
+                    Date: {{ booking.get('payment_time').strftime('%d %b %Y, %I:%M %p') if booking.get('payment_time') else (booking.get('created_at').strftime('%d %b %Y') if booking.get('created_at') else '—') }}<br>
+                    Status: {{ booking.get('payment_status', '—') }}
+                </div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>Description</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        Water Tanker Delivery ({{ booking.quantity }} L)<br>
+                        <span style="color:#9aa5b1;font-size:.78rem;">Delivered to: {{ booking.address }}</span>
+                    </td>
+                    <td>₹{{ "{:,.2f}".format(base_amount) }}</td>
+                </tr>
+                <tr>
+                    <td>GST (18%, included in price)</td>
+                    <td>₹{{ "{:,.2f}".format(gst_amount) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="totals">
+            <div class="t-row"><span>Subtotal</span><span>₹{{ "{:,.2f}".format(base_amount) }}</span></div>
+            <div class="t-row"><span>GST</span><span>₹{{ "{:,.2f}".format(gst_amount) }}</span></div>
+            <div class="t-row grand"><span>Total Paid</span><span>₹{{ "{:,.2f}".format(amount) }}</span></div>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-title">Order Timeline</div>
+            {% set stages = [
+                ('Booking Created', booking.get('created_at')),
+                ('Admin Approved', booking.get('approved_at')),
+                ('Payment Successful', booking.get('payment_time') or booking.get('paid_at')),
+                ('Driver Assigned', booking.get('driver_assigned_at')),
+                ('Driver Started', booking.get('started_at')),
+                ('OTP Verified', booking.get('otp_verified_at')),
+                ('Delivered', booking.get('delivered_at')),
+            ] %}
+            {% for label, ts in stages %}
+            <div class="tl-item">
+                <div class="tl-dot {{ 'done' if ts else 'pending' }}">
+                    {% if ts %}<i class="fa-solid fa-check"></i>{% endif %}
+                </div>
+                <div>
+                    <div class="tl-label {{ '' if ts else 'pending-label' }}">{{ label }}</div>
+                    {% if ts %}<div class="tl-time">{{ ts.strftime('%d %b %Y, %I:%M %p') }}</div>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="footer-note">
+            This is a system-generated invoice from AquaFlow and does not require a signature.
+        </div>
+    </div>
+</body>
+</html>

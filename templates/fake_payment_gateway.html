@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing Payment | AquaFlow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+        body{background:#eef3f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+        .card{background:#fff;border-radius:20px;padding:38px 32px;max-width:400px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,.08);text-align:center;}
+
+        .amount{font-size:2.1rem;font-weight:700;color:#1f2d3d;margin-bottom:4px;}
+        .method-label{color:#6b7684;font-size:.85rem;margin-bottom:28px;}
+
+        .spinner{width:56px;height:56px;border:5px solid #e3ecfb;border-top-color:#2d7aff;border-radius:50%;margin:0 auto 22px;animation:spin 0.9s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+
+        .stage-text{font-size:1rem;font-weight:600;color:#3a4451;margin-bottom:6px;}
+        .stage-sub{font-size:.82rem;color:#9aa5b1;}
+
+        .success-icon{width:64px;height:64px;border-radius:50%;background:#e1f5ea;color:#1a9c5a;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 18px;animation:pop .35s ease;}
+        @keyframes pop{from{transform:scale(0);}to{transform:scale(1);}}
+
+        .txn-box{background:#f7f9fc;border-radius:12px;padding:14px 16px;margin-top:18px;text-align:left;}
+        .txn-row{display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0;color:#3a4451;}
+        .txn-row .label{color:#8b95a3;}
+        .txn-row .value{font-weight:600;font-family:monospace;}
+
+        .hidden{display:none;}
+        .go-btn{display:inline-block;margin-top:22px;padding:12px 28px;border-radius:999px;background:#2d7aff;color:#fff;text-decoration:none;font-weight:600;font-size:.9rem;}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="amount">₹{{ "{:,.0f}".format(amount) }}</div>
+        <div class="method-label">
+            {% if method == 'card' %}Paying via Credit / Debit Card
+            {% elif method == 'netbanking' %}Paying via Net Banking
+            {% else %}Paying via UPI{% endif %}
+        </div>
+
+        <div id="processingStage">
+            <div class="spinner"></div>
+            <div class="stage-text">Payment Processing...</div>
+            <div class="stage-sub">Please don't close this window</div>
+        </div>
+
+        <div id="successStage" class="hidden">
+            <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+            <div class="stage-text">Payment Successful</div>
+            <div class="stage-sub">Your booking is confirmed</div>
+
+            <div class="txn-box">
+                <div class="txn-row"><span class="label">Transaction ID</span><span class="value" id="txnIdValue">—</span></div>
+                <div class="txn-row"><span class="label">Amount Paid</span><span class="value">₹{{ "{:,.0f}".format(amount) }}</span></div>
+                <div class="txn-row"><span class="label">Status</span><span class="value" style="color:#1a9c5a;">Completed</span></div>
+            </div>
+
+            <a href="{{ url_for('view_invoice', booking_id=booking_id) }}" class="go-btn" id="continueBtn">View Receipt</a>
+        </div>
+
+        <div id="errorStage" class="hidden">
+            <div class="stage-text" style="color:#c0392b;">Something went wrong</div>
+            <div class="stage-sub">Please try again from the payment page</div>
+            <a href="{{ url_for('payment_page', booking_id=booking_id) }}" class="go-btn" style="background:#c0392b;">Go Back</a>
+        </div>
+    </div>
+
+    <script>
+        // Simulated gateway: this project doesn't have a live Razorpay
+        // merchant account, so we show a realistic "processing" delay
+        // and then mark the booking as paid on the server the same way
+        // a real gateway callback would.
+        setTimeout(async function () {
+            try {
+                const resp = await fetch("{{ url_for('fake_payment_complete', booking_id=booking_id) }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ method: "{{ method }}" })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('txnIdValue').innerText = data.transaction_id;
+                    document.getElementById('processingStage').classList.add('hidden');
+                    document.getElementById('successStage').classList.remove('hidden');
+                } else {
+                    document.getElementById('processingStage').classList.add('hidden');
+                    document.getElementById('errorStage').classList.remove('hidden');
+                }
+            } catch (e) {
+                document.getElementById('processingStage').classList.add('hidden');
+                document.getElementById('errorStage').classList.remove('hidden');
+            }
+        }, 1800);
+    </script>
+</body>
+</html>

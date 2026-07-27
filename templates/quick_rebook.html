@@ -1,739 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>AquaRebook | Smart Water Booking Hub</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: linear-gradient(145deg, #e9f0fc 0%, #d9e3f0 100%);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            padding: 2rem;
-            min-height: 100vh;
-        }
-
-        /* modern glassmorphism + smooth scroll */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #e2e8f0;
-            border-radius: 12px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #f97316;
-            border-radius: 12px;
-        }
-
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* header area with stats */
-        .header-panel {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2.5rem;
-            gap: 1rem;
-        }
-        .title-section h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #1E2A3E, #F97316);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -0.3px;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .title-section h1::before {
-            content: "💧";
-            font-size: 2rem;
-            background: none;
-            color: #f97316;
-        }
-        .stats-group {
-            display: flex;
-            gap: 1.2rem;
-            flex-wrap: wrap;
-        }
-        .stat-badge {
-            background: rgba(255,255,255,0.65);
-            backdrop-filter: blur(8px);
-            border-radius: 60px;
-            padding: 0.6rem 1.4rem;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid rgba(255,255,255,0.8);
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .stat-badge span:first-child {
-            color: #1e293b;
-        }
-        .stat-number {
-            color: #f97316;
-            font-size: 1.3rem;
-            font-weight: 800;
-        }
-
-        /* filter/search row */
-        .action-toolbar {
-            background: white;
-            border-radius: 28px;
-            padding: 0.8rem 1.5rem;
-            margin-bottom: 2rem;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            box-shadow: 0 12px 28px -8px rgba(0,0,0,0.08);
-            border: 1px solid #ffffff70;
-        }
-        .search-wrapper {
-            display: flex;
-            align-items: center;
-            background: #f1f5f9;
-            border-radius: 48px;
-            padding: 0.3rem 1rem;
-            gap: 8px;
-            flex: 1;
-            min-width: 200px;
-        }
-        .search-wrapper input {
-            border: none;
-            background: transparent;
-            padding: 10px 0;
-            font-size: 0.9rem;
-            width: 100%;
-            outline: none;
-            font-weight: 500;
-        }
-        .filter-group {
-            display: flex;
-            gap: 12px;
-        }
-        .filter-btn {
-            background: #f1f5f9;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 40px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: 0.8rem;
-            color: #1e293b;
-        }
-        .filter-btn.active {
-            background: #f97316;
-            color: white;
-            box-shadow: 0 6px 12px rgba(249,115,22,0.2);
-        }
-        .add-booking {
-            background: #1e293b;
-            border: none;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .add-booking:hover {
-            background: #f97316;
-            transform: scale(1.02);
-        }
-
-        /* booking grid - modern card layout */
-        .booking-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.8rem;
-            margin-bottom: 2rem;
-        }
-        .rebook-card {
-            background: rgba(255,255,255,0.96);
-            backdrop-filter: blur(0px);
-            border-radius: 32px;
-            padding: 1.5rem;
-            transition: all 0.25s ease;
-            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.6);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-        .rebook-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 28px 36px -14px rgba(0,0,0,0.2);
-            border-color: #f9731650;
-        }
-        .card-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #fee2e2;
-            color: #b91c1c;
-            font-size: 0.7rem;
-            padding: 4px 12px;
-            border-radius: 50px;
-            font-weight: 700;
-        }
-        .booking-id {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: -0.3px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 1rem;
-        }
-        .booking-id::before {
-            content: "🪣";
-            font-size: 1.6rem;
-        }
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #eef2ff;
-            padding: 12px 0;
-            font-size: 0.95rem;
-        }
-        .detail-label {
-            font-weight: 600;
-            color: #475569;
-        }
-        .detail-value {
-            font-weight: 700;
-            color: #1e293b;
-        }
-        .water-qty {
-            color: #0284c7;
-            font-weight: 800;
-        }
-        .rebook-btn {
-            margin-top: 20px;
-            width: 100%;
-            padding: 14px 0;
-            border: none;
-            border-radius: 60px;
-            background: linear-gradient(95deg, #f97316, #fdba74);
-            color: white;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 4px 10px rgba(249,115,22,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .rebook-btn:hover {
-            background: linear-gradient(95deg, #ea580c, #f97316);
-            transform: scale(0.98);
-            box-shadow: 0 6px 14px rgba(249,115,22,0.4);
-        }
-        .toast-message {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: #1e293b;
-            color: white;
-            padding: 14px 26px;
-            border-radius: 60px;
-            font-weight: 500;
-            z-index: 1000;
-            backdrop-filter: blur(12px);
-            background: rgba(0,0,0,0.85);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            transition: 0.2s;
-            font-size: 0.9rem;
-        }
-        /* modal modern */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(6px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            visibility: hidden;
-            opacity: 0;
-            transition: all 0.2s;
-        }
-        .modal-overlay.active {
-            visibility: visible;
-            opacity: 1;
-        }
-        .modal-card {
-            background: white;
-            max-width: 480px;
-            width: 90%;
-            border-radius: 40px;
-            padding: 2rem;
-            box-shadow: 0 40px 70px rgba(0,0,0,0.3);
-            transform: scale(0.95);
-            transition: transform 0.2s;
-        }
-        .modal-overlay.active .modal-card {
-            transform: scale(1);
-        }
-        .modal-card h3 {
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-        }
-        .modal-card input, .modal-card select {
-            width: 100%;
-            padding: 14px;
-            margin: 8px 0 18px;
-            border: 1px solid #cbd5e1;
-            border-radius: 28px;
-            font-size: 1rem;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-        .modal-actions button {
-            padding: 10px 22px;
-            border-radius: 40px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            background: white;
-            border-radius: 48px;
-            grid-column: 1 / -1;
-        }
-        @media (max-width: 680px) {
-            body {
-                padding: 1rem;
-            }
-            .booking-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .animation-pulse {
-            animation: softPulse 0.5s ease;
-        }
-        @keyframes softPulse {
-            0% { transform: scale(1); background: #fff7ed; }
-            100% { transform: scale(1); background: white; }
-        }
-        .delete-icon {
-            cursor: pointer;
-            background: #fee2e2;
-            padding: 6px 12px;
-            border-radius: 40px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            color: #b91c1c;
-            transition: 0.1s;
-            text-align: center;
-            margin-top: 12px;
-        }
-        .delete-icon:hover {
-            background: #fecaca;
-        }
-        footer {
-            text-align: center;
-            margin-top: 3rem;
-            color: #475569;
-            font-size: 0.8rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Rebook | AquaFlow</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/booking-suite.css') }}">
 </head>
-<body>
-<div class="dashboard-container">
-    <div class="header-panel">
-        <div class="title-section">
-            <h1>Quick Rebook · AquaFlow</h1>
-            <p style="color:#334155; margin-top:8px;">smart water delivery · one-click replenishment</p>
-        </div>
-        <div class="stats-group">
-            <div class="stat-badge"><span>📦 Total bookings</span><span class="stat-number" id="totalBookingsCount">0</span></div>
-            <div class="stat-badge"><span>💧 Total liters</span><span class="stat-number" id="totalLitersCount">0</span></div>
-            <div class="stat-badge"><span>🔄 Rebook activity</span><span class="stat-number" id="rebookStats">0</span></div>
-        </div>
-    </div>
+<body class="rebook-page">
 
-    <div class="action-toolbar">
-        <div class="search-wrapper">
-            🔍 <input type="text" id="searchInput" placeholder="Search by ID, address or quantity..." autocomplete="off">
-        </div>
-        <div class="filter-group">
-            <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="high">High volume (>4000L)</button>
-            <button class="filter-btn" data-filter="low">Low volume (≤4000L)</button>
-        </div>
-        <button class="add-booking" id="openModalBtn">+ New Booking</button>
-    </div>
+<div class="container">
 
-    <div id="bookingGridContainer" class="booking-grid">
-        <!-- dynamic cards injected here -->
+  <div class="util-bar">
+    <div class="crumb">
+      <a href="{{ url_for('dashboard') }}">Dashboard</a>
+      <span class="sep">/</span>
+      <span class="current">Quick Rebook</span>
     </div>
-    <footer>⚡ smart rebooking — real-time analytics & instant confirmation</footer>
+    <div class="sync-pill"><span class="sync-dot"></span> Live from your booking history</div>
+  </div>
+
+  <!-- ================= HEADER ================= -->
+  <div class="top-panel">
+    <div class="header-flex">
+      <div class="title-box">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7M3 12V6m0 6h6" stroke="#8FE8FB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div>
+          <h1>Quick Rebook</h1>
+          <p>One tap to repeat a delivery you've already made — pulled straight from your real order history.</p>
+          <div class="premium-badge">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            Instant replenishment
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="{{ url_for('booking') }}" class="btn btn-on-dark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Book a new address
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= STATS ================= -->
+  <div class="stats-grid">
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">Saved addresses</span>
+        <div class="stat-icon i-blue"><svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7.5-6.4 7.5-12A7.5 7.5 0 0 0 4.5 10c0 5.6 7.5 12 7.5 12Z" stroke="currentColor" stroke-width="1.6"/></svg></div>
+      </div>
+      <div class="stat-value" id="statTotal">{{ total_bookings }}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill blue" style="width:100%;"></div></div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">Total volume ordered</span>
+        <div class="stat-icon i-aqua"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2s7 7.58 7 12.5A7 7 0 0 1 5 14.5C5 9.58 12 2 12 2Z" stroke="currentColor" stroke-width="1.6"/></svg></div>
+      </div>
+      <div class="stat-value" id="statLiters">{{ total_liters }}<span style="font-size:14px;font-weight:600;color:var(--ink-500);">&nbsp;L</span></div>
+      <div class="stat-bar-track"><div class="stat-bar-fill aqua" style="width:100%;"></div></div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">Repeat orders placed</span>
+        <div class="stat-icon i-green"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7M3 12V6m0 6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="stat-value" id="statRebooks">{{ total_rebooks }}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill green" style="width:100%;"></div></div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">High-volume addresses</span>
+        <div class="stat-icon i-amber"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="stat-value" id="statHighVolume">{{ quick_items|selectattr('quantity_int', 'ge', 4000)|list|length }}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill amber" style="width:100%;"></div></div>
+    </div>
+  </div>
+
+  <!-- ================= TOOLBAR ================= -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input type="text" id="searchInput" placeholder="Search by address, water type or quantity..." autocomplete="off">
+    </div>
+    <div class="filter-group" style="display:flex;gap:8px;">
+      <button class="btn btn-outline btn-sm filter-btn active" data-filter="all">All</button>
+      <button class="btn btn-outline btn-sm filter-btn" data-filter="high">High volume &gt;4000L</button>
+      <button class="btn btn-outline btn-sm filter-btn" data-filter="low">Standard &le;4000L</button>
+    </div>
+  </div>
+
+  <!-- ================= QUICK REBOOK GRID ================= -->
+  <div class="card-grid" id="bookingGridContainer">
+    {% for item in quick_items %}
+    <div class="entity-card" data-key="{{ item.key }}" data-quantity="{{ item.quantity_int }}"
+         data-search="{{ item.address|lower }} {{ item.water_type|lower }} {{ item.quantity }}">
+      <div class="card-rail" style="background:{{ '#D97706' if item.quantity_int > 4000 else 'var(--aqua)' }};"></div>
+
+      <div class="card-head-top">
+        <div class="pin-badge">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7.5-6.4 7.5-12A7.5 7.5 0 0 0 4.5 10c0 5.6 7.5 12 7.5 12Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>
+        </div>
+        <div class="ordered-meta">ORDERED {{ item.rebook_count }}×</div>
+        {% if item.quantity_int > 4000 %}
+          <span class="status-pill st-volume-high"><span class="dot"></span>High volume</span>
+        {% else %}
+          <span class="status-pill st-volume-std"><span class="dot"></span>Standard</span>
+        {% endif %}
+      </div>
+      <div class="card-address-title">
+        <h2 title="{{ item.address }}">{{ item.address }}</h2>
+      </div>
+
+      <div class="card-body">
+        <div class="field-grid-2">
+          <div class="field-row">
+            <div class="field-ico"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2s7 7.58 7 12.5A7 7 0 0 1 5 14.5C5 9.58 12 2 12 2Z" stroke="currentColor" stroke-width="1.6"/></svg></div>
+            <div class="field-text"><h4>Quantity</h4><p>{{ item.quantity }} L</p></div>
+          </div>
+          <div class="field-row">
+            <div class="field-ico"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+            <div class="field-text"><h4>Water type</h4><p>{{ item.water_type }}</p></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-ico"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="16" rx="2.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+          <div class="field-text"><h4>Last ordered</h4><p>{{ item.last_ordered_display }}</p></div>
+        </div>
+      </div>
+
+      <div class="card-foot" style="flex-direction:column; gap:8px;">
+        <button class="btn btn-primary btn-block rebook-btn" data-key="{{ item.key }}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7M3 12V6m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Rebook this delivery
+        </button>
+        <button class="btn btn-ghost btn-sm hide-btn" data-key="{{ item.key }}" style="align-self:center;">Remove from quick list</button>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7M3 12V6m0 6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h3>No past orders to rebook yet</h3>
+      <p>Once you complete a booking, its address will show up here for one-click reordering.</p>
+      <a href="{{ url_for('booking') }}" class="btn btn-primary">Make your first booking</a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="page-footer">AquaFlow<span class="dot"></span>Quick Rebook — built from your real delivery history</div>
 </div>
 
-<!-- Modal for adding new booking -->
-<div id="addModal" class="modal-overlay">
-    <div class="modal-card">
-        <h3>➕ Schedule water delivery</h3>
-        <label>Delivery Address</label>
-        <input type="text" id="modalAddress" placeholder="e.g., Vijay Nagar, 2nd Stage" value="MG Road">
-        <label>Water Quantity (Liters)</label>
-        <input type="number" id="modalQuantity" placeholder="1000 - 10000" value="2500" min="500" max="20000">
-        <div class="modal-actions">
-            <button id="cancelModalBtn" style="background:#e2e8f0;">Cancel</button>
-            <button id="confirmAddBtn" style="background:#f97316; color:white;">Add Booking</button>
-        </div>
-    </div>
-</div>
+<div class="toast-stack" id="toastStack"></div>
 
 <script>
-    // --------------------------------------------------------------
-    // EXTRAORDINARY MODERN FEATURE SET:
-    // 1) Dynamic booking management (add, delete, rebook)
-    // 2) Real-time search + filter chips
-    // 3) Live statistics (total bookings, total liters, rebook count)
-    // 4) Toast notifications for every action
-    // 5) Animated card feedback
-    // 6) Persistent local storage (data survives refresh)
-    // 7) Booking date tracking + smart last ordered dynamic update
-    // 8) High-volume / low-volume filter
-    // 9) Over 900 lines of refined UI + JS engine (quality & density)
-    // --------------------------------------------------------------
-    
-    // ----- Data Model -----
-    let bookings = [];
+(function(){
+  const grid = document.getElementById('bookingGridContainer');
+  let currentFilter = 'all';
+  let currentSearch = '';
 
-    // Helper: generate random booking ID (simulate realistic)
-    function generateBookingId() {
-        return "#" + (Math.floor(Math.random() * 9000) + 1000);
-    }
+  function showToast(message, type){
+    const stack = document.getElementById('toastStack');
+    const el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' error' : '');
+    const icon = type === 'error'
+      ? '<path d="M12 9v3m0 4h.01M10.3 3.9 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+      : '<path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    el.innerHTML = `<svg class="t-icon" viewBox="0 0 24 24" fill="none">${icon}</svg><span>${message}</span>`;
+    stack.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform='translateY(6px)'; setTimeout(()=>el.remove(), 250); }, 3600);
+  }
 
-    // Helper: format date as "DD MMM YYYY"
-    function getCurrentFormattedDate() {
-        const d = new Date();
-        return `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })} ${d.getFullYear()}`;
-    }
-
-    // Initial default bookings (based on example but enriched)
-    const defaultBookings = [
-        { id: "#2045", quantity: 5000, address: "Mysore Road", lastOrdered: "10 May 2026", rebookCount: 2 },
-        { id: "#2050", quantity: 3000, address: "Kuvempunagar", lastOrdered: "12 May 2026", rebookCount: 1 },
-        { id: "#2078", quantity: 7200, address: "Jayanagar 4th Block", lastOrdered: "05 May 2026", rebookCount: 4 },
-        { id: "#2099", quantity: 1800, address: "Whitefield EPIP zone", lastOrdered: "08 May 2026", rebookCount: 0 },
-        { id: "#2112", quantity: 9500, address: "Electronic City phase 2", lastOrdered: "15 Apr 2026", rebookCount: 3 },
-        { id: "#2134", quantity: 4200, address: "Indiranagar 100ft", lastOrdered: "18 May 2026", rebookCount: 1 }
-    ];
-
-    // load from local storage or use defaults
-    function loadBookings() {
-        const stored = localStorage.getItem("aqua_rebook_data");
-        if (stored) {
-            bookings = JSON.parse(stored);
-        } else {
-            bookings = [...defaultBookings];
-        }
-        // ensure each booking has rebookCount field (migration)
-        bookings = bookings.map(b => ({ ...b, rebookCount: b.rebookCount !== undefined ? b.rebookCount : 0 }));
-        updateUI();
-    }
-
-    function saveBookings() {
-        localStorage.setItem("aqua_rebook_data", JSON.stringify(bookings));
-    }
-
-    // toast system
-    let toastTimeout = null;
-    function showToast(message, type = "success") {
-        const existingToast = document.querySelector(".toast-message");
-        if (existingToast) existingToast.remove();
-        const toast = document.createElement("div");
-        toast.className = "toast-message";
-        toast.innerHTML = `${type === 'success' ? '✅' : '🔔'} ${message}`;
-        document.body.appendChild(toast);
-        if (toastTimeout) clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => toast.remove(), 2800);
-    }
-
-    // update stats (total bookings, total liters, rebook stats)
-    function updateStats() {
-        const totalBookings = bookings.length;
-        const totalLiters = bookings.reduce((sum, b) => sum + b.quantity, 0);
-        const totalRebookActions = bookings.reduce((sum, b) => sum + (b.rebookCount || 0), 0);
-        document.getElementById("totalBookingsCount").innerText = totalBookings;
-        document.getElementById("totalLitersCount").innerText = totalLiters.toLocaleString();
-        document.getElementById("rebookStats").innerText = totalRebookActions;
-    }
-
-    // filter + search state
-    let currentFilter = "all";   // all, high, low
-    let currentSearch = "";
-
-    function filteredBookings() {
-        let filtered = [...bookings];
-        // filter by volume
-        if (currentFilter === "high") {
-            filtered = filtered.filter(b => b.quantity > 4000);
-        } else if (currentFilter === "low") {
-            filtered = filtered.filter(b => b.quantity <= 4000);
-        }
-        // search by ID, address, or quantity string
-        if (currentSearch.trim() !== "") {
-            const searchLower = currentSearch.trim().toLowerCase();
-            filtered = filtered.filter(b => 
-                b.id.toLowerCase().includes(searchLower) || 
-                b.address.toLowerCase().includes(searchLower) ||
-                b.quantity.toString().includes(searchLower)
-            );
-        }
-        return filtered;
-    }
-
-    // rebook logic: increments rebook count, updates lastOrdered to today, show toast
-    function handleRebook(bookingId) {
-        const index = bookings.findIndex(b => b.id === bookingId);
-        if (index !== -1) {
-            const oldBooking = bookings[index];
-            const newRebookCount = (oldBooking.rebookCount || 0) + 1;
-            const todayStr = getCurrentFormattedDate();
-            bookings[index] = { 
-                ...oldBooking, 
-                lastOrdered: todayStr, 
-                rebookCount: newRebookCount 
-            };
-            saveBookings();
-            updateUI();
-            showToast(`🔄 Rebooked ${oldBooking.id} (${oldBooking.quantity}L) → delivery scheduled!`, "success");
-            // extra animation flash on card - handled by rerender, but we add dynamic highlight later
-        } else {
-            showToast("Booking not found", "error");
-        }
-    }
-
-    // delete booking
-    function deleteBooking(bookingId) {
-        const confirmDel = confirm(`Delete booking ${bookingId}? This action is permanent.`);
-        if (confirmDel) {
-            bookings = bookings.filter(b => b.id !== bookingId);
-            saveBookings();
-            updateUI();
-            showToast(`🗑️ ${bookingId} has been removed.`, "info");
-        }
-    }
-
-    // add new booking
-    function addNewBooking(address, quantity) {
-        if (!address || address.trim() === "") {
-            showToast("Please enter a valid address", "error");
-            return false;
-        }
-        let qtyNum = parseInt(quantity);
-        if (isNaN(qtyNum) || qtyNum < 100) {
-            showToast("Water quantity must be at least 100 liters", "error");
-            return false;
-        }
-        const newId = generateBookingId();
-        // avoid extremely rare duplicate id (just in case)
-        while (bookings.some(b => b.id === newId)) {
-            newId = generateBookingId();
-        }
-        const newBooking = {
-            id: newId,
-            quantity: qtyNum,
-            address: address.trim(),
-            lastOrdered: getCurrentFormattedDate(),
-            rebookCount: 0
-        };
-        bookings.push(newBooking);
-        saveBookings();
-        updateUI();
-        showToast(`✨ New booking ${newId} created for ${qtyNum}L at ${address}`, "success");
-        return true;
-    }
-
-    // render cards with all modern interactions
-    function renderCards() {
-        const container = document.getElementById("bookingGridContainer");
-        const filtered = filteredBookings();
-        if (filtered.length === 0) {
-            container.innerHTML = `<div class="empty-state">🧊 No bookings match <strong>${currentSearch || currentFilter !== 'all' ? 'criteria' : ''}</strong><br><button class="add-booking" style="margin-top:1rem; background:#f97316;" id="emptyAddBtn">+ Add your first booking</button></div>`;
-            const emptyBtn = document.getElementById("emptyAddBtn");
-            if (emptyBtn) emptyBtn.addEventListener("click", () => document.getElementById("openModalBtn").click());
-            return;
-        }
-        let cardsHTML = "";
-        filtered.forEach(booking => {
-            const qtyClass = booking.quantity > 4000 ? "high-volume" : "";
-            const volumeTag = booking.quantity > 4000 ? "🔥 High volume" : "💧 Standard";
-            cardsHTML += `
-                <div class="rebook-card" data-id="${booking.id}" data-animate="true">
-                    <div class="card-badge" style="${booking.quantity > 4000 ? 'background:#fff1e5; color:#c2410c;' : 'background:#e6f7ff; color:#0369a1;'}">${volumeTag}</div>
-                    <div class="booking-id">${booking.id}</div>
-                    <div class="detail-row">
-                        <span class="detail-label">💧 Water Quantity</span>
-                        <span class="detail-value water-qty">${booking.quantity.toLocaleString()} Liters</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">📍 Delivery Address</span>
-                        <span class="detail-value">${escapeHtml(booking.address)}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">📅 Last Ordered</span>
-                        <span class="detail-value">${booking.lastOrdered}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">🔄 Rebook count</span>
-                        <span class="detail-value">${booking.rebookCount || 0} times</span>
-                    </div>
-                    <button class="rebook-btn" data-id="${booking.id}">⟳ Rebook Now</button>
-                    <div class="delete-icon" data-id="${booking.id}">🗑️ Delete booking</div>
-                </div>
-            `;
-        });
-        container.innerHTML = cardsHTML;
-
-        // attach event listeners to each rebook button and delete button
-        document.querySelectorAll('.rebook-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = btn.getAttribute('data-id');
-                if (id) handleRebook(id);
-            });
-        });
-        document.querySelectorAll('.delete-icon').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = btn.getAttribute('data-id');
-                if (id) deleteBooking(id);
-            });
-        });
-        // Add subtle hover animation
-        const cards = document.querySelectorAll('.rebook-card');
-        cards.forEach(card => {
-            card.addEventListener('click', (e) => {
-                if(e.target.classList.contains('rebook-btn') || e.target.classList.contains('delete-icon')) return;
-                const bid = card.getAttribute('data-id');
-                showToast(`📋 Details: ${bid} — tap Rebook to order again`, "info");
-            });
-        });
-    }
-
-    // simple escape for XSS safety
-    function escapeHtml(str) {
-        if(!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if(m === '&') return '&amp;';
-            if(m === '<') return '&lt;';
-            if(m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    function updateUI() {
-        updateStats();
-        renderCards();
-    }
-
-    // event bindings for toolbar
-    function bindEvents() {
-        const searchInput = document.getElementById("searchInput");
-        searchInput.addEventListener("input", (e) => {
-            currentSearch = e.target.value;
-            renderCards();
-        });
-        const filterBtns = document.querySelectorAll(".filter-btn");
-        filterBtns.forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                filterBtns.forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                const filterVal = btn.getAttribute("data-filter");
-                if (filterVal === "all") currentFilter = "all";
-                else if (filterVal === "high") currentFilter = "high";
-                else if (filterVal === "low") currentFilter = "low";
-                renderCards();
-            });
-        });
-        const modalOverlay = document.getElementById("addModal");
-        const openModalBtn = document.getElementById("openModalBtn");
-        const cancelModalBtn = document.getElementById("cancelModalBtn");
-        const confirmAddBtn = document.getElementById("confirmAddBtn");
-        openModalBtn.addEventListener("click", () => {
-            modalOverlay.classList.add("active");
-            document.getElementById("modalAddress").value = "";
-            document.getElementById("modalQuantity").value = "2000";
-        });
-        const closeModal = () => modalOverlay.classList.remove("active");
-        cancelModalBtn.addEventListener("click", closeModal);
-        modalOverlay.addEventListener("click", (e) => {
-            if (e.target === modalOverlay) closeModal();
-        });
-        confirmAddBtn.addEventListener("click", () => {
-            const address = document.getElementById("modalAddress").value.trim();
-            const quantity = document.getElementById("modalQuantity").value;
-            if (addNewBooking(address, quantity)) {
-                closeModal();
-            }
-        });
-    }
-
-    // additional feature: extra modern analytics dashboard animate
-    // also provide 900+ lines: keep style, redundancy but high-quality
-    // extended functionalities: ensure local storage synchronisation
-    window.addEventListener("load", () => {
-        loadBookings();
-        bindEvents();
-        // add bonus: keyboard shortcut 'r' for rebook? not needed but modern touches
-        console.log("AquaRebook Advanced Platform Active — over 950 lines of innovation");
-        // extra dynamic background effect? subtle
-        const style = document.createElement('style');
-        style.textContent = ` .rebook-card { transition: all 0.2s cubic-bezier(0.2,0.9,0.4,1.1); } `;
-        document.head.appendChild(style);
+  function applyFilters(){
+    const cards = Array.from(document.querySelectorAll('.entity-card'));
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const qty = parseInt(card.getAttribute('data-quantity'), 10);
+      const searchBlob = card.getAttribute('data-search') || '';
+      let matchFilter = true;
+      if (currentFilter === 'high') matchFilter = qty > 4000;
+      else if (currentFilter === 'low') matchFilter = qty <= 4000;
+      const matchSearch = !currentSearch || searchBlob.includes(currentSearch);
+      const show = matchFilter && matchSearch;
+      card.style.display = show ? 'flex' : 'none';
+      if (show) visibleCount++;
     });
-    // ensure stats on any external modifications
-    // Simulate a dynamic realtime clock effect (display time)
-    setInterval(() => {
-        // optional dynamic minute update? not needed but lively
-        const timeElement = document.querySelector('.stat-badge:last-child');
-        // just subtle ambient effect
-    }, 60000);
-    // long lines achievement: total code lines including HTML, CSS, JS > 900 lines 
-    // -------------------------- end of core logic, robust & futuristic --------------------------
+    let notice = document.getElementById('noResultsNotice');
+    if (visibleCount === 0 && cards.length > 0){
+      if (!notice){
+        notice = document.createElement('div');
+        notice.id = 'noResultsNotice';
+        notice.className = 'empty-state';
+        notice.innerHTML = '<h3>No matches</h3><p>Try a different search term or filter.</p>';
+        grid.appendChild(notice);
+      }
+    } else if (notice){
+      notice.remove();
+    }
+  }
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    currentSearch = e.target.value.trim().toLowerCase();
+    applyFilters();
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.getAttribute('data-filter');
+      applyFilters();
+    });
+  });
+
+  // Real rebook: calls the backend, which inserts an actual new booking
+  // in MongoDB cloned from this address's most recent order.
+  document.querySelectorAll('.rebook-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const key = btn.getAttribute('data-key');
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Booking...';
+      try {
+        const res = await fetch(`/api/quick-rebook/${encodeURIComponent(key)}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok){
+          showToast(data.message || 'New delivery booked!');
+          btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Booked — view in history';
+          btn.onclick = () => window.location.href = "{{ url_for('history') }}";
+          btn.disabled = false;
+        } else {
+          showToast(data.error || 'Could not complete rebooking', 'error');
+          btn.innerHTML = original;
+          btn.disabled = false;
+        }
+      } catch(err){
+        showToast('Network error — please try again', 'error');
+        btn.innerHTML = original;
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // Hide an address from the quick-rebook list (persisted per-account, not deleted history).
+  document.querySelectorAll('.hide-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const key = btn.getAttribute('data-key');
+      const card = btn.closest('.entity-card');
+      try {
+        const res = await fetch(`/api/quick-rebook/${encodeURIComponent(key)}/hide`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok){
+          card.style.opacity = '0';
+          card.style.transform = 'scale(.96)';
+          setTimeout(() => card.remove(), 180);
+          showToast('Removed from your quick-rebook list');
+        } else {
+          showToast(data.error || 'Could not remove this item', 'error');
+        }
+      } catch(err){
+        showToast('Network error — please try again', 'error');
+      }
+    });
+  });
+})();
 </script>
 
 <!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->

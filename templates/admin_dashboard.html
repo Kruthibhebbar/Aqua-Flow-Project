@@ -285,6 +285,30 @@
                         Live ETA Tracking
                     </a>
                 </li>
+                <li>
+                    <a href="/coupon-management">
+                        <i class="fas fa-tags"></i>
+                        Coupons
+                    </a>
+                </li>
+                <li>
+                    <a href="/refund-management">
+                        <i class="fas fa-rotate-left"></i>
+                        Refunds
+                    </a>
+                </li>
+                <li>
+                    <a href="/transaction-table">
+                        <i class="fas fa-table-list"></i>
+                        Transactions
+                    </a>
+                </li>
+                <li>
+                    <a href="/business-insights">
+                        <i class="fas fa-chart-line"></i>
+                        Insights
+                    </a>
+                </li>
             </ul>
         </nav>
     </div>
@@ -308,10 +332,13 @@
         <h2 class="page-title" style="font-size:20px; margin-top:30px;"><i class="fas fa-sack-dollar water-icon"></i> Finance Overview</h2>
         <div class="stats-grid">
             <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-day"></i> Today's Revenue</div><div class="stat-number" id="statTodayRevenue">₹{{ "{:,.0f}".format(finance.today_revenue) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-week"></i> Weekly Revenue</div><div class="stat-number" id="statWeeklyRevenue">₹{{ "{:,.0f}".format(finance.weekly_revenue) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar"></i> Monthly Revenue</div><div class="stat-number" id="statMonthlyRevenue">₹{{ "{:,.0f}".format(finance.monthly_revenue) }}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-percent"></i> Today's Platform Commission</div><div class="stat-number" id="statTodayCommission">₹{{ "{:,.0f}".format(finance.today_commission) }}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-hand-holding-dollar"></i> Pending Driver Deposits</div><div class="stat-number" id="statPendingDeposits">₹{{ "{:,.0f}".format(finance.pending_driver_deposits) }}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-money-bill-transfer"></i> Pending Driver Payouts</div><div class="stat-number" id="statPendingPayouts">₹{{ "{:,.0f}".format(finance.pending_driver_payouts) }}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-rotate-left"></i> Pending Customer Refunds</div><div class="stat-number" id="statPendingRefunds">₹{{ "{:,.0f}".format(finance.pending_customer_refunds) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-sack-dollar"></i> Profit (Revenue → Commission → Settlement)</div><div class="stat-number" id="statProfit">₹{{ "{:,.0f}".format(finance.profit) }}</div></div>
         </div>
         <p style="color:#9aa5b1; font-size:13px; margin-top:-6px; margin-bottom:20px;">
             <i class="fas fa-circle-info"></i> Refunds aren't tracked yet — this will show ₹0 until a refund workflow is built.

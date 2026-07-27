@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>AquaFlow Console | Coupon Management</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --ink: #0A1A22; --ink-2: #123039; --ink-soft: #55707A; --ink-faint: #93A8AF;
+        --teal-900: #073239; --teal-700: #0E6672; --teal-600: #0E7C86; --teal-500: #17A6B4;
+        --teal-050: #EAF4F5; --teal-100: #DCEEEF;
+        --amber-600: #A5690C; --amber-100: #FBF0DC;
+        --green-600: #157A50; --green-100: #E1F5EA;
+        --red-600: #B23B30; --red-100: #FBEAE8;
+        --blue-600: #2C5F9E; --blue-100: #E8EFFA;
+        --bg: #EEF3F4; --surface: #FFFFFF; --border: #DCE6E8; --border-soft: #E7EEEF;
+        --r-lg: 18px; --r-pill: 999px;
+        --shadow-xs: 0 2px 8px rgba(10,26,34,0.05);
+        --shadow-lg: 0 20px 44px rgba(10,26,34,0.16);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink);
+        padding: 32px 4%;
+    }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .page-head h1 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--teal-900);
+        display: flex; align-items: center; gap: 10px;
+    }
+    .back-link {
+        text-decoration: none; color: var(--ink-soft); font-weight: 600; font-size: 13.5px;
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .back-link:hover { color: var(--teal-700); }
+
+    .flash-msg {
+        padding: 12px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; margin-bottom: 18px;
+    }
+    .flash-success { background: var(--green-100); color: var(--green-600); }
+    .flash-danger { background: var(--red-100); color: var(--red-600); }
+
+    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 22px; align-items: start; }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+    .card { background: var(--surface); border-radius: var(--r-lg); padding: 24px; box-shadow: var(--shadow-xs); }
+    .card h2 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--teal-700); margin-bottom: 18px;
+    }
+
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
+    .field input, .field select {
+        width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+        font-size: 13.5px; font-family: 'Inter', sans-serif; color: var(--ink); outline: none;
+    }
+    .field input:focus, .field select:focus { border-color: var(--teal-500); }
+    .create-btn {
+        width: 100%; border: none; background: var(--teal-700); color: #fff; padding: 12px;
+        border-radius: var(--r-pill); font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: 'Inter', sans-serif;
+    }
+    .create-btn:hover { background: var(--teal-900); }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+        text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
+        color: var(--ink-faint); padding: 10px 12px; border-bottom: 1px solid var(--border-soft);
+    }
+    tbody td { padding: 14px 12px; font-size: 13.5px; border-bottom: 1px solid var(--border-soft); }
+    .code-chip {
+        font-family: 'IBM Plex Mono', monospace; font-weight: 600; background: var(--teal-050);
+        color: var(--teal-700); padding: 4px 10px; border-radius: 8px; font-size: 12.5px;
+    }
+    .status-pill { padding: 4px 10px; border-radius: var(--r-pill); font-size: 11.5px; font-weight: 700; }
+    .status-active { background: var(--green-100); color: var(--green-600); }
+    .status-inactive { background: var(--red-100); color: var(--red-600); }
+
+    .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .row-actions form { display: inline; }
+    .action-btn {
+        border: none; padding: 6px 12px; border-radius: var(--r-pill); font-weight: 700; font-size: 11.5px;
+        cursor: pointer; font-family: 'Inter', sans-serif;
+    }
+    .btn-toggle { background: var(--blue-100); color: var(--blue-600); }
+    .btn-toggle:hover { background: #D6E4FB; }
+    .btn-delete { background: var(--red-100); color: var(--red-600); }
+    .btn-delete:hover { background: #F7D9D5; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--ink-faint); }
+    .empty-state i { font-size: 28px; margin-bottom: 10px; display: block; }
+</style>
+</head>
+<body>
+
+    <div class="page-head">
+        <h1><i class="fas fa-tags"></i> Coupon Management</h1>
+        <a href="/booking-management" class="back-link"><i class="fas fa-arrow-left"></i> Back to Booking Console</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="layout">
+        <div class="card">
+            <h2>Create New Coupon</h2>
+            <form method="POST" action="/create-coupon">
+                <div class="field">
+                    <label>Coupon Code</label>
+                    <input type="text" name="code" placeholder="e.g. WELCOME100" required maxlength="20" style="text-transform:uppercase;">
+                </div>
+                <div class="field">
+                    <label>Discount Type</label>
+                    <select name="discount_type">
+                        <option value="flat">Flat amount (₹)</option>
+                        <option value="percent">Percentage (%)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Discount Value</label>
+                    <input type="number" name="value" min="1" step="0.01" placeholder="e.g. 100" required>
+                </div>
+                <div class="field" style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" name="one_time_per_user" id="oneTimeCheckbox" style="width:auto;">
+                    <label for="oneTimeCheckbox" style="margin:0; font-weight:600; cursor:pointer;">
+                        Limit to 1 use per customer, ever (e.g. new-user welcome offer)
+                    </label>
+                </div>
+                <button type="submit" class="create-btn"><i class="fas fa-plus"></i> Create Coupon</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>All Coupons</h2>
+            {% if coupons %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Discount</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in coupons %}
+                    <tr>
+                        <td><span class="code-chip">{{ c.code }}</span></td>
+                        <td>
+                            {% if c.discount_type == 'percent' %}
+                                {{ c.value | int }}% off
+                            {% else %}
+                                ₹{{ "{:,.0f}".format(c.value) }} off
+                            {% endif %}
+                            {% if c.get('one_time_per_user') %}
+                            <br><span style="font-size:10.5px; color:var(--amber-600); font-weight:700;"><i class="fas fa-user-clock"></i> 1 use / customer</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if c.get('active', True) %}
+                                <span class="status-pill status-active"><i class="fas fa-circle"></i> Active</span>
+                            {% else %}
+                                <span class="status-pill status-inactive"><i class="fas fa-circle"></i> Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ c.created_at.strftime('%d %b %Y') if c.get('created_at') else '—' }}</td>
+                        <td>
+                            <div class="row-actions">
+                                <form method="POST" action="/toggle-coupon/{{ c._id }}">
+                                    <button type="submit" class="action-btn btn-toggle">
+                                        {% if c.get('active', True) %}Deactivate{% else %}Activate{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="/delete-coupon/{{ c._id }}" onsubmit="return confirm('Delete this coupon? This cannot be undone.');">
+                                    <button type="submit" class="action-btn btn-delete">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-tags"></i>
+                No coupons created yet. Create your first one on the left.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>

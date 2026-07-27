@@ -32,7 +32,7 @@
         <button id="payBtn" class="btn btn-primary">
             <i class="fa-solid fa-bolt"></i> Pay with UPI
         </button>
-        <a href="{{ url_for('history') }}" class="btn btn-outline">
+        <a href="{{ url_for('payment_page', booking_id=booking_id) }}" class="btn btn-outline">
             <i class="fa-solid fa-arrow-left"></i> Cancel
         </a>
 
@@ -59,15 +59,15 @@
             },
             config: {
                 display: {
-                    // UPI shown first / preferred, but customer can still
-                    // switch to card, netbanking, or wallet if they want.
+                    // Preselect whichever method the customer picked on
+                    // the payment page (Feature 3) — they can still
+                    // switch to any other method inside the checkout.
                     blocks: {
-                        upi: {
-                            name: "Pay via UPI",
-                            instruments: [{ method: "upi" }]
-                        }
+                        upi: { name: "Pay via UPI", instruments: [{ method: "upi" }] },
+                        card: { name: "Pay via Card", instruments: [{ method: "card" }] },
+                        netbanking: { name: "Pay via Net Banking", instruments: [{ method: "netbanking" }] }
                     },
-                    sequence: ["block.upi"],
+                    sequence: ["block.{{ preferred_method | default('upi') }}"],
                     preferences: { show_default_blocks: true }
                 }
             },
@@ -99,7 +99,10 @@
             },
             modal: {
                 ondismiss: function () {
-                    document.getElementById('statusMsg').innerText = "Payment cancelled.";
+                    document.getElementById('statusMsg').innerText = "Payment cancelled. Taking you back...";
+                    setTimeout(function () {
+                        window.location.href = "{{ url_for('payment_page', booking_id=booking_id) }}";
+                    }, 1200);
                 }
             },
             theme: { color: "#2d7aff" }
@@ -107,8 +110,11 @@
 
         const rzp = new Razorpay(options);
         rzp.on('payment.failed', function (response) {
-            document.getElementById('statusMsg').innerText = "Payment failed: " + response.error.description;
+            document.getElementById('statusMsg').innerText = "Payment failed: " + response.error.description + ". Taking you back...";
             document.getElementById('statusMsg').className = "status error";
+            setTimeout(function () {
+                window.location.href = "{{ url_for('payment_page', booking_id=booking_id) }}";
+            }, 1800);
         });
 
         document.getElementById('payBtn').addEventListener('click', function () {

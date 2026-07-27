@@ -173,6 +173,51 @@
 
         .price-info { font-size: 0.8rem; color: #5b6e8c; }
 
+        .price-breakdown {
+            width: 100%;
+            margin-top: 6px;
+            padding-top: 10px;
+            border-top: 1px dashed #cfe0fb;
+        }
+        .price-breakdown .pb-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #3a4451;
+            padding: 3px 0;
+        }
+        .price-breakdown .pb-row.discount { color: #1a9c5a; }
+        .price-breakdown .pb-row .pb-label { color: #5b6e8c; }
+        .price-breakdown .pb-note { font-size: 0.72rem; color: #9aa5b1; margin-top: 4px; }
+
+        .coupon-inline {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0 4px;
+        }
+        .coupon-inline input {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1.5px solid #dee2e6;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+        }
+        .coupon-inline button {
+            padding: 0 16px;
+            border-radius: 10px;
+            border: 1.5px solid #2d7aff;
+            background: #fff;
+            color: #2d7aff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .coupon-msg { font-size: 0.78rem; margin: -2px 0 8px 2px; }
+        .coupon-msg.ok { color: #1a9c5a; }
+        .coupon-msg.err { color: #c0392b; }
+
         /* Next-steps note reflecting the real OTP-on-approval flow */
         .next-steps {
             background: #f7faff;
@@ -367,13 +412,30 @@
                 <div class="price-preview" id="pricePreviewBox">
                     <div>
                         <div class="fw-semibold"><i class="fa-solid fa-indian-rupee-sign me-1"></i> Estimated Total</div>
-                        <div class="price-info">incl. delivery &amp; GST</div>
+                        <div class="price-info" id="perLiterRate">calculating...</div>
                     </div>
                     <div class="text-end">
-                        <div class="price-tag" id="dynamicPrice">₹ 1,200</div>
-                        <div class="price-info" id="perLiterRate">≈ ₹0.60 / liter</div>
+                        <div class="price-tag" id="dynamicPrice">₹ 0</div>
+                    </div>
+
+                    <div class="price-breakdown" id="priceBreakdown">
+                        <div class="pb-row"><span class="pb-label">Tanker Cost</span><span id="pbTankerCost">₹0</span></div>
+                        <div class="pb-row"><span class="pb-label">Delivery Fee <span id="pbDistanceNote"></span></span><span id="pbDeliveryFee">₹0</span></div>
+                        <div class="pb-row"><span class="pb-label">Platform Fee</span><span id="pbPlatformFee">₹0</span></div>
+                        <div class="pb-row"><span class="pb-label">GST (<span id="pbGstPercent">18</span>%)</span><span id="pbGst">₹0</span></div>
+                        <div class="pb-row discount" id="pbCouponRow" style="display:none;">
+                            <span class="pb-label">Coupon (<span id="pbCouponCode"></span>)</span><span id="pbCouponDiscount">-₹0</span>
+                        </div>
+                        <div class="pb-note" id="pbLocationNote">Pin your delivery location to get an accurate delivery fee.</div>
                     </div>
                 </div>
+
+                <div class="coupon-inline">
+                    <input type="text" id="couponCodeInput" placeholder="Have a coupon code? (e.g. WELCOME100)">
+                    <button type="button" id="applyCouponBtn">Apply</button>
+                </div>
+                <div class="coupon-msg" id="couponMsg"></div>
+                <input type="hidden" id="appliedCouponCode" name="coupon_code" value="">
 
                 <div class="row row-gap mb-4">
                     <div class="col-md-6 mb-3 mb-md-0">
@@ -500,6 +562,7 @@ function setLocation(lat, lng) {
     document.getElementById('latitude').value = lat;
     document.getElementById('longitude').value = lng;
     document.getElementById('locationError').innerHTML = '';
+    updatePriceDisplay();
 
     fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, {
         headers: { 'Accept-Language': 'en' }
@@ -670,7 +733,8 @@ document.getElementById('useMyLocationBtn').addEventListener('click', function (
 // Initialize the map once the DOM (and Leaflet) is ready
 initMap();
 
-// pricing map (kept identical to what the backend now calculates too)
+// pricing map kept only as an instant "while we calculate" placeholder -
+// the real, authoritative number always comes from /calculate-price
 const pricingMap = {
     1000: 750,
     2000: 1200,
@@ -679,22 +743,107 @@ const pricingMap = {
 };
 
 function formatPrice(amount) {
-    return '₹ ' + amount.toLocaleString('en-IN');
+    return '₹ ' + Math.round(amount).toLocaleString('en-IN');
 }
 
-function updatePriceDisplay() {
-    const qtySelect = document.getElementById('waterQty');
-    let selectedVal = parseInt(qtySelect.value);
-    let priceAmount = pricingMap[selectedVal] || 1200;
-    const priceSpan = document.getElementById('dynamicPrice');
-    if (priceSpan) priceSpan.innerText = formatPrice(priceAmount);
+let priceRequestToken = 0;
 
-    const rateSpan = document.getElementById('perLiterRate');
-    if (rateSpan && selectedVal > 0) {
-        const perLiter = (priceAmount / selectedVal).toFixed(2);
-        rateSpan.innerText = `≈ ₹${perLiter} / liter`;
+async function updatePriceDisplay() {
+    const qtySelect = document.getElementById('waterQty');
+    const quantity = qtySelect.value;
+    const lat = document.getElementById('latitude').value;
+    const lng = document.getElementById('longitude').value;
+    const couponCode = document.getElementById('appliedCouponCode').value;
+
+    // Instant placeholder so the UI never feels frozen while the real
+    // number is being computed server-side.
+    const priceSpan = document.getElementById('dynamicPrice');
+    if (priceSpan) priceSpan.innerText = formatPrice(pricingMap[quantity] || 0);
+    document.getElementById('perLiterRate').innerText = 'calculating...';
+
+    const myToken = ++priceRequestToken;
+
+    try {
+        const resp = await fetch('/calculate-price', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity, latitude: lat || null, longitude: lng || null, coupon_code: couponCode })
+        });
+        const data = await resp.json();
+
+        // If another request started after this one, ignore this stale response
+        if (myToken !== priceRequestToken) return;
+
+        if (!data.success) return;
+
+        document.getElementById('pbTankerCost').innerText = formatPrice(data.tanker_cost);
+        document.getElementById('pbDeliveryFee').innerText = formatPrice(data.delivery_fee);
+        document.getElementById('pbPlatformFee').innerText = formatPrice(data.platform_fee);
+        document.getElementById('pbGstPercent').innerText = data.gst_percent;
+        document.getElementById('pbGst').innerText = formatPrice(data.gst);
+
+        if (data.distance_km !== null && data.distance_km !== undefined) {
+            document.getElementById('pbDistanceNote').innerText = `(${data.distance_km} km)`;
+            document.getElementById('pbLocationNote').style.display = 'none';
+        } else {
+            document.getElementById('pbDistanceNote').innerText = '';
+            document.getElementById('pbLocationNote').style.display = 'block';
+        }
+
+        if (data.coupon_discount > 0) {
+            document.getElementById('pbCouponRow').style.display = 'flex';
+            document.getElementById('pbCouponCode').innerText = couponCode;
+            document.getElementById('pbCouponDiscount').innerText = '-' + formatPrice(data.coupon_discount);
+        } else {
+            document.getElementById('pbCouponRow').style.display = 'none';
+        }
+
+        priceSpan.innerText = formatPrice(data.final_total);
+        const perLiter = quantity > 0 ? (data.final_total / quantity).toFixed(2) : '0.00';
+        document.getElementById('perLiterRate').innerText = `≈ ₹${perLiter} / liter, incl. everything`;
+    } catch (e) {
+        // Keep the placeholder number visible; nothing to submit yet anyway.
     }
 }
+
+document.getElementById('applyCouponBtn')?.addEventListener('click', async () => {
+    const codeInput = document.getElementById('couponCodeInput');
+    const code = codeInput.value.trim().toUpperCase();
+    const msg = document.getElementById('couponMsg');
+    if (!code) {
+        msg.innerText = 'Enter a coupon code first.';
+        msg.className = 'coupon-msg err';
+        return;
+    }
+
+    const lat = document.getElementById('latitude').value;
+    const lng = document.getElementById('longitude').value;
+    const quantity = document.getElementById('waterQty').value;
+
+    try {
+        const resp = await fetch('/calculate-price', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity, latitude: lat || null, longitude: lng || null, coupon_code: code })
+        });
+        const data = await resp.json();
+        if (data.success && !data.coupon_error && data.coupon_discount > 0) {
+            document.getElementById('appliedCouponCode').value = code;
+            msg.innerText = `${code} applied - you saved ${formatPrice(data.coupon_discount)}!`;
+            msg.className = 'coupon-msg ok';
+            codeInput.disabled = true;
+            document.getElementById('applyCouponBtn').innerText = 'Applied';
+            document.getElementById('applyCouponBtn').disabled = true;
+            updatePriceDisplay();
+        } else {
+            msg.innerText = (data.coupon_error) || 'This coupon can\'t be applied.';
+            msg.className = 'coupon-msg err';
+        }
+    } catch (e) {
+        msg.innerText = 'Network error - please try again.';
+        msg.className = 'coupon-msg err';
+    }
+});
 
 function setMinDate() {
     const dateInput = document.getElementById('deliveryDate');

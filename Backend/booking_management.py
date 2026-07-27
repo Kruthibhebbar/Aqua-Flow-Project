@@ -45,12 +45,31 @@ def init_booking_management(
         future_date = request.args.get("future_date", "").strip()
 
         # =====================================================
+        # AUTO-EXPIRE ABANDONED "PAY NOW" REQUESTS
+        # A booking only becomes real once payment succeeds (see
+        # app.py). Anything still "Awaiting Payment" after 30 minutes
+        # never got paid for and shouldn't clutter the admin queue.
+        # =====================================================
+
+        bookings_collection.update_many(
+            {
+                "status": "Awaiting Payment",
+                "created_at": {"$lt": datetime.now() - timedelta(minutes=30)}
+            },
+            {"$set": {
+                "status": "Cancelled",
+                "auto_cancelled_reason": "Payment was never completed within 30 minutes"
+            }}
+        )
+
+        # =====================================================
         # ALL FUTURE ORDERS (next 15 days) — used to build the
         # dropdown counts and the unseen-order red-dot alert
         # =====================================================
 
         future_bookings_all = list(bookings_collection.find({
-            "delivery_date": {"$gt": today_str, "$lte": max_future_str}
+            "delivery_date": {"$gt": today_str, "$lte": max_future_str},
+            "status": {"$ne": "Awaiting Payment"}
         }))
 
         future_dates_summary = []
@@ -80,7 +99,10 @@ def init_booking_management(
 
         if future_date and future_date in {row["date"] for row in future_dates_summary}:
             bookings = list(
-                bookings_collection.find({"delivery_date": future_date})
+                bookings_collection.find({
+                    "delivery_date": future_date,
+                    "status": {"$ne": "Awaiting Payment"}
+                })
                 .sort("created_at", -1)
             )
             # Admin has now seen this date's orders — clear the red dot
@@ -97,7 +119,8 @@ def init_booking_management(
                         {"delivery_date": {"$lte": today_str}},
                         {"delivery_date": {"$exists": False}},
                         {"delivery_date": ""}
-                    ]
+                    ],
+                    "status": {"$ne": "Awaiting Payment"}
                 }).sort("created_at", -1)
             )
             viewing_future_date = None

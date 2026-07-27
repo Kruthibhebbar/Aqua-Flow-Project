@@ -409,6 +409,37 @@
         background: #F1F3F4; color: var(--ink-faint); cursor: default;
     }
     .btn-verified { background: var(--green-100); color: var(--green-600); cursor: default; }
+    .btn-edit-price { background: var(--blue-100); color: var(--blue-600); }
+    .btn-edit-price:hover:not(:disabled) { background: #D6E4FB; }
+
+    /* ============================================================
+       PRICE EDIT MODAL
+    ============================================================ */
+    .price-field { margin-bottom: 14px; }
+    .price-field label { display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:5px; }
+    .price-field .price-input-wrap { position:relative; }
+    .price-field .price-input-wrap span {
+        position:absolute; left:12px; top:50%; transform:translateY(-50%);
+        color:var(--ink-faint); font-weight:700; font-size:13px;
+    }
+    .price-field input {
+        width:100%; padding:9px 12px 9px 26px; border-radius:10px;
+        border:1px solid var(--border-soft); font-size:13.5px; font-family:'Inter',sans-serif;
+        color:var(--ink); outline:none; transition:border-color .15s;
+    }
+    .price-field input:focus { border-color:var(--blue-600); }
+    .price-total-row {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:14px 4px 4px; margin-top:6px; border-top:1px dashed var(--border-soft);
+        font-weight:700;
+    }
+    .price-total-row span:last-child { font-size:18px; color:var(--teal-700); font-family:'Space Grotesk',sans-serif; }
+    .price-save-btn {
+        width:100%; margin-top:18px; border:none; background:var(--ink); color:#fff;
+        padding:11px; border-radius:var(--r-pill); font-weight:700; font-size:13px;
+        cursor:pointer; font-family:'Inter',sans-serif;
+    }
+    .price-save-btn:disabled { opacity:.6; cursor:not-allowed; }
 
     .spin-ic { display: inline-block; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -762,6 +793,20 @@
                                     {% endif %}
                                 {% endif %}
 
+                                {% if booking.status in ["Pending", "Approved"] and booking.get('payment_status') != 'Paid (Online)' and not booking.get('payment_processed') %}
+                                    {% set pb = booking.get('price_breakdown') %}
+                                    <button class="action-btn btn-edit-price"
+                                        onclick='openPriceModal("{{ booking._id }}", {{ {
+                                            "water_charge": pb.water_charge if pb else booking.get("delivery_fee", 0),
+                                            "distance_charge": pb.distance_charge if pb else 0,
+                                            "emergency_charge": pb.emergency_charge if pb else 0,
+                                            "platform_fee": pb.platform_fee if pb else 20,
+                                            "discount": pb.discount if pb else 0
+                                        } | tojson }})'>
+                                        <i class="fas fa-pen-to-square"></i>Edit Price
+                                    </button>
+                                {% endif %}
+
                                 <button class="action-btn btn-details" onclick="viewDetails('{{ booking._id }}')">
                                     <i class="fas fa-info-circle"></i>Details
                                 </button>
@@ -800,6 +845,47 @@
         <div id="dynamicModalContent">
             <h3 style="color:var(--teal-700); font-family:'Space Grotesk',sans-serif;">Loading...</h3>
         </div>
+    </div>
+</div>
+
+<!-- ================= PRICE EDIT MODAL ================= -->
+<div class="glass-modal" id="priceModal">
+    <div class="modal-card">
+        <span class="modal-close" onclick="closePriceModal()">&times;</span>
+        <h3 style="color:var(--teal-700); font-family:'Space Grotesk',sans-serif; margin-bottom:18px;">Edit Price</h3>
+
+        <div class="price-field">
+            <label>Water Charge</label>
+            <div class="price-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" id="priceWaterCharge" oninput="recalcPriceTotal()"></div>
+        </div>
+        <div class="price-field">
+            <label>Distance Charge</label>
+            <div class="price-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" id="priceDistanceCharge" oninput="recalcPriceTotal()"></div>
+        </div>
+        <div class="price-field">
+            <label>Emergency Charge</label>
+            <div class="price-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" id="priceEmergencyCharge" oninput="recalcPriceTotal()"></div>
+        </div>
+        <div class="price-field">
+            <label>Platform Fee</label>
+            <div class="price-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" id="pricePlatformFee" oninput="recalcPriceTotal()"></div>
+        </div>
+        <div class="price-field">
+            <label>Discount</label>
+            <div class="price-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" id="priceDiscount" oninput="recalcPriceTotal()"></div>
+        </div>
+
+        <div class="price-total-row" style="border-top:none; padding-top:0; font-weight:500; font-size:12.5px; color:var(--ink-soft);">
+            <span>GST (18%, auto-calculated)</span>
+            <span id="priceGstDisplay">₹0</span>
+        </div>
+
+        <div class="price-total-row">
+            <span>Total</span>
+            <span id="priceTotalDisplay">₹0</span>
+        </div>
+
+        <button class="price-save-btn" id="priceSaveBtn" onclick="savePrice()">Save Price</button>
     </div>
 </div>
 
@@ -996,6 +1082,67 @@
             showResult('error', 'Network error', 'Could not reach the server. Please try again.');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
+        }
+    }
+
+    // ================= EDIT PRICE MODAL =================
+    let currentPriceBookingId = null;
+
+    function openPriceModal(id, breakdown) {
+        currentPriceBookingId = id;
+        document.getElementById('priceWaterCharge').value = breakdown.water_charge || 0;
+        document.getElementById('priceDistanceCharge').value = breakdown.distance_charge || 0;
+        document.getElementById('priceEmergencyCharge').value = breakdown.emergency_charge || 0;
+        document.getElementById('pricePlatformFee').value = breakdown.platform_fee || 20;
+        document.getElementById('priceDiscount').value = breakdown.discount || 0;
+        recalcPriceTotal();
+        document.getElementById('priceModal').style.display = 'flex';
+    }
+
+    function closePriceModal() {
+        document.getElementById('priceModal').style.display = 'none';
+        currentPriceBookingId = null;
+    }
+
+    function recalcPriceTotal() {
+        const num = (id) => parseFloat(document.getElementById(id).value) || 0;
+        const subtotal = num('priceWaterCharge') + num('priceDistanceCharge') + num('priceEmergencyCharge') + num('pricePlatformFee');
+        const gst = Math.round(subtotal * 0.18 * 100) / 100;
+        const total = Math.max(0, subtotal + gst - num('priceDiscount'));
+        document.getElementById('priceGstDisplay').innerText = '₹' + gst.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+        document.getElementById('priceTotalDisplay').innerText = '₹' + total.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    }
+
+    async function savePrice() {
+        if (!currentPriceBookingId) return;
+        const btn = document.getElementById('priceSaveBtn');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Saving...';
+        try {
+            const resp = await fetch(`/update-booking-price/${currentPriceBookingId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    water_charge: document.getElementById('priceWaterCharge').value,
+                    distance_charge: document.getElementById('priceDistanceCharge').value,
+                    emergency_charge: document.getElementById('priceEmergencyCharge').value,
+                    platform_fee: document.getElementById('pricePlatformFee').value,
+                    discount: document.getElementById('priceDiscount').value
+                })
+            });
+            const data = await resp.json();
+            closePriceModal();
+            if (data.success) {
+                showResult('success', 'Price updated', data.message || 'The booking price has been updated.', 'New total · ₹' + data.total);
+            } else {
+                showResult('error', 'Could not update price', data.message || 'Please try again.');
+            }
+        } catch (e) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            closePriceModal();
+            showResult('error', 'Network error', 'Could not reach the server. Please try again.');
         }
     }
 

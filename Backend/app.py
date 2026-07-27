@@ -9,6 +9,8 @@ import re
 import os
 from urllib.parse import quote
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+from image_utils import compress_image_file
 from driver_assignment import init_driver_assignment
 from notification import init_notification
 from driver_auth import init_driver_auth
@@ -20,6 +22,10 @@ from driver_notifications import init_driver_notifications
 from live_status_tracking import init_live_tracking
 from payment_admin import init_payment_admin, get_bank_details, get_finance_overview
 from razorpay_payments import init_razorpay_payments, razorpay_configured
+from coupon_management import init_coupon_management, validate_coupon, record_redemption
+from business_insights import init_business_insights
+from pricing_engine import calculate_booking_price
+from quickrebook import init_quickrebook
 from gps_engine import init_gps_engine
 from mail_utils import send_mail_capped
 
@@ -123,6 +129,33 @@ earnings_collection = db["earnings"]
 
 settings_collection = db["settings"]
 transactions_collection = db["transactions"]
+coupons_collection = db["coupons"]
+wallet_transactions_collection = db["wallet_transactions"]
+coupon_redemptions_collection = db["coupon_redemptions"]
+
+
+def expire_stale_awaiting_payment_bookings():
+    """
+    'Pay Now' bookings start life as status "Awaiting Payment" - not a
+    real booking until payment actually succeeds. If someone abandons
+    checkout (closes the tab, never comes back), we don't want that
+    sitting around forever looking like a live order. Rather than a
+    background scheduler, this runs as a cheap lazy sweep any time a
+    customer or admin views their booking list - anything still
+    "Awaiting Payment" after 30 minutes gets auto-cancelled.
+    """
+    try:
+        cutoff = datetime.now() - timedelta(minutes=30)
+        bookings_collection.update_many(
+            {"status": "Awaiting Payment", "created_at": {"$lt": cutoff}},
+            {"$set": {
+                "status": "Cancelled",
+                "auto_cancelled_reason": "Payment was never completed within 30 minutes"
+            }}
+        )
+    except Exception:
+        # Never let a cleanup sweep break the page that triggered it.
+        pass
 
 # Real-time GPS engine collections:
 # driver_locations = latest known fix per driver (fast reads)
@@ -146,6 +179,7 @@ try:
     tracking_history_collection.create_index("driver_id")
     transactions_collection.create_index("driver_email")
     transactions_collection.create_index("status")
+    coupons_collection.create_index("code")
 except Exception as e:
     print("Index creation skipped (non-fatal):", e)
 
@@ -221,7 +255,19 @@ init_payment_admin(
 init_razorpay_payments(
     app,
     bookings_collection,
-    settings_collection
+    settings_collection,
+    notifications_collection
+)
+init_coupon_management(
+    app,
+    coupons_collection,
+    bookings_collection,
+    coupon_redemptions_collection
+)
+init_business_insights(
+    app,
+    bookings_collection,
+    drivers_collection
 )
 init_gps_engine(
     app,
@@ -230,6 +276,11 @@ init_gps_engine(
     driver_locations_collection,
     tracking_history_collection,
     notifications_collection
+)
+init_quickrebook(
+    app,
+    bookings_collection,
+    users_collection
 )
 
 # ================= HOME =================
@@ -385,12 +436,23 @@ Thank You,
 AquaFlow Team
 """
 
-            send_mail_capped(mail, msg, timeout_seconds=6)
+            mail_sent = send_mail_capped(mail, msg, timeout_seconds=6)
+
+            if not mail_sent:
+                print(f"[signup] OTP email to {email} could not be delivered "
+                      f"(see [mail] logs above for the exact reason)")
+                session.pop('signup_otp', None)
+                return render_template(
+                    'signup.html',
+                    error="We couldn't send the verification OTP to that email "
+                          "right now. Please check the address and try again."
+                )
 
             return redirect(url_for('verify_otp'))
 
         except Exception as e:
             print("MAIL ERROR:", e)
+            session.pop('signup_otp', None)
 
             return render_template(
                 'signup.html',
@@ -477,13 +539,18 @@ def dashboard():
     # CURRENT LOGGED IN USER
     user_email = session["user_email"]
 
+    expire_stale_awaiting_payment_bookings()
+
     user = users_collection.find_one({
         "email": user_email
     })
 
-    # TOTAL BOOKINGS
+    # TOTAL BOOKINGS (an unpaid "Pay Now" attempt that never went
+    # through isn't a real booking - excluded here the same way it's
+    # excluded from the customer's own history and the admin queue)
     total_bookings = bookings_collection.count_documents({
-        "user_email": user_email
+        "user_email": user_email,
+        "status": {"$ne": "Awaiting Payment"}
     })
 
     # PENDING ORDERS
@@ -513,14 +580,16 @@ def dashboard():
     # RECENT BOOKINGS
     recent_bookings = list(
         bookings_collection.find({
-            "user_email": user_email
+            "user_email": user_email,
+            "status": {"$ne": "Awaiting Payment"}
         }).sort("created_at", -1).limit(5)
     )
 
     # LIVE ACTIVITIES
     live_activities = list(
         bookings_collection.find({
-            "user_email": user_email
+            "user_email": user_email,
+            "status": {"$ne": "Awaiting Payment"}
         }).sort("created_at", -1).limit(10)
     )
 
@@ -528,7 +597,8 @@ def dashboard():
     total_water = 0
 
     all_bookings = bookings_collection.find({
-        "user_email": user_email
+        "user_email": user_email,
+        "status": {"$ne": "Awaiting Payment"}
     })
 
     for booking in all_bookings:
@@ -644,11 +714,6 @@ def analytics_charts():
 def profile_system():
     return render_template("profile_system.html")
 
-#=========quick_rebook=================================================
-@app.route("/quick_rebook")
-def quick_rebook():
-    return render_template("quick_rebook.html")
-
 #=========live_ETA_tracking============================================
 @app.route("/admin/live_tracking")
 def admin_live_tracking():
@@ -689,14 +754,74 @@ def profile():
         }
     })
 
+    # Real lifetime consumption, computed from actual delivered bookings
+    # rather than a placeholder figure.
+    total_liters = 0
+    for b in bookings_collection.find(
+        {"user_email": session['user_email'], "status": "Delivered"},
+        {"quantity": 1}
+    ):
+        try:
+            total_liters += int(b.get("quantity", 0))
+        except (TypeError, ValueError):
+            pass
+
+    # The soonest upcoming delivery, if any, so the profile page has
+    # something genuinely actionable at a glance instead of only history.
+    next_delivery = bookings_collection.find_one(
+        {
+            "user_email": session['user_email'],
+            "status": {"$in": ["Pending", "Assigned", "On The Way"]}
+        },
+        sort=[("delivery_date", 1)]
+    )
+
     return render_template(
         'profile.html',
         user=user,
         total_orders=total_orders,
         completed_orders=completed_orders,
         cancelled_orders=cancelled_orders,
-        active_orders=active_orders
+        active_orders=active_orders,
+        total_liters=total_liters,
+        next_delivery=next_delivery
     )
+
+# ================= PROFILE PHOTO UPLOAD =================
+@app.route('/profile/upload_photo', methods=['POST'])
+def upload_profile_photo():
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    photo = request.files.get('photo')
+
+    if not photo or photo.filename == '':
+        flash("Please choose an image to upload.", "danger")
+        return redirect(url_for('profile'))
+
+    allowed_exts = {'.png', '.jpg', '.jpeg', '.webp'}
+    ext = os.path.splitext(photo.filename)[1].lower()
+    if ext not in allowed_exts:
+        flash("Profile photo must be a PNG, JPG, or WEBP image.", "danger")
+        return redirect(url_for('profile'))
+
+    os.makedirs("static/uploads/profile_photos", exist_ok=True)
+
+    filename = f"{secure_filename(session['user_email'])}_{int(datetime.now().timestamp())}{ext}"
+    photo_path = f"static/uploads/profile_photos/{filename}"
+
+    photo.save(photo_path)
+    compress_image_file(photo_path)  # safe no-op on failure
+
+    users_collection.update_one(
+        {"email": session['user_email']},
+        {"$set": {"profile_image": "/" + photo_path}}
+    )
+
+    flash("Profile photo updated.", "success")
+    return redirect(url_for('profile'))
+
 
 # ================= HISTORY =================
 @app.route('/history')
@@ -704,6 +829,8 @@ def history():
 
     if 'user_email' not in session:
         return redirect(url_for('login'))
+
+    expire_stale_awaiting_payment_bookings()
 
     bookings = list(
         bookings_collection.find(
@@ -719,7 +846,100 @@ def history():
         total_bookings=total_bookings
     )
 
+
+# ================= CANCEL AN UNPAID "PAY NOW" REQUEST =================
+# Lets the customer explicitly walk away from a booking they started
+# but decided not to pay for, instead of waiting for the 30-minute
+# auto-expiry. Only works on bookings that were never actually paid.
+@app.route('/cancel-awaiting-payment/<booking_id>', methods=['POST'])
+def cancel_awaiting_payment(booking_id):
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking = None
+
+    if not booking or booking.get('user_email') != session['user_email']:
+        flash("Booking not found.", "danger")
+        return redirect(url_for('history'))
+
+    if booking.get('status') != 'Awaiting Payment':
+        flash("This request has already been resolved.", "info")
+        return redirect(url_for('history'))
+
+    bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {
+            "status": "Cancelled",
+            "auto_cancelled_reason": "Cancelled by customer before payment"
+        }}
+    )
+
+    flash("Booking request cancelled - you were never charged.", "success")
+    return redirect(url_for('history'))
+
 # ================= BOOKING =================
+
+# ================= LIVE PRICE PREVIEW =================
+# Called from booking.html as the customer picks a tanker size, drops
+# their pin, or types a coupon code - runs the exact same calculation
+# that /booking uses to actually store the price, so nothing shown
+# here can drift from what's really charged.
+@app.route('/calculate-price', methods=['POST'])
+def calculate_price():
+
+    if 'user_email' not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json(silent=True) or {}
+    quantity = str(data.get('quantity', '')).strip()
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    coupon_code = (data.get('coupon_code') or '').strip().upper()
+
+    if quantity not in ("1000", "2000", "5000", "10000"):
+        return jsonify({"success": False, "message": "Select a valid tanker size"})
+
+    try:
+        latitude = float(latitude) if latitude not in (None, '') else None
+        longitude = float(longitude) if longitude not in (None, '') else None
+    except (TypeError, ValueError):
+        latitude = longitude = None
+
+    price = calculate_booking_price(quantity, latitude, longitude, settings_collection)
+
+    result = {
+        "success": True,
+        "tanker_cost": price["tanker_cost"],
+        "distance_km": price["distance_km"],
+        "delivery_fee": price["delivery_fee"],
+        "platform_fee": price["platform_fee"],
+        "gst_percent": price["gst_percent"],
+        "gst": price["gst"],
+        "subtotal": price["subtotal"],
+        "total": price["total"],
+        "coupon_discount": 0,
+        "coupon_error": None,
+        "final_total": price["total"]
+    }
+
+    if coupon_code:
+        coupon, discount, coupon_error = validate_coupon(
+            coupons_collection, coupon_redemptions_collection,
+            coupon_code, session['user_email'], price["total"]
+        )
+        if coupon_error:
+            result["coupon_error"] = coupon_error
+        else:
+            result["coupon_discount"] = discount
+            result["final_total"] = max(0, round(price["total"] - discount, 2))
+
+    return jsonify(result)
+
+
 @app.route('/booking', methods=['GET', 'POST'])
 def booking():
 
@@ -810,26 +1030,64 @@ def booking():
             errors.append("Please pin your delivery location on the map")
 
         # =========================
-        # PRICING
-        # (kept in sync with the pricingMap in booking.html's JS —
-        # server-side is the source of truth actually stored/billed)
+        # PRICING (Feature: real pricing engine)
+        # Tanker Cost + real distance-based Delivery Fee (from the
+        # customer's actual pinned lat/lng) + Platform Fee + GST -
+        # computed server-side so this is the authoritative number,
+        # not something trusted from the browser. The exact same
+        # function backs the live preview on booking.html, so what the
+        # customer saw while filling the form matches what's charged.
         # =========================
 
-        pricing_map = {
-            "1000": 750,
-            "2000": 1200,
-            "5000": 2600,
-            "10000": 4800
-        }
-
-        delivery_fee = pricing_map.get(quantity)
-
-        if delivery_fee is None:
+        if quantity not in ("1000", "2000", "5000", "10000"):
             errors.append("Please select a valid water quantity")
 
         if errors:
             flash(" | ".join(errors), "danger")
             return render_template('booking.html')
+
+        price = calculate_booking_price(quantity, latitude, longitude, settings_collection)
+        delivery_fee = price["total"]
+
+        price_breakdown = {
+            "water_charge": price["tanker_cost"],
+            "distance_charge": price["delivery_fee"],
+            "emergency_charge": 0,
+            "platform_fee": price["platform_fee"],
+            "gst": price["gst"],
+            "gst_percent": price["gst_percent"],
+            "discount": 0
+        }
+
+        # =========================
+        # OPTIONAL COUPON (applied directly on the booking page)
+        # =========================
+
+        coupon_code = request.form.get('coupon_code', '').strip().upper()
+        applied_coupon = None
+        pre_coupon_amount = None
+
+        if coupon_code:
+            coupon, discount, coupon_error = validate_coupon(
+                coupons_collection, coupon_redemptions_collection,
+                coupon_code, session['user_email'], delivery_fee
+            )
+            if coupon_error:
+                # Don't fail the whole booking over a bad coupon code -
+                # just skip it silently; the customer already saw the
+                # same validation live on the booking page before
+                # submitting, so this should be rare (e.g. someone else
+                # used a one-time code in another tab in the meantime).
+                flash(f"Coupon note: {coupon_error} - booking created without it.", "warning")
+            else:
+                pre_coupon_amount = delivery_fee
+                delivery_fee = max(0, round(delivery_fee - discount, 2))
+                applied_coupon = {
+                    "code": coupon_code,
+                    "discount_type": coupon["discount_type"],
+                    "value": coupon["value"],
+                    "discount": discount
+                }
 
         # =========================
         # BOOKING DATA
@@ -853,6 +1111,8 @@ def booking():
 
             "delivery_fee": delivery_fee,
 
+            "price_breakdown": price_breakdown,
+
             "delivery_date": delivery_date,
 
             "delivery_time": delivery_time,
@@ -868,8 +1128,17 @@ def booking():
             # =========================
             # LIVE STATUS
             # =========================
+            # "Pay Now" bookings start as "Awaiting Payment" - NOT a
+            # real, confirmed booking yet. They're excluded from the
+            # admin approval queue and clearly marked (with a
+            # Complete Payment / Cancel option) on the customer's own
+            # booking history, and auto-cancelled if abandoned for too
+            # long (see _expire_stale_awaiting_payment_bookings below).
+            # Only once payment actually succeeds does this become a
+            # real "Pending" booking. Cash On Delivery is a genuine
+            # commitment immediately, so it still starts as "Pending".
 
-            "status": "Pending",
+            "status": "Awaiting Payment" if payment_method == "upi" else "Pending",
 
             # =========================
             # DRIVER DETAILS
@@ -897,6 +1166,10 @@ def booking():
 
         }
 
+        if applied_coupon:
+            booking_data["coupon"] = applied_coupon
+            booking_data["pre_coupon_amount"] = pre_coupon_amount
+
         # =========================
         # SAVE TO MONGODB
         # =========================
@@ -905,13 +1178,17 @@ def booking():
             booking_data
         )
 
+        if applied_coupon:
+            record_redemption(
+                coupon_redemptions_collection,
+                session['user_email'],
+                applied_coupon["code"],
+                str(result.inserted_id)
+            )
+
         if payment_method == "upi":
-            if razorpay_configured():
-                return redirect(
-                    url_for('razorpay_checkout', booking_id=str(result.inserted_id))
-                )
             return redirect(
-                url_for('pay_upi', booking_id=str(result.inserted_id))
+                url_for('payment_page', booking_id=str(result.inserted_id))
             )
 
         return redirect(
@@ -921,6 +1198,623 @@ def booking():
     return render_template(
         'booking.html'
     )
+
+
+# ================= PAYMENT PAGE (Feature 3) =================
+# Shown right after booking creation for "Pay Now" bookings — full
+# summary + coupon field + payment method buttons, instead of jumping
+# the customer straight into a gateway with no way back. This is also
+# where a cancelled/dismissed Razorpay checkout sends the customer
+# back to, so they can retry or switch to Cash on Delivery instead of
+# being left stranded on the gateway page.
+@app.route('/payment/<booking_id>')
+def payment_page(booking_id):
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        booking_doc = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking_doc = None
+
+    if not booking_doc or booking_doc.get('user_email') != session['user_email']:
+        flash("Booking not found.", "danger")
+        return redirect(url_for('history'))
+
+    # Already paid online? Nothing to do here — send them to history.
+    if booking_doc.get('payment_status') == 'Paid (Online)':
+        flash("This booking is already paid.", "info")
+        return redirect(url_for('history'))
+
+    if booking_doc.get('status') == 'Cancelled':
+        flash("This booking request was cancelled and can no longer be paid for. Please create a new booking.", "danger")
+        return redirect(url_for('history'))
+
+    user_doc = users_collection.find_one({"email": session['user_email']})
+    wallet_balance = user_doc.get('wallet_balance', 0) if user_doc else 0
+
+    return render_template(
+        'payment_page.html',
+        booking=booking_doc,
+        booking_id=booking_id,
+        amount=booking_doc.get('delivery_fee', 0),
+        breakdown=booking_doc.get('price_breakdown'),
+        coupon=booking_doc.get('coupon'),
+        wallet_balance=wallet_balance,
+        wallet_used=booking_doc.get('wallet_used', 0),
+        gateway_available=razorpay_configured()
+    )
+
+
+# ================= SWITCH TO CASH ON DELIVERY =================
+# Lets the customer back out of online payment (e.g. after cancelling
+# at the gateway) and confirm the booking as Cash on Delivery instead,
+# without having to re-fill the whole booking form.
+@app.route('/switch-to-cod/<booking_id>', methods=['POST'])
+def switch_to_cod(booking_id):
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        booking_doc = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking_doc = None
+
+    if not booking_doc or booking_doc.get('user_email') != session['user_email']:
+        flash("Booking not found.", "danger")
+        return redirect(url_for('history'))
+
+    if booking_doc.get('payment_status') == 'Paid (Online)':
+        flash("This booking is already paid online.", "info")
+        return redirect(url_for('history'))
+
+    bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {
+            "payment_method": "Cash on Delivery",
+            # Choosing COD is a genuine commitment - confirm the
+            # booking now, same as if they'd picked COD from the start.
+            "status": "Pending"
+        }}
+    )
+
+    flash("Payment method switched to Cash on Delivery - your booking is confirmed.", "success")
+    return redirect(url_for('history'))
+
+
+# ================= FAKE PAYMENT GATEWAY (Feature 5) =================
+# This project doesn't have a live Razorpay merchant account, so when
+# real Razorpay isn't configured, this simulated gateway is used
+# instead: "Payment Processing..." then "Payment Successful" with a
+# generated Transaction ID. Structured exactly like a real gateway
+# result (same fields real Razorpay verification writes) so every
+# downstream feature - driver assignment, invoices, driver wallet,
+# admin finance dashboard - can't tell the difference.
+@app.route('/fake-payment/<booking_id>')
+def fake_payment(booking_id):
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        booking_doc = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking_doc = None
+
+    if not booking_doc or booking_doc.get('user_email') != session['user_email']:
+        flash("Booking not found.", "danger")
+        return redirect(url_for('history'))
+
+    if booking_doc.get('payment_status') == 'Paid (Online)':
+        flash("This booking is already paid.", "info")
+        return redirect(url_for('history'))
+
+    if booking_doc.get('status') == 'Cancelled':
+        flash("This booking request was cancelled and can no longer be paid for. Please create a new booking.", "danger")
+        return redirect(url_for('history'))
+
+    if booking_doc.get('delivery_fee', 0) <= 0:
+        flash("This booking is fully covered by wallet/coupon - use the Confirm Booking button instead.", "info")
+        return redirect(url_for('payment_page', booking_id=booking_id))
+
+    method = request.args.get('method', 'upi').strip().lower()
+    if method not in ('upi', 'card', 'netbanking'):
+        method = 'upi'
+
+    return render_template(
+        'fake_payment_gateway.html',
+        booking_id=booking_id,
+        amount=booking_doc.get('delivery_fee', 0),
+        method=method
+    )
+
+
+@app.route('/fake-payment-complete/<booking_id>', methods=['POST'])
+def fake_payment_complete(booking_id):
+
+    if 'user_email' not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    try:
+        booking_doc = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking_doc = None
+
+    if not booking_doc or booking_doc.get('user_email') != session['user_email']:
+        return jsonify({"success": False, "message": "Booking not found"}), 404
+
+    # Already paid (e.g. a duplicate click) - just hand back the
+    # existing transaction id instead of generating a second one.
+    if booking_doc.get('payment_status') == 'Paid (Online)':
+        return jsonify({
+            "success": True,
+            "transaction_id": booking_doc.get('payment_id', ''),
+            "already_paid": True
+        })
+
+    data = request.get_json(silent=True) or {}
+    method = data.get('method', 'upi').strip().lower()
+    method_labels = {"upi": "UPI", "card": "Card", "netbanking": "Net Banking"}
+    method_label = method_labels.get(method, "UPI")
+
+    transaction_id = "TXN" + str(random.randint(10000000, 99999999))
+    payment_time = datetime.now()
+    amount = booking_doc.get('delivery_fee', 0)
+
+    bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {
+            "payment_status": "Paid (Online)",
+            "payment_processed": True,
+            "payment_method": method_label,
+            "payment_id": transaction_id,
+            "payment_time": payment_time,
+            "paid_at": payment_time,
+            # Payment succeeded - this is now a real, confirmed booking
+            # that enters the normal admin-approval pipeline.
+            "status": "Pending"
+        }}
+    )
+
+    if transactions_collection is not None:
+        transactions_collection.insert_one({
+            "type": "customer_payment",
+            "transaction_id": transaction_id,
+            "booking_id": str(booking_id),
+            "user_email": session['user_email'],
+            "amount": amount,
+            "payment_method": method_label,
+            "status": "Completed",
+            "created_at": payment_time
+        })
+
+    notifications_collection.insert_one({
+        "user_email": session['user_email'],
+        "title": "Payment Successful",
+        "message": f"Your payment of ₹{amount:,.0f} was successful. Your invoice is ready to view.",
+        "type": "payment_successful",
+        "status": "success",
+        "icon": "✅",
+        "read": False,
+        "created_at": payment_time
+    })
+
+    return jsonify({
+        "success": True,
+        "transaction_id": transaction_id,
+        "already_paid": False
+    })
+
+
+# ================= PAYMENT RECEIPT / INVOICE (Feature 6) =================
+@app.route('/invoice/<booking_id>')
+def view_invoice(booking_id):
+
+    if 'user_email' not in session and 'admin' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        booking_doc = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking_doc = None
+
+    if not booking_doc:
+        flash("Booking not found.", "danger")
+        return redirect(url_for('history'))
+
+    is_owner = booking_doc.get('user_email') == session.get('user_email')
+    is_admin = 'admin' in session
+    if not (is_owner or is_admin):
+        flash("You don't have access to this invoice.", "danger")
+        return redirect(url_for('history'))
+
+    amount = booking_doc.get('delivery_fee', 0)
+    # Amount charged is treated as GST-inclusive (18%) - this is purely
+    # an invoice breakdown, it does NOT change anything already charged.
+    gst_amount = round(amount * 18 / 118, 2)
+    base_amount = round(amount - gst_amount, 2)
+
+    return render_template(
+        'invoice.html',
+        booking=booking_doc,
+        booking_id=booking_id,
+        amount=amount,
+        base_amount=base_amount,
+        gst_amount=gst_amount
+    )
+
+
+# ================= REFUND MANAGEMENT (Feature 14) =================
+@app.route('/refund-management')
+def refund_management():
+
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
+
+    requested = list(
+        bookings_collection.find({"refund_status": "Requested"}).sort("refund_requested_at", -1)
+    )
+    resolved = list(
+        bookings_collection.find({"refund_status": {"$in": ["Completed", "Rejected"]}})
+        .sort("refund_requested_at", -1)
+        .limit(50)
+    )
+
+    return render_template(
+        'refund_management.html',
+        requested_refunds=requested,
+        resolved_refunds=resolved,
+        admin_name="Admin",
+        admin_email=session.get('admin_email', 'admin@aquaflow.com')
+    )
+
+
+# ================= TRANSACTION TABLE (Feature 22) =================
+# Unified ledger view across every type of money movement this app
+# tracks: customer payments (Feature 5), refunds (Feature 14), and
+# driver settlements (existing feature) - all already stored in
+# transactions_collection, just not visible in one place until now.
+@app.route('/transaction-table')
+def transaction_table():
+
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
+
+    txn_type = request.args.get('type', 'all')
+    query = {}
+    if txn_type != 'all':
+        query['type'] = txn_type
+
+    transactions = list(
+        transactions_collection.find(query).sort("created_at", -1).limit(200)
+    ) if transactions_collection is not None else []
+
+    return render_template(
+        'transaction_table.html',
+        transactions=transactions,
+        active_type=txn_type,
+        admin_name="Admin",
+        admin_email=session.get('admin_email', 'admin@aquaflow.com')
+    )
+
+
+@app.route('/approve-refund/<booking_id>', methods=['POST'])
+def approve_refund(booking_id):
+
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Unauthorized"})
+
+    try:
+        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+        if not booking or booking.get('refund_status') != 'Requested':
+            flash("This refund request is no longer pending.", "danger")
+            return redirect(url_for('refund_management'))
+
+        refund_amount = booking.get('refund_amount', 0)
+
+        bookings_collection.update_one(
+            {"_id": ObjectId(booking_id)},
+            {"$set": {
+                "refund_status": "Completed",
+                "refund_completed_at": datetime.now()
+            }}
+        )
+
+        if transactions_collection is not None:
+            transactions_collection.insert_one({
+                "type": "refund",
+                "booking_id": str(booking_id),
+                "user_email": booking.get('user_email'),
+                "amount": refund_amount,
+                "status": "Completed",
+                "created_at": datetime.now()
+            })
+
+        notifications_collection.insert_one({
+            "user_email": booking.get('user_email'),
+            "title": "Refund Completed",
+            "message": f"Your refund of ₹{refund_amount:,.0f} has been processed.",
+            "type": "refund_completed",
+            "status": "success",
+            "icon": "💸",
+            "read": False,
+            "created_at": datetime.now()
+        })
+
+        flash(f"Refund of ₹{refund_amount:,.0f} marked as completed.", "success")
+        return redirect(url_for('refund_management'))
+
+    except Exception as e:
+        flash(f"Could not approve refund: {str(e)}", "danger")
+        return redirect(url_for('refund_management'))
+
+
+@app.route('/reject-refund/<booking_id>', methods=['POST'])
+def reject_refund(booking_id):
+
+    if 'admin' not in session:
+        return jsonify({"success": False, "message": "Unauthorized"})
+
+    try:
+        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+        if not booking or booking.get('refund_status') != 'Requested':
+            flash("This refund request is no longer pending.", "danger")
+            return redirect(url_for('refund_management'))
+
+        bookings_collection.update_one(
+            {"_id": ObjectId(booking_id)},
+            {"$set": {
+                "refund_status": "Rejected",
+                "refund_completed_at": datetime.now()
+            }}
+        )
+
+        notifications_collection.insert_one({
+            "user_email": booking.get('user_email'),
+            "title": "Refund Rejected",
+            "message": "Your refund request was reviewed and rejected. Contact support if you believe this is a mistake.",
+            "type": "refund_rejected",
+            "status": "danger",
+            "icon": "⚠️",
+            "read": False,
+            "created_at": datetime.now()
+        })
+
+        flash("Refund request rejected.", "success")
+        return redirect(url_for('refund_management'))
+
+    except Exception as e:
+        flash(f"Could not reject refund: {str(e)}", "danger")
+        return redirect(url_for('refund_management'))
+
+
+# ================= USER WALLET (Feature 17) =================
+@app.route('/wallet')
+def user_wallet():
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    user = users_collection.find_one({"email": session['user_email']})
+    wallet_balance = user.get('wallet_balance', 0) if user else 0
+
+    history = list(
+        wallet_transactions_collection.find({"user_email": session['user_email']})
+        .sort("created_at", -1)
+        .limit(50)
+    )
+
+    return render_template(
+        'wallet.html',
+        wallet_balance=wallet_balance,
+        history=history
+    )
+
+
+@app.route('/recharge-wallet', methods=['POST'])
+def recharge_wallet():
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        amount = float(request.form.get('amount', '0'))
+    except ValueError:
+        amount = 0
+
+    if amount <= 0:
+        flash("Please enter a valid recharge amount.", "danger")
+        return redirect(url_for('user_wallet'))
+
+    # This project doesn't take real money for a wallet top-up either -
+    # same simulated-success approach as the fake payment gateway
+    # (Feature 5), just instant since there's no gateway UI needed here.
+    users_collection.update_one(
+        {"email": session['user_email']},
+        {"$inc": {"wallet_balance": amount}},
+        upsert=False
+    )
+
+    wallet_transactions_collection.insert_one({
+        "user_email": session['user_email'],
+        "type": "recharge",
+        "amount": amount,
+        "created_at": datetime.now()
+    })
+
+    flash(f"₹{amount:,.0f} added to your wallet.", "success")
+    return redirect(url_for('user_wallet'))
+
+
+@app.route('/apply-wallet/<booking_id>', methods=['POST'])
+def apply_wallet(booking_id):
+
+    if 'user_email' not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    try:
+        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking = None
+
+    if not booking or booking.get('user_email') != session['user_email']:
+        return jsonify({"success": False, "message": "Booking not found"}), 404
+
+    if booking.get('payment_status') == 'Paid (Online)':
+        return jsonify({"success": False, "message": "This booking has already been paid for"})
+
+    if booking.get('wallet_used'):
+        return jsonify({"success": False, "message": "Wallet is already applied to this booking"})
+
+    user = users_collection.find_one({"email": session['user_email']})
+    wallet_balance = user.get('wallet_balance', 0) if user else 0
+
+    if wallet_balance <= 0:
+        return jsonify({"success": False, "message": "Your wallet balance is ₹0"})
+
+    current_amount = booking.get('delivery_fee', 0)
+    use_amount = min(wallet_balance, current_amount)
+    new_amount = round(current_amount - use_amount, 2)
+
+    # Debit immediately - this money is now committed to this booking.
+    # It's only ever returned to the wallet if the booking is later
+    # cancelled (see cancel_booking) or the customer removes it below.
+    users_collection.update_one(
+        {"email": session['user_email']},
+        {"$inc": {"wallet_balance": -use_amount}}
+    )
+
+    bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {
+            "delivery_fee": new_amount,
+            "wallet_used": use_amount
+        }}
+    )
+
+    wallet_transactions_collection.insert_one({
+        "user_email": session['user_email'],
+        "type": "booking_payment",
+        "booking_id": str(booking_id),
+        "amount": -use_amount,
+        "created_at": datetime.now()
+    })
+
+    return jsonify({
+        "success": True,
+        "message": f"₹{use_amount:,.0f} applied from your wallet",
+        "used": use_amount,
+        "new_amount": new_amount,
+        "fully_paid": new_amount <= 0
+    })
+
+
+@app.route('/remove-wallet/<booking_id>', methods=['POST'])
+def remove_wallet(booking_id):
+
+    if 'user_email' not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    try:
+        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking = None
+
+    if not booking or booking.get('user_email') != session['user_email']:
+        return jsonify({"success": False, "message": "Booking not found"}), 404
+
+    used = booking.get('wallet_used', 0)
+    if not used:
+        return jsonify({"success": False, "message": "No wallet amount is applied on this booking"})
+
+    users_collection.update_one(
+        {"email": session['user_email']},
+        {"$inc": {"wallet_balance": used}}
+    )
+
+    new_amount = round(booking.get('delivery_fee', 0) + used, 2)
+
+    bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {"delivery_fee": new_amount}, "$unset": {"wallet_used": ""}}
+    )
+
+    wallet_transactions_collection.insert_one({
+        "user_email": session['user_email'],
+        "type": "refund_to_wallet",
+        "booking_id": str(booking_id),
+        "amount": used,
+        "created_at": datetime.now()
+    })
+
+    return jsonify({"success": True, "message": "Wallet amount removed", "new_amount": new_amount})
+
+
+@app.route('/wallet-full-payment/<booking_id>', methods=['POST'])
+def wallet_full_payment(booking_id):
+    """Closes out a booking whose amount due has reached Rs0 - whether
+    that's from wallet balance, a coupon, or both combined - without
+    needing to send a Rs0 charge through a payment gateway."""
+
+    if 'user_email' not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    try:
+        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+    except Exception:
+        booking = None
+
+    if not booking or booking.get('user_email') != session['user_email']:
+        return jsonify({"success": False, "message": "Booking not found"}), 404
+
+    if booking.get('payment_status') == 'Paid (Online)':
+        return jsonify({"success": True, "already_paid": True})
+
+    if booking.get('delivery_fee', 0) > 0:
+        return jsonify({"success": False, "message": "This booking isn't fully covered yet"})
+
+    # Attribute the Rs0 close-out to whatever actually covered it.
+    used_wallet = bool(booking.get('wallet_used'))
+    used_coupon = bool(booking.get('coupon'))
+    if used_wallet and used_coupon:
+        method_label = "Wallet + Coupon"
+    elif used_wallet:
+        method_label = "Wallet"
+    elif used_coupon:
+        method_label = "Coupon"
+    else:
+        method_label = "Free"
+
+    payment_time = datetime.now()
+    bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {
+            "payment_status": "Paid (Online)",
+            "payment_processed": True,
+            "payment_method": method_label,
+            "payment_id": "NOCHARGE" + str(random.randint(10000000, 99999999)),
+            "payment_time": payment_time,
+            "paid_at": payment_time,
+            "status": "Pending"
+        }}
+    )
+
+    original_amount = booking.get('pre_coupon_amount') or booking.get('wallet_used') or 0
+
+    notifications_collection.insert_one({
+        "user_email": session['user_email'],
+        "title": "Payment Successful",
+        "message": f"Your booking (₹{original_amount:,.0f}) was fully covered by {method_label} - nothing more to pay. Your invoice is ready to view.",
+        "type": "payment_successful",
+        "status": "success",
+        "icon": "✅",
+        "read": False,
+        "created_at": payment_time
+    })
+
+    return jsonify({"success": True, "already_paid": False})
 
 
 # ================= UPI PAY REDIRECT =================
@@ -1063,12 +1957,23 @@ Thank You,
 AquaFlow Team
 """
 
-            send_mail_capped(mail, msg, timeout_seconds=6)
+            mail_sent = send_mail_capped(mail, msg, timeout_seconds=6)
+
+            if not mail_sent:
+                print(f"[forgot-password] OTP email to {email} could not be "
+                      f"delivered (see [mail] logs above for the exact reason)")
+                session.pop('reset_otp', None)
+                return render_template(
+                    'forgot_password.html',
+                    error="We couldn't send the reset OTP to that email right "
+                          "now. Please try again in a moment."
+                )
 
             return redirect(url_for('reset_password_otp'))
 
         except Exception as e:
             print("MAIL ERROR:", e)
+            session.pop('reset_otp', None)
 
             return render_template(
                 'forgot_password.html',
@@ -1158,6 +2063,8 @@ def edit_profile():
         gender = request.form.get('gender')
         dob = request.form.get('dob')
         address = request.form.get('address')
+        favorite_tanker = request.form.get('favorite_tanker')
+        preferred_water = request.form.get('preferred_water')
 
         users_collection.update_one(
             {"email": session['user_email']},
@@ -1166,7 +2073,9 @@ def edit_profile():
                     "phone": phone,
                     "gender": gender,
                     "dob": dob,
-                    "address": address
+                    "address": address,
+                    "favorite_tanker": favorite_tanker,
+                    "preferred_water": preferred_water
                 }
             }
         )
@@ -1477,20 +2386,37 @@ Thank You,
 AquaFlow Team
 """
 
-        send_mail_capped(mail, msg, timeout_seconds=6)
+        otp_mail_sent = send_mail_capped(mail, msg, timeout_seconds=6)
+
+        if not otp_mail_sent:
+            print(f"[approve-booking] Delivery OTP email to {user_email} "
+                  f"could not be delivered for booking {booking_id} "
+                  f"(see [mail] logs above for the exact reason). The OTP is "
+                  f"still saved on the booking record, so it can be shared "
+                  f"with the customer manually if needed.")
+
+        bookings_collection.update_one(
+            {"_id": ObjectId(booking_id)},
+            {"$set": {"delivery_otp_email_sent": otp_mail_sent}}
+        )
+
         notifications_collection.insert_one({
 
     "user_email": user_email,
 
-    "title": "OTP Sent",
+    "title": "OTP Sent" if otp_mail_sent else "OTP Email Failed",
 
-    "message": "Delivery OTP is sent to your registered Gmail",
+    "message": (
+        "Delivery OTP is sent to your registered Gmail"
+        if otp_mail_sent else
+        "We couldn't email your delivery OTP. Please contact support to get it."
+    ),
 
     "type": "otp",
 
-    "status": "success",
+    "status": "success" if otp_mail_sent else "error",
 
-    "icon": "📧",
+    "icon": "📧" if otp_mail_sent else "⚠️",
 
     "read": False,
 
@@ -1529,7 +2455,10 @@ AquaFlow Team
 
         return jsonify({
             "success": True,
-            "message": "Booking approved successfully"
+            "message": "Booking approved successfully" if otp_mail_sent else
+                       "Booking approved, but the delivery OTP email failed to "
+                       "send. Check server mail logs / share the OTP manually.",
+            "otp_mail_sent": otp_mail_sent
         })
 
     except Exception as e:
@@ -1573,6 +2502,67 @@ def cancel_booking(booking_id):
         user_email = booking["user_email"]
 
         # =========================================
+        # WALLET REFUND (Feature 17)
+        # If any wallet balance was applied to this booking, give it
+        # back regardless of how the rest of the payment was handled -
+        # this is separate from the online-payment refund/cancellation
+        # fee logic below, since it was never actually "charged" to a
+        # gateway in the first place.
+        # =========================================
+
+        wallet_used = booking.get("wallet_used", 0)
+        if wallet_used:
+            users_collection.update_one(
+                {"email": user_email},
+                {"$inc": {"wallet_balance": wallet_used}}
+            )
+            wallet_transactions_collection.insert_one({
+                "user_email": user_email,
+                "type": "refund_to_wallet",
+                "booking_id": str(booking_id),
+                "amount": wallet_used,
+                "created_at": datetime.now()
+            })
+
+        # =========================================
+        # REFUND (Feature 14) + CANCELLATION CHARGE (Feature 15)
+        # Only relevant if money was actually collected online. COD
+        # bookings and never-paid bookings have nothing to refund, so
+        # this leaves their cancellation behaviour exactly as before.
+        # =========================================
+
+        refund_fields = {}
+        refund_message_suffix = ""
+
+        if booking.get("payment_status") == "Paid (Online)" and not booking.get("refund_status"):
+            amount = booking.get("delivery_fee", 0)
+
+            driver_already_assigned = bool(booking.get("driver_name")) or booking.get("status") in (
+                "Assigned", "Accepted", "Arrived", "On The Way"
+            )
+
+            # Before a driver is assigned: full refund.
+            # After a driver is assigned: 20% cancellation fee applies.
+            refund_percent = 0.8 if driver_already_assigned else 1.0
+            refund_amount = round(amount * refund_percent, 2)
+            cancellation_fee = round(amount - refund_amount, 2)
+
+            refund_fields = {
+                "refund_status": "Requested",
+                "refund_amount": refund_amount,
+                "cancellation_fee": cancellation_fee,
+                "refund_requested_at": datetime.now()
+            }
+
+            if cancellation_fee > 0:
+                refund_message_suffix = (
+                    f" A refund of ₹{refund_amount:,.0f} has been initiated "
+                    f"(₹{cancellation_fee:,.0f} cancellation fee applied since a driver was already assigned)."
+                )
+            else:
+                refund_message_suffix = f" A full refund of ₹{refund_amount:,.0f} has been initiated."
+
+        # =========================================
         # UPDATE STATUS
         # =========================================
 
@@ -1580,7 +2570,8 @@ def cancel_booking(booking_id):
             {"_id": ObjectId(booking_id)},
             {
                 "$set": {
-                    "status": "Cancelled"
+                    "status": "Cancelled",
+                    **refund_fields
                 }
             }
         )
@@ -1595,7 +2586,7 @@ def cancel_booking(booking_id):
 
             "title": "Booking Cancelled",
 
-            "message": "Your water tanker booking has been cancelled",
+            "message": "Your water tanker booking has been cancelled." + refund_message_suffix,
 
             "type": "cancelled",
 
@@ -1623,6 +2614,93 @@ def cancel_booking(booking_id):
             "success": False,
             "message": str(e)
         })
+# ================= ADMIN EDIT PRICE / EXTRA CHARGES / DISCOUNT =================
+@app.route('/update-booking-price/<booking_id>', methods=['POST'])
+def update_booking_price(booking_id):
+
+    # =========================================
+    # SECURITY CHECK - ADMIN ONLY
+    # =========================================
+
+    if 'admin' not in session:
+        return jsonify({
+            "success": False,
+            "message": "Unauthorized"
+        })
+
+    try:
+        data = request.get_json(force=True) or {}
+
+        def to_num(v):
+            try:
+                return round(float(v), 2)
+            except (TypeError, ValueError):
+                return 0.0
+
+        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
+        if not booking:
+            return jsonify({
+                "success": False,
+                "message": "Booking not found"
+            })
+
+        existing_breakdown = booking.get("price_breakdown") or {}
+
+        water_charge = to_num(data.get('water_charge'))
+        distance_charge = to_num(data.get('distance_charge'))
+        emergency_charge = to_num(data.get('emergency_charge'))
+        discount = to_num(data.get('discount'))
+
+        # Platform fee: editable, but defaults to whatever this booking
+        # already had (or the standard fee) rather than silently
+        # dropping to Rs0 if the admin's request doesn't include it.
+        platform_fee = to_num(data.get('platform_fee')) if 'platform_fee' in data else existing_breakdown.get('platform_fee', 20)
+
+        gst_percent = existing_breakdown.get('gst_percent', 18)
+
+        # GST is a tax, not something an admin manually types - it's
+        # always recalculated from the real components so editing the
+        # price can never accidentally under- or over-charge GST.
+        subtotal = water_charge + distance_charge + emergency_charge + platform_fee
+        gst = round(subtotal * gst_percent / 100, 2)
+
+        total = subtotal + gst - discount
+        if total < 0:
+            total = 0
+
+        # NOTE: "delivery_fee" is the single field every other part of the
+        # app already reads (driver earnings, payment page, exports, etc).
+        # We keep updating that same field so nothing downstream breaks —
+        # we just also store the itemised breakdown alongside it.
+        bookings_collection.update_one(
+            {"_id": ObjectId(booking_id)},
+            {"$set": {
+                "price_breakdown": {
+                    "water_charge": water_charge,
+                    "distance_charge": distance_charge,
+                    "emergency_charge": emergency_charge,
+                    "platform_fee": platform_fee,
+                    "gst_percent": gst_percent,
+                    "gst": gst,
+                    "discount": discount
+                },
+                "delivery_fee": total,
+                "price_updated_at": datetime.now()
+            }}
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "Price updated successfully",
+            "total": total
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        })
+
 # ================= ADMIN DELIVER BOOKING =================
 @app.route('/deliver-booking/<booking_id>')
 def deliver_booking(booking_id):

@@ -1138,6 +1138,15 @@ AquaFlow Team
             _transactions_collection, _bookings_collection, session["driver_email"]
         )
 
+        # Driver Bonus (Feature 16): every 25 completed deliveries earns
+        # a flat Rs500 bonus. Derived straight from the driver's
+        # existing completed_deliveries counter, so it's always in
+        # sync - nothing new to keep updated separately.
+        completed_deliveries_count = driver.get("completed_deliveries", 0) if driver else 0
+        bonus_tiers_reached = completed_deliveries_count // 25
+        current_bonus = bonus_tiers_reached * 500
+        deliveries_to_next_bonus = 25 - (completed_deliveries_count % 25) if completed_deliveries_count % 25 != 0 else 25
+
         # Get earnings history
         earnings_history = []
         if _earnings_collection is not None:
@@ -1152,7 +1161,10 @@ AquaFlow Team
             driver=driver,
             earnings=earnings_data,
             settlement=settlement,
-            earnings_history=earnings_history
+            earnings_history=earnings_history,
+            current_bonus=current_bonus,
+            completed_deliveries_count=completed_deliveries_count,
+            deliveries_to_next_bonus=deliveries_to_next_bonus
         )
     
     # =====================================================

@@ -183,6 +183,39 @@
 
         </div>
 
+        <div class="form-group">
+
+            <label>Favorite Tanker Size</label>
+
+            <select name="favorite_tanker">
+
+                <option value="">Select Size</option>
+
+                <option value="1000 L" {% if user.favorite_tanker == '1000 L' %}selected{% endif %}>1000 L</option>
+                <option value="2000 L" {% if user.favorite_tanker == '2000 L' %}selected{% endif %}>2000 L</option>
+                <option value="5000 L" {% if user.favorite_tanker == '5000 L' %}selected{% endif %}>5000 L</option>
+                <option value="10000 L" {% if user.favorite_tanker == '10000 L' %}selected{% endif %}>10000 L</option>
+
+            </select>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Preferred Water Type</label>
+
+            <select name="preferred_water">
+
+                <option value="">Select Type</option>
+
+                <option value="Fresh Water" {% if user.preferred_water == 'Fresh Water' %}selected{% endif %}>Fresh Water</option>
+                <option value="Mineral Water" {% if user.preferred_water == 'Mineral Water' %}selected{% endif %}>Mineral Water</option>
+                <option value="RO Purified" {% if user.preferred_water == 'RO Purified' %}selected{% endif %}>RO Purified</option>
+
+            </select>
+
+        </div>
+
         <button type="submit" class="save-btn">
 
             Save Profile

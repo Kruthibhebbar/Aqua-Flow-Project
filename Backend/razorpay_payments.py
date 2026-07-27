@@ -82,7 +82,7 @@ def _create_order(amount_rupees, receipt):
         return None
 
 
-def init_razorpay_payments(app, bookings_collection, settings_collection):
+def init_razorpay_payments(app, bookings_collection, settings_collection, notifications_collection=None):
 
     # =========================================
     # CHECKOUT PAGE - creates the Razorpay order
@@ -105,10 +105,18 @@ def init_razorpay_payments(app, bookings_collection, settings_collection):
             flash("Booking not found.", "danger")
             return redirect(url_for("history"))
 
+        if booking_doc.get("status") == "Cancelled":
+            flash("This booking request was cancelled and can no longer be paid for. Please create a new booking.", "danger")
+            return redirect(url_for("history"))
+
         if not razorpay_configured():
             # No gateway account set up - fall back to the plain UPI
             # deep-link flow instead of showing a broken checkout.
             return redirect(url_for("pay_upi", booking_id=booking_id))
+
+        if booking_doc.get("delivery_fee", 0) <= 0:
+            flash("This booking is fully covered by wallet/coupon - use the Confirm Booking button instead.", "info")
+            return redirect(url_for("payment_page", booking_id=booking_id))
 
         amount = booking_doc.get("delivery_fee", 500)
 
@@ -116,12 +124,19 @@ def init_razorpay_payments(app, bookings_collection, settings_collection):
 
         if not order:
             flash("Couldn't start online payment right now - please try Cash on Delivery, or try again in a moment.", "danger")
-            return redirect(url_for("history"))
+            return redirect(url_for("payment_page", booking_id=booking_id))
 
         bookings_collection.update_one(
             {"_id": ObjectId(booking_id)},
             {"$set": {"razorpay_order_id": order["id"]}}
         )
+
+        # Which payment method the customer picked on the payment page
+        # (Feature 3) - used only to preselect the right block in
+        # Razorpay's checkout UI. Falls back to UPI if missing/unknown.
+        preferred_method = request.args.get("method", "upi").strip().lower()
+        if preferred_method not in ("upi", "card", "netbanking"):
+            preferred_method = "upi"
 
         return render_template(
             "razorpay_checkout.html",
@@ -130,7 +145,8 @@ def init_razorpay_payments(app, bookings_collection, settings_collection):
             order_id=order["id"],
             razorpay_key_id=os.getenv("RAZORPAY_KEY_ID"),
             customer_name=booking_doc.get("fullname", ""),
-            customer_email=booking_doc.get("user_email", "")
+            customer_email=booking_doc.get("user_email", ""),
+            preferred_method=preferred_method
         )
 
     # =========================================
@@ -178,16 +194,34 @@ def init_razorpay_payments(app, bookings_collection, settings_collection):
         if not booking_doc or booking_doc.get("user_email") != session["user_email"]:
             return jsonify({"success": False, "message": "Booking not found"}), 404
 
+        payment_time = datetime.now()
+
         bookings_collection.update_one(
             {"_id": ObjectId(booking_id)},
             {"$set": {
                 "payment_status": "Paid (Online)",
+                "payment_processed": True,
                 "payment_method": "UPI",
                 "razorpay_payment_id": razorpay_payment_id,
                 "razorpay_signature": razorpay_signature,
-                "paid_at": datetime.now()
+                "payment_id": razorpay_payment_id,
+                "payment_time": payment_time,
+                "paid_at": payment_time,
+                "status": "Pending"
             }}
         )
+
+        if notifications_collection is not None:
+            notifications_collection.insert_one({
+                "user_email": session["user_email"],
+                "title": "Payment Successful",
+                "message": f"Your payment of ₹{booking_doc.get('delivery_fee', 0):,.0f} was successful. Your invoice is ready to view.",
+                "type": "payment_successful",
+                "status": "success",
+                "icon": "✅",
+                "read": False,
+                "created_at": payment_time
+            })
 
         return jsonify({"success": True})
 

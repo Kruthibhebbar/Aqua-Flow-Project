@@ -297,6 +297,17 @@ def get_finance_overview(bookings_collection, drivers_collection, transactions_c
         if isinstance(o.get("delivered_at"), datetime) and o["delivered_at"].date() == today
     )
 
+    week_start = today - timedelta(days=today.weekday())
+    month_start = today.replace(day=1)
+    weekly_revenue = sum(
+        fee(o) for o in delivered
+        if isinstance(o.get("delivered_at"), datetime) and o["delivered_at"].date() >= week_start
+    )
+    monthly_revenue = sum(
+        fee(o) for o in delivered
+        if isinstance(o.get("delivered_at"), datetime) and o["delivered_at"].date() >= month_start
+    )
+
     total_commission = round(total_revenue * (1 - DRIVER_SHARE_RATE))
     today_commission = round(today_revenue * (1 - DRIVER_SHARE_RATE))
 
@@ -315,16 +326,30 @@ def get_finance_overview(bookings_collection, drivers_collection, transactions_c
             )
             pending_driver_payouts += settlement["withdrawable"]
 
+    # Refund system (Feature 14) - money owed back to customers for
+    # cancelled-after-payment bookings, awaiting admin approval.
+    pending_customer_refunds = sum(
+        b.get("refund_amount", 0)
+        for b in bookings_collection.find({"refund_status": "Requested"})
+    )
+
+    # Admin Wallet (Feature 18): Revenue -> Commission -> Driver
+    # Settlement -> Profit. "Profit" here is the platform's commission
+    # net of refunds already owed back to customers - not a full P&L,
+    # just what Feature 18 asks for at this level of detail.
+    profit = round(total_commission - pending_customer_refunds)
+
     return {
         "total_revenue": total_revenue,
         "today_revenue": today_revenue,
+        "weekly_revenue": weekly_revenue,
+        "monthly_revenue": monthly_revenue,
         "total_commission": total_commission,
         "today_commission": today_commission,
         "pending_driver_deposits": pending_driver_deposits,
         "pending_driver_payouts": pending_driver_payouts,
-        # No refund workflow exists yet (see cancel_booking) - kept at
-        # 0 rather than a fake number until that's built.
-        "pending_customer_refunds": 0
+        "pending_customer_refunds": pending_customer_refunds,
+        "profit": profit
     }
 
 

@@ -59,7 +59,16 @@
             <div class="label">Withdrawable Now</div>
             <div class="value blue">₹{{ "{:,.0f}".format(settlement.withdrawable) }}</div>
         </div>
+        <div class="stat">
+            <div class="label">Current Bonus <span style="font-weight:400;">(every 25 deliveries)</span></div>
+            <div class="value green">₹{{ "{:,.0f}".format(current_bonus) }}</div>
+        </div>
     </div>
+
+    <p class="empty" style="text-align:left; padding:0 0 20px;">
+        {{ completed_deliveries_count }} deliveries completed &middot;
+        {{ deliveries_to_next_bonus }} more to your next ₹500 bonus
+    </p>
 
     <div class="card">
         <h2><i class="fa-solid fa-money-bill-transfer me-2"></i>Withdraw Earnings</h2>
@@ -98,6 +107,34 @@
         </table>
         {% else %}
         <p class="empty">No withdrawal requests yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2><i class="fa-solid fa-list-check me-2"></i>Order Payment History</h2>
+        {% if earnings_history %}
+        <table>
+            <thead>
+                <tr><th>Order</th><th>Date</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for e in earnings_history %}
+                <tr>
+                    <td>#{{ e.booking_id[-6:] if e.booking_id else '—' }}</td>
+                    <td>{{ e.created_at.strftime('%d %b %Y') if e.created_at else '-' }}</td>
+                    <td>₹{{ "{:,.0f}".format(e.amount) }}</td>
+                    <td>
+                        {% set st = (e.status or 'pending')|lower %}
+                        <span class="badge badge-{{ 'completed' if st in ['paid','completed'] else st }}">
+                            {{ 'Paid' if st in ['paid','completed'] else e.status|title }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No completed orders yet.</p>
         {% endif %}
     </div>
 </div>

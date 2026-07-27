@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>AquaFlow Console | Business Insights</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --ink: #0A1A22; --ink-2: #123039; --ink-soft: #55707A; --ink-faint: #93A8AF;
+        --teal-900: #073239; --teal-700: #0E6672; --teal-050: #EAF4F5;
+        --violet-600: #6C4FCE; --violet-100: #EDE7FB;
+        --amber-600: #A5690C; --amber-100: #FBF0DC;
+        --green-600: #157A50; --green-100: #E1F5EA;
+        --red-600: #B23B30; --red-100: #FBEAE8;
+        --blue-600: #2C5F9E; --blue-100: #E8EFFA;
+        --bg: #EEF3F4; --surface: #FFFFFF; --border: #DCE6E8; --border-soft: #E7EEEF;
+        --r-lg: 18px; --r-pill: 999px;
+        --shadow-xs: 0 2px 8px rgba(10,26,34,0.05);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); padding: 32px 4%; }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .page-head h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--teal-900); display: flex; align-items: center; gap: 10px; }
+    .back-link { text-decoration: none; color: var(--ink-soft); font-weight: 600; font-size: 13.5px; display: inline-flex; align-items: center; gap: 6px; }
+    .back-link:hover { color: var(--teal-700); }
+
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--teal-700); margin: 28px 0 14px; display: flex; align-items: center; gap: 8px; }
+    .section-title:first-of-type { margin-top: 0; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .stat-card { background: var(--surface); border-radius: var(--r-lg); padding: 18px 20px; box-shadow: var(--shadow-xs); }
+    .stat-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--ink); }
+    .stat-sub { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+
+    .ai-card { background: var(--violet-100); border-radius: var(--r-lg); padding: 18px 20px; }
+    .ai-card .stat-label { color: var(--violet-600); }
+    .ai-badge { display: inline-block; background: var(--violet-600); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); margin-bottom: 10px; letter-spacing: .03em; }
+
+    .empty-value { color: var(--ink-faint); font-size: 14px; font-style: italic; }
+
+    .unusual-list { list-style: none; margin-top: 8px; }
+    .unusual-list li { font-size: 12.5px; padding: 6px 0; border-bottom: 1px solid var(--border-soft); color: var(--ink-soft); }
+    .unusual-list li:last-child { border-bottom: none; }
+
+    .disclaimer { font-size: 11.5px; color: var(--ink-faint); margin-top: 20px; padding: 12px 16px; background: var(--surface); border-radius: 12px; border: 1px dashed var(--border); }
+</style>
+</head>
+<body>
+
+    <div class="page-head">
+        <h1><i class="fas fa-chart-line"></i> Business Insights</h1>
+        <a href="/admin-dashboard" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+
+    <div class="section-title"><i class="fas fa-magnifying-glass-chart"></i> Analytics</div>
+    <div class="grid">
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-calendar-star"></i> Highest Revenue Day</div>
+            {% if highest_revenue_day %}
+            <div class="stat-value">₹{{ "{:,.0f}".format(highest_revenue_day[1]) }}</div>
+            <div class="stat-sub">{{ highest_revenue_day[0].strftime('%d %b %Y') }}</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-credit-card"></i> Most Used Payment Method</div>
+            {% if most_used_payment_method %}
+            <div class="stat-value">{{ most_used_payment_method[0] }}</div>
+            <div class="stat-sub">{{ most_used_payment_method[1] }} payments</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-id-badge"></i> Most Active Driver</div>
+            {% if most_active_driver %}
+            <div class="stat-value">{{ most_active_driver[0] }}</div>
+            <div class="stat-sub">{{ most_active_driver[1] }} deliveries</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-crown"></i> Highest Spending Customer</div>
+            {% if highest_spending_customer %}
+            <div class="stat-value">₹{{ "{:,.0f}".format(highest_spending_customer[1]) }}</div>
+            <div class="stat-sub">{{ highest_spending_customer[0] }}</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-scale-balanced"></i> Average Booking Amount</div>
+            <div class="stat-value">₹{{ "{:,.0f}".format(avg_booking_amount) }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-stopwatch"></i> Average Delivery Time</div>
+            {% if avg_delivery_minutes %}
+            <div class="stat-value">{{ avg_delivery_minutes }} min</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-clock"></i> Peak Booking Hour</div>
+            {% if peak_booking_hour %}
+            <div class="stat-value">{{ "%02d:00"|format(peak_booking_hour[0]) }}</div>
+            <div class="stat-sub">{{ peak_booking_hour[1] }} bookings</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-ban"></i> Cancelled Orders</div>
+            <div class="stat-value">{{ cancelled_count }}</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label"><i class="fas fa-rotate-left"></i> Refund Rate</div>
+            <div class="stat-value">{{ refund_rate }}%</div>
+            <div class="stat-sub">of paid bookings</div>
+        </div>
+    </div>
+
+    <div class="section-title"><i class="fas fa-wand-magic-sparkles"></i> AI Insights</div>
+    <div class="grid">
+        <div class="stat-card ai-card">
+            <span class="ai-badge">PATTERN-BASED</span>
+            <div class="stat-label"><i class="fas fa-clock"></i> Predicted Busy Hours</div>
+            {% if busy_hours %}
+            <div class="stat-value">{% for h in busy_hours %}{{ "%02d:00"|format(h) }}{{ ", " if not loop.last }}{% endfor %}</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card ai-card">
+            <span class="ai-badge">PATTERN-BASED</span>
+            <div class="stat-label"><i class="fas fa-droplet"></i> Recommended Tanker Size</div>
+            {% if recommended_tanker_size %}
+            <div class="stat-value">{{ recommended_tanker_size[0] }} L</div>
+            <div class="stat-sub">Booked {{ recommended_tanker_size[1] }} times - most popular</div>
+            {% else %}<div class="empty-value">Not enough data yet</div>{% endif %}
+        </div>
+
+        <div class="stat-card ai-card">
+            <span class="ai-badge">STATISTICAL OUTLIERS</span>
+            <div class="stat-label"><i class="fas fa-triangle-exclamation"></i> Unusually Large Bookings</div>
+            {% if unusual_bookings %}
+            <ul class="unusual-list">
+                {% for b in unusual_bookings %}
+                <li>₹{{ "{:,.0f}".format(b.get('delivery_fee', 0)) }} — {{ b.get('fullname', 'Unknown') }} ({{ b.get('quantity') }} L)</li>
+                {% endfor %}
+            </ul>
+            {% else %}<div class="empty-value">None detected</div>{% endif %}
+        </div>
+
+        <div class="stat-card ai-card">
+            <span class="ai-badge">7-DAY TREND</span>
+            <div class="stat-label"><i class="fas fa-chart-simple"></i> Forecasted Next-Day Revenue</div>
+            <div class="stat-value">₹{{ "{:,.0f}".format(forecast_next_day_revenue) }}</div>
+            <div class="stat-sub">Based on the last 7 days' average</div>
+        </div>
+
+        <div class="stat-card ai-card">
+            <span class="ai-badge">LOAD-BASED</span>
+            <div class="stat-label"><i class="fas fa-truck"></i> Suggested Next Assignment</div>
+            {% if suggested_driver %}
+            <div class="stat-value">{{ suggested_driver[0] }}</div>
+            <div class="stat-sub">{{ suggested_driver[1] }} active order(s) right now - most available</div>
+            {% else %}<div class="empty-value">No approved drivers yet</div>{% endif %}
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        <i class="fas fa-circle-info"></i> "AI Insights" here are rule-based statistics computed directly from your booking
+        data (pattern frequency, trailing averages, and load balancing) - not a trained machine-learning model.
+        They're labelled by method above so it's clear how each number was derived.
+    </div>
+
+</body>
+</html>
