@@ -1,0 +1,57 @@
+name: CI
+
+# Runs automatically:
+#  - on every push to main
+#  - on every pull request targeting main
+# This is what makes the checkmark/X show up on GitHub next to each
+# commit and each PR - nothing needs to be triggered by hand.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Get the code onto the runner (a temporary GitHub-hosted machine)
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # 2) Set up the same Python version the app is built for
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # 3) Install the app's normal dependencies + the test/lint tools
+      #    (requirements-dev.txt pulls in requirements.txt itself, plus
+      #    pytest/mongomock/ruff - see that file for details)
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          pip install ruff
+
+      # 4) Lint - fails the whole job (red X) on real bugs: unused
+      #    imports/variables, undefined names, syntax errors, duplicate
+      #    dict keys. See ruff.toml for exactly which checks are enabled
+      #    and why the rule set is intentionally narrow for now.
+      - name: Lint (ruff)
+        run: ruff check Backend/
+
+      # 5) Tests - fails the job if any of the 32 tests in tests/ break.
+      #    mongomock means this never touches a real database or costs
+      #    a real Mongo connection - it's fully self-contained.
+      #
+      #    Using "python -m pytest" (not the bare "pytest" command) -
+      #    the "-m" form adds the current folder to Python's import
+      #    path, which is what lets "from tests.helpers import ..."
+      #    resolve. The bare "pytest" command doesn't do this and
+      #    fails with "ModuleNotFoundError: No module named 'tests'" -
+      #    caught by actually running this workflow before shipping it,
+      #    not just writing it and hoping.
+      - name: Run tests (pytest)
+        run: python -m pytest -v

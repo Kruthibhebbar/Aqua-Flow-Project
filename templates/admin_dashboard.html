@@ -31,41 +31,42 @@
             border: 1px solid #e5e7eb;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
-        .admin-profile { text-align: center; padding-bottom: 24px; border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 28px; }
+        .admin-profile { text-align: center; padding-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: 14px; }
         .avatar {
-            width: 80px; height: 80px;
+            width: 60px; height: 60px;
             background: linear-gradient(135deg, #ff9966, #ff5e62);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 12px;
-            font-size: 40px; color: white;
+            margin: 0 auto 10px;
+            font-size: 28px; color: white;
             border: 2px solid rgba(255,215,0,0.6);
         }
-        .admin-name { color: #1f2937; font-size: 1.3rem; margin: 8px 0 4px; font-weight: 700; }
-        .admin-role { color: #ff914d; font-size: 0.8rem; font-weight: 500; }
+        .admin-name { color: #1f2937; font-size: 1.1rem; margin: 6px 0 3px; font-weight: 700; }
+        .admin-role { color: #ff914d; font-size: 0.78rem; font-weight: 500; }
         .admin-email { font-size: 0.7rem; color: #4b5563; }
         .admin-login-time { font-size: 0.7rem; color: #6b7280; }
         .logout-link {
             color: #ef4444;
             text-decoration: none;
-            font-size: 0.8rem;
-            margin-top: 12px;
+            font-size: 0.78rem;
+            margin-top: 10px;
             display: inline-block;
             transition: 0.2s;
         }
         .logout-link:hover { color: #dc2626; text-decoration: underline; }
         
         .sidebar nav ul { list-style: none; }
-        .sidebar nav ul li { margin: 18px 0; position: relative; }
+        .sidebar nav ul li { margin: 5px 0; position: relative; }
         .sidebar nav ul li a {
             color: #374151; text-decoration: none; font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 10px 16px;
-            border-radius: 20px;
+            gap: 12px;
+            padding: 8px 14px;
+            border-radius: 16px;
             transition: 0.2s;
             position: relative;
+            font-size: 0.92rem;
         }
         .sidebar nav ul li a:hover, .sidebar nav ul li.active a {
             background: rgba(255, 105, 180, 0.1);
@@ -101,15 +102,16 @@
             font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 10px 16px;
-            border-radius: 20px;
+            gap: 12px;
+            padding: 8px 14px;
+            border-radius: 16px;
             transition: 0.2s;
             position: relative;
             background: transparent;
             border: none;
             box-shadow: none;
             margin: 0;
+            font-size: 0.92rem;
         }
         .live-tracking-link i {
             font-size: 1rem;
@@ -186,15 +188,15 @@
         
         @media (max-width: 768px) {
             .dashboard-layout { flex-direction: column; }
-            .sidebar { width: 100%; position: relative; top: 0; height: auto; max-height: 400px; }
+            .sidebar { width: 100%; position: relative; top: 0; height: auto; max-height: none; overflow-y: visible; }
             .main-content { padding: 20px; }
         }
         .sidebar nav ul li a i {
-            width: 24px;
+            width: 22px;
             text-align: center;
         }
         .sidebar-nav-divider {
-            margin: 20px 0 12px;
+            margin: 12px 0 8px;
             border-top: 1px solid #e2e8f0;
         }
         .sidebar::-webkit-scrollbar { width: 6px; }
@@ -263,7 +265,12 @@
                         Booking Management
                     </a>
                 </li>
-                <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
+                <li>
+                    <a href="/admin/users">
+                        <i class="fas fa-users"></i>
+                        Users
+                    </a>
+                </li>
                 <li class="sidebar-link">
                     <a href="/driver-management">
                         <i class="fas fa-id-card"></i>
@@ -275,6 +282,12 @@
                         <i class="fas fa-user-plus"></i>
                         New Driver Requests
                         <span id="driverRequestDot" class="notification-dot"></span>
+                    </a>
+                </li>
+                <li class="sidebar-link">
+                    <a href="/finance-management">
+                        <i class="fas fa-sack-dollar"></i>
+                        Finance Management
                     </a>
                 </li>
                 <div class="sidebar-nav-divider"></div>
@@ -289,12 +302,6 @@
                     <a href="/coupon-management">
                         <i class="fas fa-tags"></i>
                         Coupons
-                    </a>
-                </li>
-                <li>
-                    <a href="/refund-management">
-                        <i class="fas fa-rotate-left"></i>
-                        Refunds
                     </a>
                 </li>
                 <li>
@@ -337,12 +344,58 @@
             <div class="stat-card"><div class="stat-title"><i class="fas fa-percent"></i> Today's Platform Commission</div><div class="stat-number" id="statTodayCommission">₹{{ "{:,.0f}".format(finance.today_commission) }}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-hand-holding-dollar"></i> Pending Driver Deposits</div><div class="stat-number" id="statPendingDeposits">₹{{ "{:,.0f}".format(finance.pending_driver_deposits) }}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-money-bill-transfer"></i> Pending Driver Payouts</div><div class="stat-number" id="statPendingPayouts">₹{{ "{:,.0f}".format(finance.pending_driver_payouts) }}</div></div>
-            <div class="stat-card"><div class="stat-title"><i class="fas fa-rotate-left"></i> Pending Customer Refunds</div><div class="stat-number" id="statPendingRefunds">₹{{ "{:,.0f}".format(finance.pending_customer_refunds) }}</div></div>
             <div class="stat-card"><div class="stat-title"><i class="fas fa-sack-dollar"></i> Profit (Revenue → Commission → Settlement)</div><div class="stat-number" id="statProfit">₹{{ "{:,.0f}".format(finance.profit) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-receipt"></i> GST Collected</div><div class="stat-number" id="statGstCollected">₹{{ "{:,.0f}".format(ledger_overview.gst_collected) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-calendar-day"></i> Today's Withdrawals</div><div class="stat-number" id="statTodayWithdrawals">₹{{ "{:,.0f}".format(ledger_overview.today_withdrawals) }}</div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-money-bill-wave"></i> Total Withdrawals</div><div class="stat-number" id="statTotalWithdrawals">₹{{ "{:,.0f}".format(ledger_overview.total_withdrawals) }}</div></div>
         </div>
-        <p style="color:#9aa5b1; font-size:13px; margin-top:-6px; margin-bottom:20px;">
-            <i class="fas fa-circle-info"></i> Refunds aren't tracked yet — this will show ₹0 until a refund workflow is built.
-        </p>
+
+        <!-- Payment method split + leaderboards -->
+        <h2 class="page-title" style="font-size:20px; margin-top:10px;"><i class="fas fa-chart-pie water-icon"></i> Payment Split &amp; Leaderboards</h2>
+        <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-mobile-screen-button"></i> Online Payments (Total)</div><div class="stat-number" id="statOnlineTotal">₹{{ "{:,.0f}".format(ledger_overview.online_total) }} <span style="font-size:13px; color:#9aa5b1;">({{ ledger_overview.online_count }})</span></div></div>
+            <div class="stat-card"><div class="stat-title"><i class="fas fa-money-bill"></i> Cash on Delivery (Total)</div><div class="stat-number" id="statCodTotal">₹{{ "{:,.0f}".format(ledger_overview.cod_total) }} <span style="font-size:13px; color:#9aa5b1;">({{ ledger_overview.cod_count }})</span></div></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:30px;">
+            <div class="stat-card" style="text-align:left;">
+                <div class="stat-title" style="margin-bottom:12px;"><i class="fas fa-trophy"></i> Top Drivers (by earnings)</div>
+                {% if top_drivers %}
+                <table style="width:100%; font-size:14px; border-collapse:collapse;">
+                    <thead><tr style="color:#9aa5b1; text-align:left;"><th style="padding:4px 0;">Driver</th><th>Deliveries</th><th>Earned</th></tr></thead>
+                    <tbody>
+                    {% for d in top_drivers %}
+                        <tr style="border-top:1px solid #eef1f4;">
+                            <td style="padding:6px 0;">{{ d.name }}</td>
+                            <td>{{ d.deliveries }}</td>
+                            <td>₹{{ "{:,.0f}".format(d.earned) }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color:#9aa5b1; font-size:13px;">No completed deliveries yet.</p>
+                {% endif %}
+            </div>
+            <div class="stat-card" style="text-align:left;">
+                <div class="stat-title" style="margin-bottom:12px;"><i class="fas fa-crown"></i> Top Customers (by spend)</div>
+                {% if top_customers %}
+                <table style="width:100%; font-size:14px; border-collapse:collapse;">
+                    <thead><tr style="color:#9aa5b1; text-align:left;"><th style="padding:4px 0;">Customer</th><th>Orders</th><th>Spent</th></tr></thead>
+                    <tbody>
+                    {% for c in top_customers %}
+                        <tr style="border-top:1px solid #eef1f4;">
+                            <td style="padding:6px 0;">{{ c.email }}</td>
+                            <td>{{ c.orders }}</td>
+                            <td>₹{{ "{:,.0f}".format(c.total_spent) }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color:#9aa5b1; font-size:13px;">No completed deliveries yet.</p>
+                {% endif %}
+            </div>
+        </div>
 
         <!-- Analytics Charts Section Only (No bookings list, modals, or action buttons) -->
         <div class="analytics-row">
@@ -437,6 +490,11 @@ async function silentUpdateStats() {
             const todayCommissionEl = document.getElementById('statTodayCommission');
             const pendingDepositsEl = document.getElementById('statPendingDeposits');
             const pendingPayoutsEl = document.getElementById('statPendingPayouts');
+            const gstCollectedEl = document.getElementById('statGstCollected');
+            const todayWithdrawalsEl = document.getElementById('statTodayWithdrawals');
+            const totalWithdrawalsEl = document.getElementById('statTotalWithdrawals');
+            const onlineTotalEl = document.getElementById('statOnlineTotal');
+            const codTotalEl = document.getElementById('statCodTotal');
             
             if (pendingEl) pendingEl.innerText = data.pending_orders;
             if (approvedEl) approvedEl.innerText = data.approved_orders;
@@ -450,6 +508,11 @@ async function silentUpdateStats() {
             if (todayCommissionEl && typeof data.today_commission !== 'undefined') todayCommissionEl.innerText = `₹${Number(data.today_commission).toLocaleString('en-IN')}`;
             if (pendingDepositsEl && typeof data.pending_driver_deposits !== 'undefined') pendingDepositsEl.innerText = `₹${Number(data.pending_driver_deposits).toLocaleString('en-IN')}`;
             if (pendingPayoutsEl && typeof data.pending_driver_payouts !== 'undefined') pendingPayoutsEl.innerText = `₹${Number(data.pending_driver_payouts).toLocaleString('en-IN')}`;
+            if (gstCollectedEl && typeof data.gst_collected !== 'undefined') gstCollectedEl.innerText = `₹${Number(data.gst_collected).toLocaleString('en-IN')}`;
+            if (todayWithdrawalsEl && typeof data.today_withdrawals !== 'undefined') todayWithdrawalsEl.innerText = `₹${Number(data.today_withdrawals).toLocaleString('en-IN')}`;
+            if (totalWithdrawalsEl && typeof data.total_withdrawals !== 'undefined') totalWithdrawalsEl.innerText = `₹${Number(data.total_withdrawals).toLocaleString('en-IN')}`;
+            if (onlineTotalEl && typeof data.online_total !== 'undefined') onlineTotalEl.innerText = `₹${Number(data.online_total).toLocaleString('en-IN')}`;
+            if (codTotalEl && typeof data.cod_total !== 'undefined') codTotalEl.innerText = `₹${Number(data.cod_total).toLocaleString('en-IN')}`;
             
             const deliveredVal = data.delivered_orders || 0;
             if (statusChart && statusChart.data.datasets[0]) {

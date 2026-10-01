@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Users | AquaFlow Admin</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/booking-suite.css') }}">
+<style>
+
+  /* =====================================================================
+     Page-specific additions on top of booking-suite.css. Same design
+     tokens (colors, radii, shadows, fonts) as Booking History - nothing
+     redefined here that the shared stylesheet already provides.
+     ===================================================================== */
+
+  /* ---- directory panel (wraps the customer table) ---- */
+  .directory-panel{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--r-lg); box-shadow:var(--shadow-xs);
+    overflow:hidden; margin-bottom:8px;
+  }
+  .directory-head{
+    padding:18px 22px; border-bottom:1px solid var(--line-soft);
+    display:flex; align-items:center; gap:10px;
+  }
+  .directory-head .dir-icon{
+    width:34px; height:34px; border-radius:9px; flex:none;
+    background:var(--blue-bg); color:var(--cobalt);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .directory-head .dir-icon svg{ width:16px; height:16px; }
+  .directory-head h2{
+    font-family:'Space Grotesk',sans-serif; font-size:15.5px; font-weight:700; color:var(--navy);
+  }
+  .directory-head .count-chip{
+    background:var(--paper); color:var(--ink-500); font-size:11px; font-weight:700;
+    padding:3px 10px; border-radius:100px; border:1px solid var(--line);
+  }
+
+  .table-scroll{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; min-width:1160px; }
+  thead{ background:var(--paper); }
+  th{
+    padding:12px 22px; text-align:left; font-size:10.5px; font-weight:700;
+    color:var(--ink-500); text-transform:uppercase; letter-spacing:.55px;
+    white-space:nowrap; border-bottom:1px solid var(--line);
+  }
+  td{
+    padding:15px 22px; border-bottom:1px solid var(--line-soft);
+    font-size:13px; color:var(--ink-900); vertical-align:middle;
+  }
+  tbody tr{ transition:background .12s; }
+  tbody tr:hover{ background:var(--paper); }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr.row-hidden{ display:none; }
+
+  .user-cell{ display:flex; align-items:center; gap:12px; }
+  .user-name{ font-weight:700; color:var(--navy); font-size:13.5px; line-height:1.3; }
+  .user-joined{ font-size:11px; color:var(--ink-400); margin-top:2px; font-weight:600; }
+
+  .contact-line{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-700); font-weight:500; }
+  .contact-line svg{ width:13px; height:13px; color:var(--ink-400); flex:none; }
+  .contact-line + .contact-line{ margin-top:5px; }
+
+  .orders-pills{ display:flex; flex-wrap:wrap; gap:5px; max-width:230px; }
+  .pill{
+    display:inline-flex; align-items:center; padding:4px 10px; border-radius:100px;
+    font-size:10.5px; font-weight:700; white-space:nowrap;
+  }
+  .pill-total{ background:var(--blue-bg); color:var(--cobalt); }
+  .pill-delivered{ background:var(--green-bg); color:var(--green); }
+  .pill-cancelled{ background:var(--red-bg); color:var(--red); }
+  .pill-active{ background:var(--amber-bg); color:var(--amber); }
+
+  .last-order-date{ font-weight:700; color:var(--navy); font-size:12px; }
+  .last-order-driver{ font-size:11.5px; color:var(--ink-500); margin-top:2px; font-weight:500; }
+  .last-order-driver b{ color:var(--cobalt); font-weight:700; }
+  .no-orders{ font-size:12.5px; color:var(--ink-400); font-style:italic; font-weight:500; }
+
+  button.status-pill{
+    font-family:'Inter',sans-serif; border:none; cursor:pointer; transition:filter .12s, transform .12s;
+  }
+  button.status-pill:hover{ filter:brightness(.94); }
+  button.status-pill:active{ transform:scale(.97); }
+  button.status-pill:disabled{ opacity:.6; cursor:not-allowed; }
+
+  .row-actions{ display:flex; gap:8px; }
+  .row-icon-btn{
+    width:33px; height:33px; border-radius:9px; border:1px solid var(--line);
+    background:var(--surface); color:var(--cobalt); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:.15s; flex:none;
+  }
+  .row-icon-btn svg{ width:14px; height:14px; }
+  .row-icon-btn:hover{ background:#F3F7FF; border-color:var(--cobalt); }
+  .row-icon-btn.msg-btn{ color:#7C3AED; }
+  .row-icon-btn.msg-btn:hover{ background:#F5F3FF; border-color:#7C3AED; }
+
+  .no-results-cell{ text-align:center; color:var(--ink-400); padding:40px 10px; font-size:13.5px; font-weight:500; }
+
+  /* ---- modals (history / message / confirm) ---- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(11,21,38,.55);
+    backdrop-filter:blur(4px); z-index:3000; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    background:var(--surface); border-radius:var(--r-lg); width:560px; max-width:100%;
+    max-height:85vh; display:flex; flex-direction:column; box-shadow:var(--shadow-lg);
+    animation:modalIn .18s ease;
+  }
+  @keyframes modalIn{ from{ opacity:0; transform:translateY(10px) scale(.98); } to{ opacity:1; transform:none; } }
+  .modal-header{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:22px 24px; border-bottom:1px solid var(--line-soft);
+  }
+  .modal-title{ font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:700; color:var(--navy); }
+  .modal-subtitle{ font-size:12.5px; color:var(--ink-500); margin-top:4px; font-weight:500; }
+  .modal-close{
+    width:32px; height:32px; border-radius:50%; border:none; background:var(--paper);
+    color:var(--ink-500); cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;
+  }
+  .modal-close svg{ width:14px; height:14px; }
+  .modal-close:hover{ background:var(--line-soft); color:var(--navy); }
+  .modal-body{ padding:20px 24px; overflow-y:auto; }
+  .modal-footer{
+    padding:16px 24px 20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--line-soft);
+  }
+
+  .booking-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--r-md);
+    padding:15px 17px; margin-bottom:11px;
+  }
+  .booking-card:last-child{ margin-bottom:0; }
+  .booking-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:10px; }
+  .booking-date{ font-weight:700; color:var(--navy); font-size:12.5px; display:flex; align-items:center; gap:6px; }
+  .booking-date svg{ width:13px; height:13px; color:var(--ink-400); }
+  .booking-meta{ font-size:12.5px; color:var(--ink-700); display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; }
+  .booking-meta span b{ color:var(--navy); }
+  .booking-meta .full-row{ grid-column:1/-1; }
+  .history-loading, .history-empty{ text-align:center; color:var(--ink-400); padding:38px 10px; font-size:13.5px; font-weight:500; }
+  .history-loading .spin-ico{ display:inline-block; animation:spin .8s linear infinite; margin-right:6px; }
+
+  .msg-target{
+    background:var(--blue-bg); border-radius:var(--r-md); padding:13px 15px;
+    margin-bottom:15px; font-size:13px; color:var(--blue); font-weight:500;
+  }
+  .msg-target b{ color:var(--navy); }
+  #messageText{
+    width:100%; min-height:120px; border:1px solid var(--line); border-radius:var(--r-md);
+    padding:13px 15px; font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical; outline:none; color:var(--ink-900);
+  }
+  #messageText:focus{ border-color:var(--cobalt); }
+  .quick-templates{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .chip{
+    padding:6px 13px; border-radius:100px; background:var(--paper); color:var(--ink-700);
+    font-size:11.5px; font-weight:600; cursor:pointer; border:1px solid var(--line); transition:.15s;
+  }
+  .chip:hover{ background:var(--blue-bg); color:var(--cobalt); border-color:#CBD8F7; }
+
+  /* ---- confirm modal (replaces native confirm()) ---- */
+  .confirm-box{ width:420px; text-align:center; }
+  .confirm-icon-wrap{
+    width:52px; height:52px; border-radius:14px; margin:6px auto 4px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .confirm-icon-wrap svg{ width:24px; height:24px; }
+  .confirm-icon-wrap.danger{ background:var(--red-bg); color:var(--red); }
+  .confirm-icon-wrap.safe{ background:var(--green-bg); color:var(--green); }
+  .confirm-body{ padding:6px 8px 4px; }
+  .confirm-body h3{ font-family:'Space Grotesk',sans-serif; font-size:16.5px; color:var(--navy); margin-bottom:8px; }
+  .confirm-body p{ font-size:13px; color:var(--ink-500); line-height:1.55; }
+  .confirm-footer{ justify-content:center; }
+
+  .btn-danger{ background:var(--red); color:#fff; box-shadow:0 6px 16px rgba(185,28,28,.25); }
+  .btn-danger:hover{ background:#9F1717; }
+
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  @media (max-width:760px){
+    .directory-head{ padding:15px 16px; }
+    th, td{ padding:12px 14px; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="util-bar">
+    <div class="crumb">
+      <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+      <span class="sep">/</span>
+      <span class="current">Users</span>
+    </div>
+    <div class="sync-pill"><span class="sync-dot"></span> Live directory data</div>
+  </div>
+
+  <!-- ================= HEADER ================= -->
+  <div class="top-panel">
+    <div class="header-flex">
+      <div class="title-box">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M17 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" stroke="#8FE8FB" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="7.5" r="3.5" stroke="#8FE8FB" stroke-width="1.6"/><path d="M17.5 10.3a3.3 3.3 0 1 0 0-6.6" stroke="#8FE8FB" stroke-width="1.6" stroke-linecap="round"/><path d="M20.5 20v-1.3a3.7 3.7 0 0 0-2.4-3.5" stroke="#8FE8FB" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <h1>Users</h1>
+          <p>Every registered AquaFlow customer, their orders and account status in one place.</p>
+          <div class="premium-badge">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2s7 7.58 7 12.5A7 7 0 0 1 5 14.5C5 9.58 12 2 12 2Z" stroke="currentColor" stroke-width="1.6"/></svg>
+            AquaFlow Admin
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-on-dark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5m0 0 7-7m-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back to Admin Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= STATS ================= -->
+  <div class="stats-grid">
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">Total users</span>
+        <div class="stat-icon i-blue"><svg viewBox="0 0 24 24" fill="none"><path d="M17 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="7.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M17.5 10.3a3.3 3.3 0 1 0 0-6.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20.5 20v-1.3a3.7 3.7 0 0 0-2.4-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="stat-value">{{ total_users }}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill blue" style="width:100%;"></div></div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">New this month</span>
+        <div class="stat-icon i-aqua"><svg viewBox="0 0 24 24" fill="none"><path d="M16 21v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M19 8v6m3-3h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="stat-value">{{ new_this_month }}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill aqua" style="width:{{ ((new_this_month / total_users * 100) if total_users else 0) | round(0, 'floor') }}%;"></div></div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">Total orders placed</span>
+        <div class="stat-icon i-green"><svg viewBox="0 0 24 24" fill="none"><path d="M21 8 12 3 3 8m18 0-9 5m9-5v9l-9 5m0-9L3 8m9 5v9M3 8v9l9 5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="stat-value">{{ total_orders_all }}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill green" style="width:100%;"></div></div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-label">Blocked accounts</span>
+        <div class="stat-icon i-amber" style="background:var(--red-bg);color:var(--red);"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 20a8 8 0 0 1 12.3-6.7M17 15l4 4m0-4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      </div>
+      <div class="stat-value">{{ blocked_users }}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="background:var(--red);width:{{ ((blocked_users / total_users * 100) if total_users else 0) | round(0, 'floor') }}%;"></div></div>
+    </div>
+  </div>
+
+  <!-- ================= TOOLBAR ================= -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input type="text" id="userSearchInput" placeholder="Search by name, email or phone..." autocomplete="off">
+    </div>
+    <select class="control-select" id="statusFilter">
+      <option value="">All statuses</option>
+      <option value="active">Active</option>
+      <option value="blocked">Blocked</option>
+    </select>
+    <div class="toolbar-divider"></div>
+    <select class="control-select" id="sortFilter">
+      <option value="newest">Newest joined</option>
+      <option value="oldest">Oldest joined</option>
+      <option value="orders">Most orders</option>
+    </select>
+    <button class="btn btn-outline btn-sm" id="resetFiltersBtn">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7M3 12V6m0 6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Reset
+    </button>
+  </div>
+
+  <!-- ================= CUSTOMER DIRECTORY ================= -->
+
+  {% if users %}
+
+  <div class="directory-panel">
+
+    <div class="directory-head">
+      <div class="dir-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <h2>Customer Directory</h2>
+      <span class="count-chip" id="visibleCountChip">{{ users|length }} customer{{ 's' if users|length != 1 else '' }}</span>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Contact</th>
+            <th>Orders</th>
+            <th>Last Order</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          {% for u in users %}
+          <tr data-search="{{ (u.name or '') ~ ' ' ~ (u.email or '') ~ ' ' ~ (u.phone or '') | lower }}"
+              data-status="{{ 'blocked' if u.is_blocked else 'active' }}"
+              data-joined="{{ u.created_at.isoformat() if u.created_at else '' }}"
+              data-orders="{{ u.total_orders }}">
+
+            <td>
+              <div class="user-cell">
+                <div class="avatar">{{ (u.name or "U")[0] | upper }}</div>
+                <div>
+                  <div class="user-name">{{ u.name or "Unnamed User" }}</div>
+                  <div class="user-joined">Joined {{ u.created_at.strftime("%d %b %Y") if u.created_at else "—" }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <div class="contact-line">
+                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.2" stroke="currentColor" stroke-width="1.7"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                {{ u.email or "—" }}
+              </div>
+              <div class="contact-line">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M6.6 10.8a15.6 15.6 0 0 0 6.6 6.6l2.2-2.2a1.2 1.2 0 0 1 1.2-.3c1.3.4 2.7.6 4.1.6.7 0 1.3.6 1.3 1.3V20.7c0 .7-.6 1.3-1.3 1.3C10.6 22 2 13.4 2 3.3 2 2.6 2.6 2 3.3 2H6.9c.7 0 1.3.6 1.3 1.3 0 1.4.2 2.8.6 4.1.1.4 0 .9-.3 1.2L6.6 10.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                {{ u.phone if u.phone else "Not provided" }}
+              </div>
+            </td>
+
+            <td>
+              <div class="orders-pills">
+                <span class="pill pill-total">{{ u.total_orders }} placed</span>
+                <span class="pill pill-delivered">{{ u.delivered_orders }} delivered</span>
+                {% if u.cancelled_orders %}
+                <span class="pill pill-cancelled">{{ u.cancelled_orders }} cancelled</span>
+                {% endif %}
+                {% if u.active_orders %}
+                <span class="pill pill-active">{{ u.active_orders }} active</span>
+                {% endif %}
+              </div>
+            </td>
+
+            <td>
+              {% if u.last_order %}
+              <div class="last-order-date">{{ u.last_order.created_at.strftime("%d %b %Y, %I:%M %p") if u.last_order.created_at else (u.last_order.delivery_date or "—") }}</div>
+              <div class="last-order-driver">Driver: <b>{{ u.last_order.driver_name or "Not Assigned" }}</b></div>
+              {% else %}
+              <span class="no-orders">No orders yet</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <button
+                class="status-pill {{ 'st-cancelled' if u.is_blocked else 'st-delivered' }}"
+                onclick="requestToggleBlock('{{ u._id }}', this)"
+                title="Click to {{ 'unblock' if u.is_blocked else 'block' }} this user"
+              >
+                <span class="dot"></span>
+                {{ "Blocked" if u.is_blocked else "Active" }}
+              </button>
+            </td>
+
+            <td>
+              <div class="row-actions">
+                <button
+                  class="row-icon-btn"
+                  title="View previous booking history"
+                  onclick="openHistoryModal('{{ u._id }}', '{{ (u.name or "User") | replace("'", "") }}')"
+                >
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v5.5M12 8v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+                <button
+                  class="row-icon-btn msg-btn"
+                  title="Send this user a message"
+                  onclick="openMessageModal('{{ u._id }}', '{{ (u.name or "User") | replace("'", "") }}', '{{ u.email or "" }}')"
+                >
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div id="noResultsRow" class="no-results-cell" style="display:none;">No customers match that search.</div>
+    </div>
+
+  </div>
+
+  {% else %}
+
+  <div class="empty-state">
+    <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none"><path d="M17 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="7.5" r="3.5" stroke="currentColor" stroke-width="1.8"/></svg></div>
+    <h3>No users yet</h3>
+    <p>Registered customers will show up here as soon as they sign up.</p>
+  </div>
+
+  {% endif %}
+
+  <div class="page-footer">AquaFlow<span class="dot"></span>{{ total_users }} user{{ 's' if total_users != 1 else '' }} registered</div>
+
+</div>
+
+<!-- ================= BOOKING HISTORY MODAL ================= -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Booking History</div>
+        <div class="modal-subtitle" id="historyModalSubtitle">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('historyModal')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="historyModalBody">
+      <div class="history-loading"><span class="spin-ico">⟳</span> Loading bookings...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MESSAGE MODAL ================= -->
+<div class="modal-overlay" id="messageModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Send Message</div>
+        <div class="modal-subtitle">Delivered straight to their notifications</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('messageModal')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="msg-target">To: <b id="msgTargetName">—</b> &middot; <span id="msgTargetEmail">—</span></div>
+      <textarea id="messageText" placeholder="Type a message for this customer..."></textarea>
+      <div class="quick-templates">
+        <span class="chip" onclick="fillTemplate('Your delivery is on schedule and will arrive as planned. Thank you for choosing AquaFlow!')">On schedule</span>
+        <span class="chip" onclick="fillTemplate('We noticed a delay with your delivery and are working to resolve it as quickly as possible. Sorry for the inconvenience.')">Delay notice</span>
+        <span class="chip" onclick="fillTemplate('Thank you for being a loyal AquaFlow customer! We appreciate you.')">Thank you</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('messageModal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="sendMessageBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= BLOCK / UNBLOCK CONFIRM MODAL (replaces native confirm()) ================= -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box confirm-box">
+    <div class="modal-body confirm-body">
+      <div class="confirm-icon-wrap" id="confirmIconWrap">
+        <svg id="confirmIcon" viewBox="0 0 24 24" fill="none"></svg>
+      </div>
+      <h3 id="confirmTitle">—</h3>
+      <p id="confirmMessage">—</p>
+    </div>
+    <div class="modal-footer confirm-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-sm" id="confirmActionBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+
+  // =========================================
+  // TOASTS
+  // =========================================
+
+  function showToast(message, isError) {
+    const stack = document.getElementById('toastStack');
+    const el = document.createElement('div');
+    el.className = 'toast' + (isError ? ' error' : '');
+    el.innerHTML = `<svg class="t-icon" viewBox="0 0 24 24" fill="none"><path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${message}</span>`;
+    stack.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(6px)'; setTimeout(() => el.remove(), 250); }, 3200);
+  }
+
+  // =========================================
+  // MODAL HELPERS
+  // =========================================
+
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+  });
+
+  // =========================================
+  // SEARCH + STATUS FILTER + SORT (directory table)
+  // =========================================
+
+  const tableBody = document.getElementById('usersTableBody');
+  const searchInput = document.getElementById('userSearchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const sortFilter = document.getElementById('sortFilter');
+  const resetBtn = document.getElementById('resetFiltersBtn');
+  const countChip = document.getElementById('visibleCountChip');
+
+  function allRows() { return tableBody ? Array.from(tableBody.querySelectorAll('tr')) : []; }
+
+  function applyFilters() {
+    if (!tableBody) return;
+    const term = (searchInput?.value || '').trim().toLowerCase();
+    const status = statusFilter?.value || '';
+    let visibleCount = 0;
+
+    allRows().forEach(row => {
+      const haystack = row.getAttribute('data-search') || '';
+      const rowStatus = row.getAttribute('data-status');
+      const matchSearch = !term || haystack.indexOf(term) !== -1;
+      const matchStatus = !status || rowStatus === status;
+      const show = matchSearch && matchStatus;
+      row.classList.toggle('row-hidden', !show);
+      if (show) visibleCount++;
+    });
+
+    const noResults = document.getElementById('noResultsRow');
+    if (noResults) noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    if (countChip) countChip.textContent = visibleCount + ' customer' + (visibleCount !== 1 ? 's' : '');
+
+    applySort();
+  }
+
+  function applySort() {
+    if (!tableBody) return;
+    const value = sortFilter?.value || 'newest';
+    const rows = allRows();
+    rows.sort((a, b) => {
+      if (value === 'orders') {
+        return (parseInt(b.getAttribute('data-orders'), 10) || 0) - (parseInt(a.getAttribute('data-orders'), 10) || 0);
+      }
+      const dateA = new Date(a.getAttribute('data-joined') || 0);
+      const dateB = new Date(b.getAttribute('data-joined') || 0);
+      return value === 'oldest' ? dateA - dateB : dateB - dateA;
+    });
+    rows.forEach(row => tableBody.appendChild(row));
+  }
+
+  searchInput?.addEventListener('input', applyFilters);
+  statusFilter?.addEventListener('change', applyFilters);
+  sortFilter?.addEventListener('change', applySort);
+  resetBtn?.addEventListener('click', () => {
+    if (searchInput) searchInput.value = '';
+    if (statusFilter) statusFilter.value = '';
+    if (sortFilter) sortFilter.value = 'newest';
+    applyFilters();
+  });
+
+  // =========================================
+  // BOOKING HISTORY MODAL
+  // =========================================
+
+  function statusClass(status) {
+    const s = String(status || 'Pending').replace(/\s+/g, '');
+    const map = {
+      Delivered: 'st-delivered', Cancelled: 'st-cancelled', Rejected: 'st-cancelled',
+      Pending: 'st-pending', Approved: 'st-assigned', Accepted: 'st-assigned', OnTheWay: 'st-onway'
+    };
+    return map[s] || 'st-pending';
+  }
+
+  function renderBookingCard(b) {
+    const when = b.created_at || (b.delivery_date + ' ' + b.delivery_time);
+    return `
+      <div class="booking-card">
+        <div class="booking-top">
+          <span class="booking-date"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>${when}</span>
+          <span class="status-pill ${statusClass(b.status)}"><span class="dot"></span>${b.status}</span>
+        </div>
+        <div class="booking-meta">
+          <span>Quantity: <b>${b.quantity || '—'} ${b.water_type ? '· ' + b.water_type : ''}</b></span>
+          <span>Fee: <b>${b.delivery_fee ? '₹' + b.delivery_fee : '—'}</b></span>
+          <span>Driver: <b>${b.driver_name || 'Not Assigned'}</b></span>
+          <span>Truck: <b>${b.truck_number || 'Not Assigned'}</b></span>
+          <span class="full-row">Address: <b>${b.address || '—'}</b></span>
+        </div>
+      </div>
+    `;
+  }
+
+  async function openHistoryModal(userId, userName) {
+    document.getElementById('historyModalSubtitle').textContent = 'Previous bookings for ' + userName;
+    document.getElementById('historyModalBody').innerHTML = '<div class="history-loading"><span class="spin-ico">⟳</span> Loading bookings...</div>';
+    openModal('historyModal');
+
+    try {
+      const res = await fetch('/admin/users/' + userId + '/bookings');
+      const data = await res.json();
+
+      if (!data.success) {
+        document.getElementById('historyModalBody').innerHTML = '<div class="history-empty">Could not load booking history.</div>';
+        return;
+      }
+      if (data.bookings.length === 0) {
+        document.getElementById('historyModalBody').innerHTML = '<div class="history-empty">No previous bookings for this customer yet.</div>';
+        return;
+      }
+      document.getElementById('historyModalBody').innerHTML = data.bookings.map(renderBookingCard).join('');
+    } catch (e) {
+      document.getElementById('historyModalBody').innerHTML = '<div class="history-empty">Something went wrong loading this history.</div>';
+    }
+  }
+
+  // =========================================
+  // MESSAGE MODAL
+  // =========================================
+
+  let currentMessageUserId = null;
+
+  function openMessageModal(userId, userName, email) {
+    currentMessageUserId = userId;
+    document.getElementById('msgTargetName').textContent = userName;
+    document.getElementById('msgTargetEmail').textContent = email;
+    document.getElementById('messageText').value = '';
+    openModal('messageModal');
+    setTimeout(() => document.getElementById('messageText').focus(), 100);
+  }
+
+  function fillTemplate(text) { document.getElementById('messageText').value = text; }
+
+  async function sendMessage() {
+    const text = document.getElementById('messageText').value.trim();
+    if (!text) { showToast('Write a message first', true); return; }
+
+    const btn = document.getElementById('sendMessageBtn');
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = 'Sending...';
+
+    try {
+      const res = await fetch('/admin/users/' + currentMessageUserId + '/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'message=' + encodeURIComponent(text)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast('Message sent to their notifications');
+        closeModal('messageModal');
+      } else {
+        showToast(data.message || 'Could not send message', true);
+      }
+    } catch (e) {
+      showToast('Something went wrong sending this message', true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+
+  // =========================================
+  // BLOCK / UNBLOCK - custom confirm modal (no native confirm())
+  // =========================================
+
+  const BAN_ICON = '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="1.8"/><path d="m5.6 5.6 12.8 12.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>';
+  const CHECK_ICON = '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke="currentColor" stroke-width="1.8"/><path d="m8 12.5 2.6 2.6L16 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>';
+
+  function requestToggleBlock(userId, btn) {
+    const isCurrentlyBlocked = btn.classList.contains('st-cancelled');
+    const iconWrap = document.getElementById('confirmIconWrap');
+    const iconSvg = document.getElementById('confirmIcon');
+    const title = document.getElementById('confirmTitle');
+    const message = document.getElementById('confirmMessage');
+    const actionBtn = document.getElementById('confirmActionBtn');
+
+    if (isCurrentlyBlocked) {
+      iconWrap.className = 'confirm-icon-wrap safe';
+      iconSvg.innerHTML = CHECK_ICON;
+      title.textContent = 'Restore account access?';
+      message.textContent = "This customer will be able to log in and place orders again immediately.";
+      actionBtn.className = 'btn btn-primary btn-sm';
+      actionBtn.textContent = 'Restore Access';
+    } else {
+      iconWrap.className = 'confirm-icon-wrap danger';
+      iconSvg.innerHTML = BAN_ICON;
+      title.textContent = 'Block this user?';
+      message.textContent = "They'll be signed out, won't be able to log in, and won't be able to place new orders until you restore access.";
+      actionBtn.className = 'btn btn-danger btn-sm';
+      actionBtn.textContent = 'Block User';
+    }
+
+    actionBtn.onclick = () => { closeModal('confirmModal'); performToggleBlock(userId, btn); };
+    openModal('confirmModal');
+  }
+
+  async function performToggleBlock(userId, btn) {
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/admin/users/' + userId + '/toggle-block', { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        const row = btn.closest('tr');
+        if (data.is_blocked) {
+          btn.classList.remove('st-delivered');
+          btn.classList.add('st-cancelled');
+          btn.innerHTML = '<span class="dot"></span>Blocked';
+          if (row) row.setAttribute('data-status', 'blocked');
+          showToast('User blocked - they can no longer log in or place orders');
+        } else {
+          btn.classList.remove('st-cancelled');
+          btn.classList.add('st-delivered');
+          btn.innerHTML = '<span class="dot"></span>Active';
+          if (row) row.setAttribute('data-status', 'active');
+          showToast('User restored');
+        }
+        applyFilters();
+      } else {
+        showToast(data.message || 'Could not update status', true);
+      }
+    } catch (e) {
+      showToast('Something went wrong', true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  applySort();
+
+</script>
+
+</body>
+</html>

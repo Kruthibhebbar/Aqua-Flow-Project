@@ -27,7 +27,7 @@
         .timeline { display: flex; justify-content: space-between; position: relative; margin: 34px 0 10px; }
         .timeline::before { content: ''; position: absolute; top: 17px; left: 5%; right: 5%; height: 4px; background: #e9edf2; border-radius: 4px; z-index: 0; }
         .timeline .fill-bar { position: absolute; top: 17px; left: 5%; height: 4px; background: linear-gradient(90deg, #2d7aff, #10b981); border-radius: 4px; z-index: 1; transition: width 0.6s ease; }
-        .tl-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 20%; text-align: center; }
+        .tl-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 16.6667%; text-align: center; }
         .tl-dot { width: 36px; height: 36px; border-radius: 50%; background: #e9edf2; color: #9aa7bd; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid #f0f2f5; transition: all 0.3s ease; }
         .tl-step.done .tl-dot { background: #2d7aff; color: white; }
         .tl-step.current .tl-dot { background: #10b981; color: white; box-shadow: 0 0 0 6px rgba(16,185,129,0.15); }
@@ -71,27 +71,31 @@
             </span>
         </div>
 
-        {% set order_map = {'Pending': 0, 'Approved': 1, 'Assigned': 1, 'Accepted': 2, 'On The Way': 3, 'Arrived': 3, 'Delivered': 4} %}
+        {% set order_map = {'Pending': 0, 'Approved': 1, 'Assigned': 2, 'Accepted': 3, 'On The Way': 4, 'Arrived': 4, 'Delivered': 5} %}
         {% set step_index = order_map.get(booking.status, 0) %}
         <div class="timeline">
-            <div class="fill-bar" style="width: {{ (step_index / 4 * 90) }}%;"></div>
+            <div class="fill-bar" style="width: {{ (step_index / 5 * 90) }}%;"></div>
             <div class="tl-step {% if step_index >= 0 %}done{% endif %} {% if step_index == 0 %}current{% endif %}">
                 <div class="tl-dot"><i class="fa-solid fa-clipboard-check"></i></div>
                 <div class="tl-label">Booked</div>
             </div>
             <div class="tl-step {% if step_index >= 1 %}done{% endif %} {% if step_index == 1 %}current{% endif %}">
+                <div class="tl-dot"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="tl-label">Approved</div>
+            </div>
+            <div class="tl-step {% if step_index >= 2 %}done{% endif %} {% if step_index == 2 %}current{% endif %}">
                 <div class="tl-dot"><i class="fa-solid fa-user-check"></i></div>
                 <div class="tl-label">Driver Assigned</div>
             </div>
-            <div class="tl-step {% if step_index >= 2 %}done{% endif %} {% if step_index == 2 %}current{% endif %}">
+            <div class="tl-step {% if step_index >= 3 %}done{% endif %} {% if step_index == 3 %}current{% endif %}">
                 <div class="tl-dot"><i class="fa-solid fa-thumbs-up"></i></div>
                 <div class="tl-label">Accepted</div>
             </div>
-            <div class="tl-step {% if step_index >= 3 %}done{% endif %} {% if step_index == 3 %}current{% endif %}">
+            <div class="tl-step {% if step_index >= 4 %}done{% endif %} {% if step_index == 4 %}current{% endif %}">
                 <div class="tl-dot"><i class="fa-solid fa-truck-fast"></i></div>
                 <div class="tl-label">On The Way</div>
             </div>
-            <div class="tl-step {% if step_index >= 4 %}done{% endif %} {% if step_index == 4 %}current{% endif %}">
+            <div class="tl-step {% if step_index >= 5 %}done{% endif %} {% if step_index == 5 %}current{% endif %}">
                 <div class="tl-dot"><i class="fa-solid fa-box-open"></i></div>
                 <div class="tl-label">Delivered</div>
             </div>
@@ -146,7 +150,7 @@
             </div>
             <div class="info-cell">
                 <div class="label">Current Status</div>
-                <div class="value" id="liveLocationText">{{ booking.live_location if booking.live_location else 'Waiting For Dispatch' }}</div>
+                <div class="value" id="liveLocationText">{{ booking.status if booking.status else 'Pending' }}</div>
             </div>
         </div>
     </div>
@@ -220,17 +224,18 @@ async function refreshTracking() {
         const liveLocEl = document.getElementById('liveLocationText');
         const etaChip = document.getElementById('etaChip');
 
+        if (data.status) {
+            if (liveLocEl) liveLocEl.textContent = data.status;
+        }
+
         if (data.driver_lat != null && data.driver_lng != null) {
             updateDriverMarker(data.driver_lat, data.driver_lng, data.route_geometry);
 
             if (data.driver_online === false) {
-                if (liveLocEl) liveLocEl.textContent = 'Driver Offline — GPS signal lost';
                 if (etaChip) etaChip.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Driver Offline';
             } else if (data.arrived) {
-                if (liveLocEl) liveLocEl.textContent = 'Driver Arrived';
                 if (etaChip) etaChip.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> Arrived';
             } else if (data.eta_min != null) {
-                if (liveLocEl) liveLocEl.textContent = data.moving_status === 'Stopped' ? 'Stopped en route' : 'En route — live GPS';
                 if (etaChip) etaChip.innerHTML = `<i class="fa-regular fa-hourglass-half"></i> ETA: ${data.eta_min} min (${data.distance_remaining_km} km)`;
             }
 

@@ -1,0 +1,9 @@
+[lint]
+# Starting narrow on purpose: E9 catches actual syntax errors, F catches
+# real bugs (unused imports/variables, undefined names, duplicate dict
+# keys, etc). This deliberately does NOT enable style-only rule sets
+# (import sorting, docstring rules, datetime-timezone conventions, ...) -
+# those are worth turning on later, but doing it on day one would make CI
+# fail on hundreds of pre-existing style choices instead of real bugs,
+# which trains you to ignore red X's instead of trusting them.
+select = ["E9", "F"]

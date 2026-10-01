@@ -4,7 +4,7 @@ business_insights.py
 
 Feature 23 - Analytics: Highest Revenue Day, Most Used Payment Method,
 Most Active Driver, Highest Spending Customer, Average Booking Amount,
-Average Delivery Time, Peak Booking Hour, Cancelled Orders, Refund Rate.
+Average Delivery Time, Peak Booking Hour, Cancelled Orders.
 
 Feature 24 - AI Insights: lightweight, rule-based insights computed
 directly from real booking data (no external ML service, no invented
@@ -88,10 +88,6 @@ def init_business_insights(app, bookings_collection, drivers_collection=None):
         # 8. Cancelled Orders
         cancelled_count = len(cancelled)
 
-        # 9. Refund Rate
-        refunded_or_pending = len([b for b in all_bookings if b.get("refund_status") in ("Requested", "Completed")])
-        refund_rate = round((refunded_or_pending / len(paid)) * 100, 1) if paid else 0
-
         # ============================================================
         # FEATURE 24 - AI INSIGHTS (rule-based, from real data only)
         # ============================================================
@@ -157,7 +153,6 @@ def init_business_insights(app, bookings_collection, drivers_collection=None):
             avg_delivery_minutes=avg_delivery_minutes,
             peak_booking_hour=peak_booking_hour,
             cancelled_count=cancelled_count,
-            refund_rate=refund_rate,
             busy_hours=busy_hours,
             recommended_tanker_size=recommended_tanker_size,
             unusual_bookings=unusual_bookings,

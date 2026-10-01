@@ -2,710 +2,370 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>AquaFlow Driver Profile | Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow Driver Profile</title>
 
-    <!-- Bootstrap 5 + Font Awesome + Google Fonts (Segoe UI fallback) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#f3f8ff; font-family:'Inter','Segoe UI',sans-serif; color:#03203f; }
 
-        body {
-            background: #f3f8ff;
-            font-family: 'Inter', 'Segoe UI', sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* ========== SIDEBAR STYLES ========== */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 290px;
-            height: 100vh;
-            background: linear-gradient(180deg, #03203f, #0b63c8);
-            padding: 30px 20px;
-            overflow-y: auto;
-            z-index: 999;
-            transition: all 0.3s ease;
-        }
-
-        .brand {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-        }
-
-        .brand h1 {
-            font-size: 42px;
-            font-weight: 900;
-            letter-spacing: -1px;
-        }
-
-        .brand p {
-            opacity: 0.8;
-            margin-top: 8px;
-            font-size: 14px;
-        }
-
-        .driver-card {
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 28px;
-            padding: 25px;
-            text-align: center;
-            color: white;
-            margin-bottom: 35px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(2px);
-        }
-
-        .driver-card img {
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 5px solid white;
-            margin-bottom: 18px;
-            background: #fff;
-        }
-
-        .driver-card h3 {
-            font-size: 28px;
-            font-weight: 800;
-        }
-
-        .driver-card p {
-            margin-top: 8px;
-            opacity: 0.85;
-            font-size: 14px;
-        }
-
-        .online-badge {
-            margin-top: 14px;
-            display: inline-block;
-            background: #14d66f;
-            padding: 8px 18px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 13px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .menu-title {
-            color: #b7d9ff;
-            margin-bottom: 18px;
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-        }
-
-        .menu-links a {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            text-decoration: none;
-            color: white;
-            padding: 16px 20px;
-            border-radius: 18px;
-            margin-bottom: 12px;
-            transition: 0.25s;
-            font-weight: 700;
-            font-size: 15px;
-        }
-
-        .menu-links a:hover, .menu-links a.active {
-            background: white;
-            color: #0b63c8;
-            transform: translateX(6px);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.1);
-        }
-
-        .menu-links i {
-            width: 24px;
-            text-align: center;
-            font-size: 20px;
-        }
-
-        /* main content */
-        .main-content {
-            margin-left: 290px;
-            padding: 35px 40px 50px 40px;
-        }
-
-        /* top bar */
-        .topbar {
-            background: white;
-            padding: 22px 30px;
-            border-radius: 32px;
+        /* Slim top bar replaces the sidebar entirely - no fixed-width rail,
+           page uses the full browser width. */
+        .top-nav {
+            background: linear-gradient(135deg, #03203f, #0b63c8);
+            padding: 18px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.05);
-            margin-bottom: 35px;
             flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .topbar h2 {
-            font-size: 32px;
-            font-weight: 800;
-            color: #03203f;
-        }
-
-        .topbar p {
-            color: #6f7d8c;
-            margin-top: 6px;
-            font-weight: 500;
-        }
-
-        .top-actions {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            border: none;
-            border-radius: 24px;
-            padding: 12px 26px;
-            font-weight: 800;
-            color: white;
-            background: linear-gradient(135deg, #0d6efd, #00a6ff);
-            transition: 0.2s;
-            font-size: 14px;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-3px);
-            background: linear-gradient(135deg, #0b5ed7, #0092e6);
-        }
-
-        /* stats */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 25px;
-            margin-bottom: 35px;
-        }
-
-        .stat-box {
-            background: white;
-            border-radius: 28px;
-            padding: 25px;
-            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.05);
-            position: relative;
-            transition: all 0.2s;
-        }
-
-        .stat-icon {
-            width: 65px;
-            height: 65px;
-            border-radius: 22px;
-            background: linear-gradient(135deg, #0d6efd, #00bfff);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-
-        .stat-box h3 {
-            font-size: 42px;
-            font-weight: 900;
-            color: #03203f;
-        }
-
-        .stat-box p {
-            color: #6e7c89;
-            margin-top: 8px;
-            font-weight: 600;
-            font-size: 15px;
-        }
-
-        /* sections grid */
-        .content-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 30px;
-            margin-bottom: 35px;
-        }
-
-        .profile-section, .earnings-section, .delivery-section, .activity-section,
-        .review-section, .vehicle-section, .timeline-section, .documents-section {
-            background: white;
-            border-radius: 32px;
-            padding: 30px;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-        }
-
-        .section-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .section-title h3 {
-            font-size: 26px;
-            font-weight: 800;
-            color: #03203f;
-        }
-
-        .section-title button {
-            border: none;
-            padding: 10px 20px;
-            border-radius: 40px;
-            background: #eef6ff;
-            color: #0d6efd;
-            font-weight: 800;
-            font-size: 13px;
-        }
-
-        .profile-info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .info-card {
-            background: #f7fbff;
-            border-radius: 24px;
-            padding: 20px;
-            border: 1px solid #e5efff;
-        }
-
-        .info-card label {
-            font-size: 12px;
-            font-weight: 800;
-            color: #7c8b99;
-            display: block;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .info-card h5 {
-            font-size: 20px;
-            font-weight: 800;
-            color: #03203f;
-        }
-
-        .progress-wrapper {
-            margin-top: 25px;
-        }
-
-        .progress-title {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-weight: 700;
-            color: #03203f;
-        }
-
-        .custom-progress {
-            height: 12px;
-            background: #dcecff;
-            border-radius: 50px;
-            overflow: hidden;
-        }
-
-        .custom-progress span {
-            display: block;
-            height: 100%;
-            width: 88%;
-            background: linear-gradient(135deg, #0d6efd, #00c6ff);
-            border-radius: 50px;
-        }
-
-        .earnings-cards {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .earning-card {
-            background: linear-gradient(135deg, #03203f, #0d6efd);
-            color: white;
-            border-radius: 24px;
-            padding: 22px;
-        }
-
-        .earning-card h4 {
-            font-size: 18px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .earning-card h2 {
-            font-size: 36px;
-            font-weight: 900;
-        }
-
-        .delivery-list {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .delivery-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f7fbff;
-            padding: 18px 20px;
-            border-radius: 24px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .delivery-left {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .delivery-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #0d6efd, #00c6ff);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 24px;
-        }
-
-        .delivery-text h5 {
-            font-size: 18px;
-            font-weight: 800;
-            color: #03203f;
-        }
-
-        .delivery-text p {
-            color: #6f7d8c;
-            margin-top: 4px;
-            font-size: 13px;
-        }
-
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-weight: 800;
-            font-size: 12px;
-        }
-        .status-active { background: #dfffe9; color: #0c9b4d; }
-        .status-pending { background: #fff4d9; color: #c88700; }
-        .status-complete { background: #e6f1ff; color: #0d6efd; }
-
-        .activity-item {
-            display: flex;
-            gap: 18px;
-            margin-bottom: 24px;
-        }
-        .activity-circle {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0d6efd, #00bfff);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 22px;
-            flex-shrink: 0;
-        }
-        .activity-content h5 {
-            font-size: 18px;
-            font-weight: 800;
-            color: #03203f;
-        }
-        .activity-content p {
-            color: #6f7d8c;
-            margin-top: 6px;
-            font-size: 14px;
-        }
-
-        .review-card {
-            background: #f7fbff;
-            border-radius: 24px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .review-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-        .review-user {
-            display: flex;
-            align-items: center;
             gap: 14px;
         }
-        .review-user img {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            object-fit: cover;
-            background: #ccc;
+        .top-nav .brand { color:#fff; font-weight:900; font-size:22px; letter-spacing:-0.5px; text-decoration:none; }
+        .top-nav .brand span { opacity:0.7; font-weight:600; font-size:14px; margin-left:8px; }
+        .top-nav-links { display:flex; gap:12px; flex-wrap:wrap; }
+        .top-nav-links a {
+            color:#fff; text-decoration:none; font-weight:700; font-size:14px;
+            background:rgba(255,255,255,0.12); padding:10px 20px; border-radius:40px;
+            display:inline-flex; align-items:center; gap:8px; transition:0.2s;
+            border:1px solid rgba(255,255,255,0.18);
         }
-        .review-user h5 { font-size: 18px; font-weight: 800; color: #03203f; }
-        .stars { color: #ffc107; font-size: 14px; }
-        .review-card p { color: #5b6c7c; line-height: 1.6; margin-top: 8px; }
+        .top-nav-links a:hover { background:rgba(255,255,255,0.24); transform:translateY(-2px); }
 
-        .vehicle-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 18px;
-        }
-        .vehicle-box {
-            background: #f7fbff;
-            border-radius: 24px;
-            padding: 20px;
-            text-align: center;
-        }
-        .vehicle-box i { font-size: 38px; color: #0d6efd; margin-bottom: 12px; }
-        .vehicle-box h5 { font-size: 18px; font-weight: 800; color: #03203f; }
-        .vehicle-box p { color: #6f7d8c; margin-top: 6px; font-size: 13px; }
+        .page-wrap { max-width:1440px; margin:0 auto; padding:32px 40px 70px; }
 
-        .timeline {
-            position: relative;
-            padding-left: 32px;
+        .flash-msg {
+            padding:14px 22px; border-radius:18px; font-weight:700; font-size:13.5px; margin-bottom:24px;
         }
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 10px;
-            top: 12px;
-            width: 3px;
-            height: 85%;
-            background: #d9eaff;
-            border-radius: 4px;
-        }
-        .timeline-item {
-            position: relative;
-            margin-bottom: 28px;
-        }
-        .timeline-dot {
-            position: absolute;
-            left: -26px;
-            top: 4px;
-            width: 14px;
-            height: 14px;
-            background: #0d6efd;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 0 2px #cce4ff;
-        }
-        .timeline-content h5 { font-size: 17px; font-weight: 800; color: #03203f; }
-        .timeline-content p { font-size: 13px; color: #6f7d8c; }
+        .flash-success { background:#e1f5ea; color:#157a50; }
+        .flash-danger { background:#fbeae8; color:#c0392b; }
+        .flash-warning, .flash-message { background:#fff6e0; color:#93690b; }
 
-        .documents-grid {
-            display: flex;
-            gap: 18px;
-            flex-wrap: wrap;
+        /* ============ CARD BASE ============ */
+        .card-box {
+            background:#fff; border-radius:26px; padding:30px;
+            box-shadow:0 10px 30px rgba(10,40,80,0.06);
+            transition:box-shadow 0.25s, transform 0.25s;
+            height:100%;
         }
-        .doc-badge {
-            background: #eef6ff;
-            border-radius: 60px;
-            padding: 12px 25px;
-            font-weight: 700;
-            color: #0d6efd;
+        .card-box:hover { box-shadow:0 16px 40px rgba(10,40,80,0.10); }
+
+        .card-title {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:22px; flex-wrap:wrap; gap:12px;
+        }
+        .card-title h3 { font-size:21px; font-weight:800; display:flex; align-items:center; gap:10px; }
+        .card-title h3 i { color:#0d6efd; }
+        .pill-btn {
+            border:none; padding:10px 22px; border-radius:40px; background:#eef6ff; color:#0d6efd;
+            font-weight:800; font-size:13px; cursor:pointer; text-decoration:none; display:inline-block;
+            transition:0.2s;
+        }
+        .pill-btn:hover { background:#dcecff; transform:translateY(-2px); }
+
+        /* ============ PROFILE HEADER ============ */
+        .profile-header {
+            background:linear-gradient(135deg, #03203f, #0b63c8);
+            border-radius:28px; padding:36px 40px; color:#fff;
+            display:flex; justify-content:space-between; align-items:center; gap:24px;
+            flex-wrap:wrap; margin-bottom:28px;
+        }
+        .profile-header-left { display:flex; gap:26px; align-items:center; flex-wrap:wrap; }
+        .profile-header img {
+            width:110px; height:110px; border-radius:50%; object-fit:cover;
+            border:4px solid rgba(255,255,255,0.85); background:#fff; flex-shrink:0;
+        }
+        .profile-header h2 { font-size:28px; font-weight:900; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .verified-badge {
+            font-size:12px; background:#14d66f; padding:4px 12px; border-radius:30px; font-weight:800;
+            display:inline-flex; align-items:center; gap:6px;
+        }
+        .verified-badge.pending { background:#f5a623; }
+        .profile-meta { margin-top:10px; display:flex; gap:18px; flex-wrap:wrap; font-size:14px; opacity:0.92; }
+        .profile-meta span { display:flex; align-items:center; gap:7px; }
+        .online-pill {
+            margin-top:14px; display:inline-flex; align-items:center; gap:8px;
+            background:#14d66f; padding:7px 18px; border-radius:40px; font-weight:800; font-size:13px;
+        }
+        .online-pill.offline { background:rgba(255,255,255,0.18); }
+        .profile-header .pill-btn { background:#fff; color:#0b63c8; font-size:14px; padding:12px 26px; white-space:nowrap; }
+
+        /* ============ STATS ROW ============ */
+        .stats-grid {
+            display:grid; grid-template-columns:repeat(4, 1fr); gap:22px; margin-bottom:28px;
+        }
+        .stat-box { text-align:left; }
+        .stat-icon {
+            width:56px; height:56px; border-radius:18px; background:linear-gradient(135deg,#0d6efd,#00bfff);
+            display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px; margin-bottom:16px;
+        }
+        .stat-box h3 { font-size:32px; font-weight:900; }
+        .stat-box p { color:#6e7c89; margin-top:6px; font-weight:600; font-size:14px; }
+
+        /* ============ TWO-COL GRIDS ============ */
+        .two-col-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; align-items:stretch; }
+
+        .info-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .info-field label { font-size:11.5px; font-weight:800; color:#8593a1; text-transform:uppercase; letter-spacing:0.6px; display:block; margin-bottom:6px; }
+        .info-field h5 { font-size:16px; font-weight:700; word-break:break-word; }
+
+        .progress-wrapper { margin-top:22px; }
+        .progress-title { display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:#6e7c89; margin-bottom:8px; }
+        .custom-progress { height:10px; border-radius:20px; background:#eef1f6; overflow:hidden; }
+        .custom-progress span { display:block; height:100%; background:linear-gradient(90deg,#0d6efd,#00bfff); border-radius:20px; }
+
+        .vehicle-visual {
+            display:flex; align-items:center; justify-content:center; gap:14px;
+            background:#f7fbff; border:1px solid #e5efff; border-radius:20px; padding:14px; margin-bottom:18px;
+        }
+        .vehicle-visual i { font-size:32px; color:#0d6efd; }
+        .vehicle-visual span { font-weight:800; font-size:15px; color:#03203f; }
+
+        /* ============ EDIT FORM ============ */
+        #editProfileForm { display:none; margin-top:8px; }
+        .form-field label { font-size:11.5px; font-weight:800; color:#7c8b99; text-transform:uppercase; letter-spacing:0.6px; display:block; margin-bottom:8px; }
+        .form-field input, .form-field select {
+            width:100%; padding:12px 14px; border-radius:14px; border:1.5px solid #dee2e6; font-size:14px; font-family:inherit;
+        }
+        .form-field input:focus, .form-field select:focus { outline:none; border-color:#0d6efd; }
+        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px; }
+        .btn-primary-flat {
+            border:none; background:linear-gradient(135deg,#0d6efd,#00a6ff); color:#fff; font-weight:800;
+            padding:12px 28px; border-radius:40px; cursor:pointer; font-size:14px;
+        }
+        .btn-primary-flat:hover { transform:translateY(-2px); }
+        .btn-secondary-flat {
+            border:1px solid #e5efff; background:#fff; color:#6f7d8c; font-weight:700;
+            padding:12px 24px; border-radius:40px; cursor:pointer; font-size:14px; margin-left:10px;
         }
 
+        /* ============ DOCUMENTS ============ */
+        .doc-row {
+            display:flex; justify-content:space-between; align-items:center; gap:14px;
+            padding:16px 18px; border-radius:18px; background:#f7fbff; border:1px solid #e5efff;
+            margin-bottom:14px; flex-wrap:wrap;
+        }
+        .doc-row:last-child { margin-bottom:0; }
+        .doc-left { display:flex; align-items:center; gap:14px; }
+        .doc-left i { font-size:22px; color:#0d6efd; width:30px; text-align:center; }
+        .doc-left h5 { font-size:15px; font-weight:800; }
+        .doc-left p { font-size:12.5px; color:#8593a1; margin-top:3px; }
+        .doc-status { font-size:11.5px; font-weight:800; padding:5px 12px; border-radius:30px; }
+        .doc-status.verified { background:#e1f5ea; color:#157a50; }
+        .doc-status.pending { background:#fff6e0; color:#93690b; }
+        .doc-status.missing { background:#f1f3f6; color:#7c8b99; }
+        .doc-actions { display:flex; align-items:center; gap:10px; }
+        .doc-actions label.pill-btn { margin:0; }
+        .doc-actions input[type=file] { display:none; }
+
+        /* ============ ACTIVITY ============ */
+        .activity-row { display:flex; gap:16px; align-items:flex-start; padding:14px 0; border-bottom:1px solid #f0f3f8; }
+        .activity-row:last-child { border-bottom:none; padding-bottom:0; }
+        .activity-icon {
+            width:42px; height:42px; border-radius:14px; background:#eef6ff; color:#0d6efd;
+            display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+        }
+        .activity-row h5 { font-size:14.5px; font-weight:800; }
+        .activity-row p { font-size:13px; color:#8593a1; margin-top:3px; }
+
+        .empty-note { color:#8593a1; text-align:center; padding:22px 0; font-size:14px; }
+
+        footer { text-align:center; padding:30px 0 10px; color:#8593a1; font-size:13px; }
+
+        /* ============ RESPONSIVE ============ */
         @media (max-width: 1100px) {
-            .sidebar { width: 260px; }
-            .main-content { margin-left: 260px; padding: 25px; }
-            .stats-grid { gap: 18px; }
-            .content-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns:repeat(2, 1fr); }
+            .two-col-grid { grid-template-columns:1fr; }
         }
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); width: 260px; }
-            .main-content { margin-left: 0; padding: 20px; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .profile-info-grid { grid-template-columns: 1fr; }
+        @media (max-width: 700px) {
+            .page-wrap { padding:24px 18px 50px; }
+            .top-nav { padding:16px 20px; }
+            .stats-grid { grid-template-columns:1fr; }
+            .info-row, .form-grid { grid-template-columns:1fr; }
+            .profile-header { padding:28px 24px; }
+            .profile-header-left { gap:16px; }
+            .profile-header img { width:84px; height:84px; }
         }
-        footer { text-align: center; margin-top: 20px; font-size: 13px; color: #7c8b99; }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="brand">
-        <h1>💧 AquaFlow</h1>
-        <p>delivery excellence</p>
-    </div>
-    <div class="driver-card">
-        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Driver Avatar">
-        <h3>Daniel Costa</h3>
-        <p>⭐ 4.92 | 358 deliveries</p>
-        <div class="online-badge"><i class="fas fa-circle" style="font-size: 10px; margin-right: 6px;"></i> Online · Available</div>
-    </div>
-    <div class="menu-title">MAIN NAVIGATION</div>
-    <div class="menu-links">
-        <a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <a href="#"><i class="fas fa-truck"></i> My Deliveries</a>
-        <a href="#"><i class="fas fa-chart-line"></i> Earnings</a>
-        <a href="#"><i class="fas fa-calendar-alt"></i> Schedule</a>
-        <a href="#"><i class="fas fa-cog"></i> Settings</a>
-        <a href="#"><i class="fas fa-headset"></i> Support</a>
+<div class="top-nav">
+    <a href="/driver-dashboard" class="brand">AquaFlow <span>Driver</span></a>
+    <div class="top-nav-links">
+        <a href="/driver-dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/driver-earnings"><i class="fas fa-chart-line"></i> Earnings</a>
+        <a href="/driver-notifications"><i class="fas fa-bell"></i> Notifications</a>
+        <a href="/driver-logout"><i class="fas fa-arrow-right-from-bracket"></i> Logout</a>
     </div>
 </div>
 
-<div class="main-content">
-    <div class="topbar">
-        <div>
-            <h2>Driver Dashboard</h2>
-            <p><i class="fas fa-map-marker-alt" style="color:#0d6efd;"></i> San Francisco, CA · Today, May 15, 2026</p>
+<div class="page-wrap">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- ============ 1. PROFILE HEADER ============ -->
+    <div class="profile-header">
+        <div class="profile-header-left">
+            <img src="{{ ('/' + driver.photo) if driver.photo else 'https://ui-avatars.com/api/?background=ffffff&color=0b63c8&size=110&name=' + (driver.name|default('Driver'))|urlencode }}" alt="Driver photo">
+            <div>
+                <h2>
+                    {{ driver.name if driver.name else 'Driver' }}
+                    {% if is_verified %}
+                    <span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span>
+                    {% else %}
+                    <span class="verified-badge pending"><i class="fas fa-clock"></i> {{ registration_status }}</span>
+                    {% endif %}
+                </h2>
+                <div class="profile-meta">
+                    <span><i class="fas fa-id-badge"></i> {{ driver_id }}</span>
+                    <span><i class="fas fa-calendar-alt"></i> Member since {{ driver.joined_at.strftime('%b %Y') if driver.joined_at else '—' }}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> {{ driver.address if driver.address else 'Address not set' }}</span>
+                </div>
+                {% if driver.online_status == 'Online' %}
+                <div class="online-pill"><i class="fas fa-circle" style="font-size:9px;"></i> Online</div>
+                {% else %}
+                <div class="online-pill offline"><i class="fas fa-circle" style="font-size:9px;"></i> Offline</div>
+                {% endif %}
+            </div>
         </div>
-        <div class="top-actions">
-            <button class="action-btn"><i class="fas fa-play-circle"></i> Start Shift</button>
-            <button class="action-btn" style="background: white; color:#0b63c8; border:1px solid #cde2ff;"><i class="fas fa-history"></i> History</button>
-        </div>
+        <button type="button" class="pill-btn" onclick="toggleEditForm()"><i class="fas fa-edit"></i> Edit Profile</button>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- ============ 2. STATS ROW ============ -->
     <div class="stats-grid">
-        <div class="stat-box"><div class="stat-icon"><i class="fas fa-truck-fast"></i></div><h3>142</h3><p>Total Deliveries</p></div>
-        <div class="stat-box"><div class="stat-icon"><i class="fas fa-dollar-sign"></i></div><h3>$3,284</h3><p>Total Earnings</p></div>
-        <div class="stat-box"><div class="stat-icon"><i class="fas fa-clock"></i></div><h3>98%</h3><p>On-Time Rate</p></div>
-        <div class="stat-box"><div class="stat-icon"><i class="fas fa-star"></i></div><h3>4.92</h3><p>Rating (254 reviews)</p></div>
+        <div class="card-box stat-box"><div class="stat-icon"><i class="fas fa-truck-fast"></i></div><h3>{{ driver.total_deliveries if driver.total_deliveries else 0 }}</h3><p>Total Deliveries</p></div>
+        <div class="card-box stat-box"><div class="stat-icon"><i class="fas fa-indian-rupee-sign"></i></div><h3>₹{{ '{:,}'.format(driver.total_earnings if driver.total_earnings else 0) }}</h3><p>Total Earnings</p></div>
+        <div class="card-box stat-box"><div class="stat-icon"><i class="fas fa-clock"></i></div><h3>{% if completion_rate is not none %}{{ completion_rate }}%{% else %}—{% endif %}</h3><p>Completion Rate</p></div>
+        <div class="card-box stat-box"><div class="stat-icon"><i class="fas fa-star"></i></div><h3>{{ driver.average_rating if driver.average_rating else '5.0' }}</h3><p>Driver Rating</p></div>
     </div>
 
-    <div class="content-grid">
-        <!-- Left column -->
-        <div>
-            <!-- Profile Info Section -->
-            <div class="profile-section">
-                <div class="section-title"><h3><i class="fas fa-user-circle"></i> Personal Info</h3><button><i class="fas fa-edit"></i> Edit</button></div>
-                <div class="profile-info-grid">
-                    <div class="info-card"><label>Full Name</label><h5>Daniel M. Costa</h5></div>
-                    <div class="info-card"><label>Driver ID</label><h5>AF-DR-8723</h5></div>
-                    <div class="info-card"><label>Phone</label><h5>+1 (415) 876-2390</h5></div>
-                    <div class="info-card"><label>Zone</label><h5>Downtown & Marina</h5></div>
-                </div>
-                <div class="progress-wrapper">
-                    <div class="progress-title"><span>✅ Profile completion</span><span>88%</span></div>
-                    <div class="custom-progress"><span style="width:88%"></span></div>
-                </div>
+    <!-- ============ 3 & 4. PERSONAL INFO + VEHICLE INFO ============ -->
+    <div class="two-col-grid">
+        <div class="card-box">
+            <div class="card-title"><h3><i class="fas fa-user-circle"></i> Personal Information</h3><button type="button" class="pill-btn" onclick="toggleEditForm()"><i class="fas fa-edit"></i> Edit</button></div>
+            <div class="info-row">
+                <div class="info-field"><label>Full Name</label><h5>{{ driver.name if driver.name else 'Not set' }}</h5></div>
+                <div class="info-field"><label>Email</label><h5>{{ driver.email }}</h5></div>
+                <div class="info-field"><label>Phone</label><h5>{{ driver.phone if driver.phone else 'Not set' }}</h5></div>
+                <div class="info-field"><label>Emergency Contact</label><h5>{{ driver.emergency_contact if driver.emergency_contact else 'Not set' }}</h5></div>
             </div>
-
-            <!-- Active Deliveries -->
-            <div class="delivery-section">
-                <div class="section-title"><h3><i class="fas fa-boxes"></i> Active Deliveries</h3><button>View All</button></div>
-                <div class="delivery-list">
-                    <div class="delivery-item"><div class="delivery-left"><div class="delivery-icon"><i class="fas fa-water"></i></div><div class="delivery-text"><h5>Order #AF-8821</h5><p>12 L water packs · 2.3 mi</p></div></div><div class="status-badge status-active">In Progress</div></div>
-                    <div class="delivery-item"><div class="delivery-left"><div class="delivery-icon"><i class="fas fa-tint"></i></div><div class="delivery-text"><h5>Order #AF-9112</h5><p>Premium 5-gal bottles · 1.8 mi</p></div></div><div class="status-badge status-pending">Pickup soon</div></div>
-                    <div class="delivery-item"><div class="delivery-left"><div class="delivery-icon"><i class="fas fa-hand-holding-water"></i></div><div class="delivery-text"><h5>Order #AF-9290</h5><p>Sparkling water case · 0.9 mi</p></div></div><div class="status-badge status-complete">Delivered (10 min ago)</div></div>
-                </div>
+            <div class="info-row" style="margin-top:16px;">
+                <div class="info-field" style="grid-column:1 / -1;"><label>Address</label><h5>{{ driver.address if driver.address else 'Not set' }}</h5></div>
             </div>
-
-            <!-- Recent Activity -->
-            <div class="activity-section">
-                <div class="section-title"><h3><i class="fas fa-bell"></i> Recent Activity</h3></div>
-                <div class="activity-item"><div class="activity-circle"><i class="fas fa-check"></i></div><div class="activity-content"><h5>Delivery Completed #AF-8910</h5><p>May 15, 10:24 AM · Earned $14.50 + tip $3.20</p></div></div>
-                <div class="activity-item"><div class="activity-circle"><i class="fas fa-chart-simple"></i></div><div class="activity-content"><h5>Weekly Bonus Achieved</h5><p>5-star rating streak — +$50 added to wallet</p></div></div>
-                <div class="activity-item"><div class="activity-circle"><i class="fas fa-phone-alt"></i></div><div class="activity-content"><h5>Support Ticket Resolved</h5><p>Vehicle document verified successfully</p></div></div>
-            </div>
-
-            <!-- Customer Reviews -->
-            <div class="review-section">
-                <div class="section-title"><h3><i class="fas fa-star-half-alt"></i> Recent Reviews</h3></div>
-                <div class="review-card"><div class="review-header"><div class="review-user"><img src="https://randomuser.me/api/portraits/women/68.jpg" alt="user"><h5>Emily Watson</h5></div><div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div></div><p>“Daniel was super professional, delivered my water early and even helped carry inside. Amazing service!”</p></div>
-                <div class="review-card"><div class="review-header"><div class="review-user"><img src="https://randomuser.me/api/portraits/men/45.jpg" alt="user"><h5>Michael Chen</h5></div><div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div></div><p>“Great communication and fast delivery. AquaFlow is lucky to have him!”</p></div>
+            <div class="progress-wrapper">
+                <div class="progress-title"><span>{% if profile_completion == 100 %}✅{% else %}⚠️{% endif %} Profile completion</span><span>{{ profile_completion }}%</span></div>
+                <div class="custom-progress"><span style="width:{{ profile_completion }}%"></span></div>
             </div>
         </div>
 
-        <!-- Right column -->
-        <div>
-            <!-- Earnings Overview -->
-            <div class="earnings-section">
-                <div class="section-title"><h3><i class="fas fa-wallet"></i> Earnings</h3><button>Withdraw</button></div>
-                <div class="earnings-cards">
-                    <div class="earning-card"><h4>This Week</h4><h2>$587</h2><p>+12% vs last week</p></div>
-                    <div class="earning-card"><h4>This Month</h4><h2>$2,140</h2><p>Goal: $2,800</p></div>
-                </div>
-                <div class="progress-wrapper" style="margin-top: 20px;"><div class="progress-title"><span>Monthly target progress</span><span>76%</span></div><div class="custom-progress"><span style="width:76%"></span></div></div>
-            </div>
-
-            <!-- Vehicle Details -->
-            <div class="vehicle-section">
-                <div class="section-title"><h3><i class="fas fa-truck"></i> My Vehicle</h3><button>Update</button></div>
-                <div class="vehicle-grid">
-                    <div class="vehicle-box"><i class="fas fa-car-side"></i><h5>Tesla Model Y</h5><p>License: 8FLA923</p></div>
-                    <div class="vehicle-box"><i class="fas fa-temperature-low"></i><h5>Refrigerated</h5><p>Water-safe cargo</p></div>
-                    <div class="vehicle-box"><i class="fas fa-battery-full"></i><h5>EV Certified</h5><p>Range 280mi</p></div>
-                </div>
-            </div>
-
-            <!-- Timeline / Shift Schedule -->
-            <div class="timeline-section">
-                <div class="section-title"><h3><i class="fas fa-timeline"></i> Today's Timeline</h3></div>
-                <div class="timeline">
-                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><h5>08:30 AM – Shift Started</h5><p>Vehicle inspection passed</p></div></div>
-                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><h5>09:15 AM – First delivery completed</h5><p>Order #AF-8712 to Sunset Blvd</p></div></div>
-                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><h5>12:30 PM – Lunch Break</h5><p>30 min off duty</p></div></div>
-                    <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-content"><h5>04:00 PM – Shift End (expected)</h5><p>5 more scheduled deliveries</p></div></div>
-                </div>
-            </div>
-
-            <!-- Documents / Certifications -->
-            <div class="documents-section">
-                <div class="section-title"><h3><i class="fas fa-id-card"></i> Documents</h3><button>Upload</button></div>
-                <div class="documents-grid">
-                    <div class="doc-badge"><i class="fas fa-check-circle" style="color:#14d66f;"></i> Driver License</div>
-                    <div class="doc-badge"><i class="fas fa-check-circle" style="color:#14d66f;"></i> Insurance</div>
-                    <div class="doc-badge"><i class="fas fa-clock"></i> Medical Cert (pending)</div>
-                </div>
-                <p style="font-size:13px; margin-top:18px; color:#6f7d8c;"><i class="fas fa-shield-alt"></i> All documents encrypted & verified by AquaFlow.</p>
+        <div class="card-box">
+            <div class="card-title"><h3><i class="fas fa-truck"></i> Vehicle Information</h3><button type="button" class="pill-btn" onclick="toggleEditForm()"><i class="fas fa-edit"></i> Update Vehicle</button></div>
+            <div class="vehicle-visual"><i class="fas fa-truck-monster"></i> <span>Water Delivery Vehicle</span></div>
+            <div class="info-row">
+                <div class="info-field"><label>Vehicle Number</label><h5>{{ driver.truck_number if driver.truck_number else 'Not set' }}</h5></div>
+                <div class="info-field"><label>Tank Capacity</label><h5>{{ driver.truck_capacity if driver.truck_capacity else 'Not set' }}</h5></div>
+                <div class="info-field"><label>License Number</label><h5>{{ driver.license_number if driver.license_number else 'Not set' }}</h5></div>
+                <div class="info-field"><label>Registration Status</label><h5>{{ registration_status }}</h5></div>
             </div>
         </div>
     </div>
-    
+
+    <!-- ============ SHARED EDIT FORM ============ -->
+    <div class="card-box" id="editProfileForm">
+        <div class="card-title"><h3><i class="fas fa-pen"></i> Edit Profile &amp; Vehicle</h3></div>
+        <form action="{{ url_for('update_driver_profile') }}" method="POST" enctype="multipart/form-data">
+            <div class="form-grid">
+                <div class="form-field"><label>Phone</label><input type="text" name="phone" value="{{ driver.phone if driver.phone else '' }}"></div>
+                <div class="form-field"><label>Address</label><input type="text" name="address" value="{{ driver.address if driver.address else '' }}"></div>
+                <div class="form-field"><label>Emergency Contact</label><input type="text" name="emergency_contact" value="{{ driver.emergency_contact if driver.emergency_contact else '' }}"></div>
+                <div class="form-field"><label>Photo</label><input type="file" name="photo" accept="image/*"></div>
+                <div class="form-field"><label>Vehicle Number</label><input type="text" name="truck_number" value="{{ driver.truck_number if driver.truck_number else '' }}"></div>
+                <div class="form-field"><label>Tank Capacity</label><input type="text" name="truck_capacity" value="{{ driver.truck_capacity if driver.truck_capacity else '' }}"></div>
+                <div class="form-field"><label>License Number</label><input type="text" name="license_number" value="{{ driver.license_number if driver.license_number else '' }}"></div>
+                <div class="form-field"><label>Years of Experience</label><input type="number" min="0" name="experience_years" value="{{ driver.experience_years if driver.experience_years else 0 }}"></div>
+            </div>
+            <button type="submit" class="btn-primary-flat"><i class="fas fa-check"></i> Save Changes</button>
+            <button type="button" class="btn-secondary-flat" onclick="toggleEditForm()">Cancel</button>
+        </form>
+    </div>
+
+    <!-- ============ 5 & 6. DOCUMENTS + RECENT ACTIVITY ============ -->
+    <div class="two-col-grid" style="margin-top:24px;">
+        <div class="card-box">
+            <div class="card-title"><h3><i class="fas fa-id-card"></i> Documents</h3></div>
+            {% for dtype, dlabel, dicon in [('driving_license','Driving License','fa-id-card'), ('aadhaar','Aadhaar','fa-address-card'), ('vehicle_rc','Vehicle RC','fa-file-lines')] %}
+            {% set doc = documents.get(dtype) %}
+            <div class="doc-row">
+                <div class="doc-left">
+                    <i class="fas {{ dicon }}"></i>
+                    <div>
+                        <h5>{{ dlabel }}</h5>
+                        <p>{% if doc %}Uploaded {{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else '' }}{% else %}Not uploaded yet{% endif %}</p>
+                    </div>
+                </div>
+                <div class="doc-actions">
+                    {% if doc %}
+                        <span class="doc-status {% if doc.status == 'Verified' %}verified{% else %}pending{% endif %}">{{ doc.status }}</span>
+                        <a href="/{{ doc.file_path }}" target="_blank" class="pill-btn">View</a>
+                    {% else %}
+                        <span class="doc-status missing">Not Uploaded</span>
+                    {% endif %}
+                    <form action="/upload-document" method="POST" enctype="multipart/form-data" style="display:inline;">
+                        <input type="hidden" name="document_type" value="{{ dtype }}">
+                        <label class="pill-btn" style="background:#f1f3f6; color:#03203f;">
+                            {{ 'Replace' if doc else 'Upload' }}
+                            <input type="file" name="document" accept=".png,.jpg,.jpeg,.webp,.pdf" onchange="this.form.submit()">
+                        </label>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="card-box">
+            <div class="card-title"><h3><i class="fas fa-bell"></i> Recent Activity</h3></div>
+            {% for a in activity_feed %}
+            <div class="activity-row">
+                <div class="activity-icon">
+                    {% if a.type == 'Delivery Completed' %}<i class="fas fa-check"></i>
+                    {% elif a.type == 'Order Accepted' %}<i class="fas fa-truck-fast"></i>
+                    {% elif a.type == 'Login' %}<i class="fas fa-right-to-bracket"></i>
+                    {% elif a.type == 'Vehicle Updated' %}<i class="fas fa-truck"></i>
+                    {% else %}<i class="fas fa-user-pen"></i>{% endif %}
+                </div>
+                <div>
+                    <h5>{{ a.type }}{% if a.detail %} — {{ a.detail }}{% endif %}</h5>
+                    <p>{{ a.at.strftime('%b %d, %I:%M %p') }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-note">No recent activity yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
     <footer>
         <p>© 2026 AquaFlow Delivery Solutions | Driver excellence program | Need help? <strong>support@aquaflow.com</strong></p>
     </footer>
 </div>
 
-<!-- Optional Bootstrap JS for toggles (not needed but adds responsiveness) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // simple console greeting and mock interactive
-    (function() {
-        console.log("AquaFlow Driver Dashboard — Profile ready.");
-        const startBtn = document.querySelector('.action-btn:first-child');
-        if(startBtn) {
-            startBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert("✅ Shift started! You are now active for deliveries. Stay safe on the road.");
-            });
-        }
-        // Edit profile demo
-        const editBtns = document.querySelectorAll('.section-title button');
-        if(editBtns.length) {
-            editBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    if(btn.innerText.includes("Edit") || btn.innerText.includes("Update")) {
-                        e.preventDefault();
-                        alert("✏️ Profile editing panel will open soon (demo version).");
-                    }
-                });
-            });
-        }
-    })();
+    function toggleEditForm() {
+        const form = document.getElementById('editProfileForm');
+        if (!form) return;
+        const isHidden = form.style.display === 'none' || !form.style.display;
+        form.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 </script>
 </body>
 </html>

@@ -38,6 +38,8 @@ from datetime import datetime
 
 from flask import request, redirect, url_for, session, flash, render_template, jsonify
 
+from payment_ledger import log_transaction
+
 logger = logging.getLogger(__name__)
 
 _RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders"
@@ -82,7 +84,8 @@ def _create_order(amount_rupees, receipt):
         return None
 
 
-def init_razorpay_payments(app, bookings_collection, settings_collection, notifications_collection=None):
+def init_razorpay_payments(app, bookings_collection, settings_collection, notifications_collection=None,
+                            payment_transactions_collection=None):
 
     # =========================================
     # CHECKOUT PAGE - creates the Razorpay order
@@ -183,6 +186,18 @@ def init_razorpay_payments(app, bookings_collection, settings_collection, notifi
         ).hexdigest()
 
         if not hmac.compare_digest(expected_signature, razorpay_signature):
+            log_transaction(
+                payment_transactions_collection,
+                type="booking_payment",
+                status="Verification Failed",
+                amount=None,
+                booking_id=booking_id,
+                user_email=session.get("user_email"),
+                gateway="razorpay",
+                razorpay_order_id=razorpay_order_id,
+                razorpay_payment_id=razorpay_payment_id,
+                razorpay_signature=razorpay_signature,
+            )
             return jsonify({"success": False, "message": "Payment verification failed"}), 400
 
         try:
@@ -193,6 +208,58 @@ def init_razorpay_payments(app, bookings_collection, settings_collection, notifi
 
         if not booking_doc or booking_doc.get("user_email") != session["user_email"]:
             return jsonify({"success": False, "message": "Booking not found"}), 404
+
+        # -----------------------------------------------------------
+        # SECURITY: confirm this order was actually created FOR this
+        # booking. Without this check, a valid signature obtained for
+        # one booking (even a cheap one the customer legitimately
+        # paid for) could be replayed against ANY other booking_id the
+        # same user owns - the HMAC would still verify (it's a real,
+        # correctly-signed order/payment pair), but it was never
+        # issued for this booking. This is the check that closes that
+        # hole: the order id must match what /checkout stored on this
+        # exact booking when the order was created.
+        # -----------------------------------------------------------
+        if booking_doc.get("razorpay_order_id") != razorpay_order_id:
+            logger.warning(
+                "Razorpay order/booking mismatch: booking %s expected order %s, got %s (user %s)",
+                booking_id, booking_doc.get("razorpay_order_id"), razorpay_order_id, session.get("user_email")
+            )
+            log_transaction(
+                payment_transactions_collection,
+                type="booking_payment",
+                status="Verification Failed",
+                amount=None,
+                booking_id=booking_id,
+                user_email=session.get("user_email"),
+                gateway="razorpay",
+                razorpay_order_id=razorpay_order_id,
+                razorpay_payment_id=razorpay_payment_id,
+                notes="Order/booking mismatch - possible replay attempt",
+            )
+            return jsonify({"success": False, "message": "Payment does not match this booking"}), 400
+
+        # IDEMPOTENCY: a double-click, a browser retry, or Razorpay
+        # re-firing the same success callback would otherwise re-run
+        # everything below - re-crediting nothing (booking money isn't
+        # double-charged) but duplicating the ledger entry and
+        # resending the "Payment Successful" notification every time.
+        # If this exact booking is already marked paid, just confirm
+        # success without doing any of that again.
+        if booking_doc.get("payment_status") == "Paid (Online)":
+            return jsonify({"success": True, "message": "Already verified"})
+
+        # Extra guard against a race between two near-simultaneous
+        # requests for the same payment slipping past the check above:
+        # if this exact Razorpay payment ID is already logged as Paid
+        # anywhere in the ledger, don't log it again.
+        if payment_transactions_collection is not None and razorpay_payment_id:
+            already_logged = payment_transactions_collection.find_one({
+                "razorpay_payment_id": razorpay_payment_id,
+                "status": "Paid"
+            })
+            if already_logged:
+                return jsonify({"success": True, "message": "Already verified"})
 
         payment_time = datetime.now()
 
@@ -222,6 +289,22 @@ def init_razorpay_payments(app, bookings_collection, settings_collection, notifi
                 "read": False,
                 "created_at": payment_time
             })
+
+        log_transaction(
+            payment_transactions_collection,
+            type="booking_payment",
+            status="Paid",
+            amount=booking_doc.get("delivery_fee", 0),
+            booking_id=booking_id,
+            user_email=session["user_email"],
+            driver_email=booking_doc.get("driver_email"),
+            gateway="razorpay",
+            gst=booking_doc.get("gst"),
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            razorpay_signature=razorpay_signature,
+            receipt=f"aquaflow_{booking_id}",
+        )
 
         return jsonify({"success": True})
 

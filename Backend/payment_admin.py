@@ -47,6 +47,8 @@ from flask import (
 
 from bson.objectid import ObjectId
 
+from payment_ledger import log_transaction, update_transaction_status
+
 
 # =====================================================
 # DEFAULTS
@@ -184,6 +186,13 @@ def get_driver_wallet_summary(bookings_collection, driver_email):
         if isinstance(o.get("delivered_at"), datetime) and o["delivered_at"].date() >= week_start
     )
 
+    month_start = today.replace(day=1)
+    monthly_earnings_total = sum(
+        round(order_fee(o) * DRIVER_SHARE_RATE)
+        for o in delivered_orders
+        if isinstance(o.get("delivered_at"), datetime) and o["delivered_at"].date() >= month_start
+    )
+
     return {
         "collected_total": collected_total,
         "pending_verification_total": pending_verification_total,
@@ -196,7 +205,8 @@ def get_driver_wallet_summary(bookings_collection, driver_email):
         "driver_share_rate": DRIVER_SHARE_RATE,
         "driver_earned_total": driver_earned_total,
         "todays_earnings": todays_earnings,
-        "weekly_earnings_total": weekly_earnings_total
+        "weekly_earnings_total": weekly_earnings_total,
+        "monthly_earnings_total": monthly_earnings_total
     }
 
 
@@ -220,17 +230,29 @@ def get_driver_settlement_summary(transactions_collection, bookings_collection, 
         r.get("amount", 0) for r in requests
         if r.get("status") in ("Pending", "Processing")
     )
+    rejected_total = sum(r.get("amount", 0) for r in requests if r.get("status") == "Rejected")
 
-    withdrawable = max(0, earned - completed_total - in_flight_total)
+    # CRITICAL: a driver's commission on a COD delivery is only really
+    # "theirs to withdraw" once the cash they collected for that same
+    # delivery has actually been submitted AND admin-approved -
+    # otherwise the company hasn't received that money yet, and the
+    # driver would be cashing out commission on money still sitting in
+    # their own pocket. wallet["pending_deposit"] is exactly that
+    # not-yet-remitted amount, so it comes straight off what's
+    # withdrawable (never below zero).
+    withdrawable = max(0, earned - completed_total - in_flight_total - wallet["pending_deposit"])
 
     return {
         "driver_earned_total": earned,
         "settled_total": completed_total,
         "pending_settlement_total": in_flight_total,
+        "rejected_total": rejected_total,
         "withdrawable": withdrawable,
+        "unremitted_cash_held": wallet["pending_deposit"],
         "requests": requests,
         "todays_earnings": wallet["todays_earnings"],
-        "weekly_earnings_total": wallet["weekly_earnings_total"]
+        "weekly_earnings_total": wallet["weekly_earnings_total"],
+        "monthly_earnings_total": wallet["monthly_earnings_total"]
     }
 
 
@@ -274,6 +296,110 @@ def save_payment_screenshot(app, file_storage):
 # =====================================================
 # MODULE INIT (admin-facing routes)
 # =====================================================
+
+def get_ledger_overview(payment_transactions_collection):
+    """
+    Numbers the finance overview above can't compute, because they
+    only exist in the unified ledger (payment_ledger.py), not in
+    bookings/drivers: GST actually collected, all-time and today's
+    withdrawal totals, and the COD-vs-online payment split.
+    """
+    empty = {
+        "gst_collected": 0,
+        "total_withdrawals": 0,
+        "today_withdrawals": 0,
+        "cod_total": 0,
+        "online_total": 0,
+        "cod_count": 0,
+        "online_count": 0,
+    }
+    if payment_transactions_collection is None:
+        return empty
+
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    gst_collected = sum(
+        t.get("gst") or 0
+        for t in payment_transactions_collection.find(
+            {"status": {"$in": ["Paid", "Settled"]}}, {"gst": 1}
+        )
+    )
+
+    withdrawn = list(payment_transactions_collection.find(
+        {"type": "withdrawal", "status": "Withdrawn"}, {"amount": 1, "updated_at": 1}
+    ))
+    total_withdrawals = sum(t.get("amount") or 0 for t in withdrawn)
+    today_withdrawals = sum(
+        t.get("amount") or 0 for t in withdrawn
+        if isinstance(t.get("updated_at"), datetime) and t["updated_at"] >= today_start
+    )
+
+    cod_docs = list(payment_transactions_collection.find(
+        {"type": "cod_collection", "status": "Settled"}, {"amount": 1}
+    ))
+    online_docs = list(payment_transactions_collection.find(
+        {"type": "booking_payment", "status": "Paid"}, {"amount": 1}
+    ))
+
+    return {
+        "gst_collected": gst_collected,
+        "total_withdrawals": total_withdrawals,
+        "today_withdrawals": today_withdrawals,
+        "cod_total": sum(t.get("amount") or 0 for t in cod_docs),
+        "online_total": sum(t.get("amount") or 0 for t in online_docs),
+        "cod_count": len(cod_docs),
+        "online_count": len(online_docs),
+    }
+
+
+def get_top_drivers(bookings_collection, drivers_collection, limit=5):
+    """Top drivers by earned commission on delivered orders (same
+    DRIVER_SHARE_RATE the driver wallet page uses)."""
+    if drivers_collection is None:
+        return []
+
+    ranked = []
+    for driver in drivers_collection.find({"approval_status": "Approved"}):
+        email = driver.get("email")
+        if not email:
+            continue
+        delivered_count = bookings_collection.count_documents({
+            "driver_email": email, "status": "Delivered"
+        })
+        if delivered_count == 0:
+            continue
+        earned = sum(
+            round(o.get("delivery_fee", 500) * DRIVER_SHARE_RATE)
+            for o in bookings_collection.find({"driver_email": email, "status": "Delivered"})
+        )
+        ranked.append({
+            "name": driver.get("name", email),
+            "email": email,
+            "deliveries": delivered_count,
+            "earned": earned
+        })
+
+    ranked.sort(key=lambda d: d["earned"], reverse=True)
+    return ranked[:limit]
+
+
+def get_top_customers(bookings_collection, limit=5):
+    """Top customers by total amount spent on delivered orders."""
+    pipeline = [
+        {"$match": {"status": "Delivered"}},
+        {"$group": {
+            "_id": "$user_email",
+            "total_spent": {"$sum": {"$ifNull": ["$delivery_fee", 500]}},
+            "orders": {"$sum": 1}
+        }},
+        {"$sort": {"total_spent": -1}},
+        {"$limit": limit}
+    ]
+    return [
+        {"email": row["_id"], "total_spent": row["total_spent"], "orders": row["orders"]}
+        for row in bookings_collection.aggregate(pipeline) if row["_id"]
+    ]
+
 
 def get_finance_overview(bookings_collection, drivers_collection, transactions_collection=None):
     """Company-wide money position for the admin finance dashboard.
@@ -326,18 +452,12 @@ def get_finance_overview(bookings_collection, drivers_collection, transactions_c
             )
             pending_driver_payouts += settlement["withdrawable"]
 
-    # Refund system (Feature 14) - money owed back to customers for
-    # cancelled-after-payment bookings, awaiting admin approval.
-    pending_customer_refunds = sum(
-        b.get("refund_amount", 0)
-        for b in bookings_collection.find({"refund_status": "Requested"})
-    )
-
     # Admin Wallet (Feature 18): Revenue -> Commission -> Driver
-    # Settlement -> Profit. "Profit" here is the platform's commission
-    # net of refunds already owed back to customers - not a full P&L,
-    # just what Feature 18 asks for at this level of detail.
-    profit = round(total_commission - pending_customer_refunds)
+    # Settlement -> Profit. There is no automated refund system in
+    # this app (business decision - refunds, if ever needed, are
+    # handled by support contacting the customer directly, not
+    # tracked here), so profit is simply the platform's commission.
+    profit = round(total_commission)
 
     return {
         "total_revenue": total_revenue,
@@ -348,7 +468,6 @@ def get_finance_overview(bookings_collection, drivers_collection, transactions_c
         "today_commission": today_commission,
         "pending_driver_deposits": pending_driver_deposits,
         "pending_driver_payouts": pending_driver_payouts,
-        "pending_customer_refunds": pending_customer_refunds,
         "profit": profit
     }
 
@@ -359,7 +478,8 @@ def init_payment_admin(
     drivers_collection,
     notifications_collection,
     settings_collection,
-    transactions_collection=None
+    transactions_collection=None,
+    payment_transactions_collection=None
 ):
 
     def _admin_only():
@@ -396,7 +516,7 @@ def init_payment_admin(
 
         if errors:
             flash(" | ".join(errors), "danger")
-            return redirect(url_for("driver_management"))
+            return redirect(url_for("finance_management"))
 
         update_fields = {
             "bank_name": bank_name,
@@ -421,7 +541,7 @@ def init_payment_admin(
         )
 
         flash("Company bank / UPI details updated. Drivers will see this immediately.", "success")
-        return redirect(url_for("driver_management"))
+        return redirect(url_for("finance_management"))
 
     # =====================================================
     # VERIFY / REJECT A DRIVER'S SUBMITTED PAYMENT
@@ -439,15 +559,15 @@ def init_payment_admin(
             booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
         except Exception:
             flash("Invalid booking reference", "danger")
-            return redirect(url_for("driver_management"))
+            return redirect(url_for("finance_management"))
 
         if not booking:
             flash("Booking not found", "danger")
-            return redirect(url_for("driver_management"))
+            return redirect(url_for("finance_management"))
 
         if not booking.get("payment_submitted"):
             flash("No payment submission found for this booking", "warning")
-            return redirect(url_for("driver_management"))
+            return redirect(url_for("finance_management"))
 
         driver_email = booking.get("driver_email")
         amount = booking.get("cash_submitted_amount") or booking.get("delivery_fee", 500)
@@ -488,6 +608,19 @@ def init_payment_admin(
                     "created_at": datetime.now()
                 })
 
+            log_transaction(
+                payment_transactions_collection,
+                type="cod_collection",
+                status="Settled",
+                amount=amount,
+                booking_id=booking_id,
+                user_email=booking.get("user_email"),
+                driver_email=driver_email,
+                gateway="cash",
+                payment_screenshot=booking.get("payment_screenshot"),
+                admin_remarks=remarks or session.get("admin_email", "admin"),
+            )
+
             flash(f"Payment of ₹{amount:,.0f} approved and marked as received.", "success")
 
         else:
@@ -518,9 +651,22 @@ def init_payment_admin(
                     "created_at": datetime.now()
                 })
 
+            log_transaction(
+                payment_transactions_collection,
+                type="cod_collection",
+                status="Rejected",
+                amount=amount,
+                booking_id=booking_id,
+                user_email=booking.get("user_email"),
+                driver_email=driver_email,
+                gateway="cash",
+                payment_screenshot=booking.get("payment_screenshot"),
+                admin_remarks=remarks or session.get("admin_email", "admin"),
+            )
+
             flash("Payment submission rejected. Driver has been notified to resubmit.", "info")
 
-        return redirect(url_for("driver_management"))
+        return redirect(url_for("finance_management"))
 
     # =====================================================
     # DRIVER REQUESTS A SETTLEMENT (WITHDRAWAL) OF EARNED
@@ -543,6 +689,16 @@ def init_payment_admin(
             transactions_collection, bookings_collection, driver_email
         )
 
+        driver_doc = drivers_collection.find_one({"email": driver_email}) if drivers_collection is not None else None
+        bank_details = (driver_doc or {}).get("bank_details") or {}
+
+        if bank_details.get("approval_status") != "Approved":
+            flash(
+                "Add your bank account details and wait for admin approval before requesting a withdrawal.",
+                "danger"
+            )
+            return redirect(url_for("driver_earnings"))
+
         if amount <= 0:
             flash("Enter a valid withdrawal amount.", "danger")
         elif amount > settlement["withdrawable"]:
@@ -550,12 +706,22 @@ def init_payment_admin(
         elif transactions_collection is None:
             flash("Withdrawals aren't available right now — please try again later.", "danger")
         else:
+            ledger_txn_id = log_transaction(
+                payment_transactions_collection,
+                type="withdrawal",
+                status="Pending",
+                amount=amount,
+                driver_email=driver_email,
+                gateway="bank_transfer",
+            )
+
             transactions_collection.insert_one({
                 "type": "settlement",
                 "driver_email": driver_email,
                 "amount": amount,
                 "status": "Pending",
-                "requested_at": datetime.now()
+                "requested_at": datetime.now(),
+                "payment_transaction_id": ledger_txn_id
             })
 
             if notifications_collection is not None:
@@ -585,7 +751,7 @@ def init_payment_admin(
 
         if transactions_collection is None:
             flash("Settlements aren't available right now.", "danger")
-            return redirect(url_for("driver_management"))
+            return redirect(url_for("finance_management"))
 
         try:
             req_doc = transactions_collection.find_one({"_id": ObjectId(request_id)})
@@ -594,7 +760,7 @@ def init_payment_admin(
 
         if not req_doc:
             flash("Withdrawal request not found.", "danger")
-            return redirect(url_for("driver_management"))
+            return redirect(url_for("finance_management"))
 
         new_status = {
             "approve": "Processing",
@@ -604,7 +770,7 @@ def init_payment_admin(
 
         if not new_status:
             flash("Unknown action.", "danger")
-            return redirect(url_for("driver_management"))
+            return redirect(url_for("finance_management"))
 
         transactions_collection.update_one(
             {"_id": ObjectId(request_id)},
@@ -613,6 +779,18 @@ def init_payment_admin(
                 "resolved_at": datetime.now(),
                 "resolved_by": session.get("admin_email", "admin")
             }}
+        )
+
+        ledger_status = {
+            "Processing": "Withdrawn",
+            "Completed": "Withdrawn",
+            "Rejected": "Rejected"
+        }.get(new_status)
+        update_transaction_status(
+            payment_transactions_collection,
+            req_doc.get("payment_transaction_id"),
+            status=ledger_status or new_status,
+            admin_remarks=session.get("admin_email", "admin")
         )
 
         if notifications_collection is not None:
@@ -633,6 +811,97 @@ def init_payment_admin(
             })
 
         flash(f"Settlement request marked as {new_status}.", "success")
-        return redirect(url_for("driver_management"))
+        return redirect(url_for("finance_management"))
+
+    # =====================================================
+    # ADMIN APPROVES / REJECTS A DRIVER'S BANK DETAILS
+    # =====================================================
+    # Withdrawals stay locked (see request_driver_withdrawal above)
+    # until this happens - admin should actually check the account
+    # holder name matches the driver's identity before approving.
+
+    @app.route("/admin/driver-bank-details/<driver_email>/<action>", methods=["POST"])
+    def resolve_driver_bank_details(driver_email, action):
+        if not _admin_only():
+            return redirect(url_for("admin_login"))
+
+        if action not in ("approve", "reject"):
+            flash("Unknown action.", "danger")
+            return redirect(url_for("finance_management"))
+
+        new_status = "Approved" if action == "approve" else "Rejected"
+
+        drivers_collection.update_one(
+            {"email": driver_email},
+            {"$set": {
+                "bank_details.approval_status": new_status,
+                "bank_details.approved_at": datetime.now(),
+                "bank_details.approved_by": session.get("admin_email", "admin")
+            }}
+        )
+
+        if notifications_collection is not None:
+            notifications_collection.insert_one({
+                "driver_email": driver_email,
+                "title": f"Bank Details {new_status}",
+                "message": (
+                    "Your bank details were approved - you can now request withdrawals."
+                    if new_status == "Approved" else
+                    "Your bank details were rejected. Please re-check and resubmit them."
+                ),
+                "type": "bank_details_update",
+                "status": "success" if new_status == "Approved" else "danger",
+                "icon": "🏦",
+                "read": False,
+                "created_at": datetime.now()
+            })
+
+        flash(f"Driver bank details {new_status.lower()}.", "success")
+        return redirect(url_for("finance_management"))
+
+    # =====================================================
+    # DOWNLOAD / VIEW A SETTLEMENT PAYMENT RECEIPT
+    # =====================================================
+    # Only makes sense once a settlement has actually been paid out
+    # (Processing/Completed carry a linked payment_transaction_id).
+
+    @app.route("/admin/settlement/<request_id>/receipt")
+    def settlement_receipt(request_id):
+        if not _admin_only():
+            return redirect(url_for("admin_login"))
+
+        if transactions_collection is None:
+            flash("Settlements aren't available right now.", "danger")
+            return redirect(url_for("finance_management"))
+
+        from flask import render_template
+
+        try:
+            req_doc = transactions_collection.find_one({"_id": ObjectId(request_id)})
+        except Exception:
+            req_doc = None
+
+        if not req_doc:
+            flash("Settlement request not found.", "danger")
+            return redirect(url_for("finance_management"))
+
+        driver = None
+        if drivers_collection is not None:
+            driver = drivers_collection.find_one({"email": req_doc.get("driver_email")})
+
+        ledger_txn = None
+        if payment_transactions_collection is not None and req_doc.get("payment_transaction_id"):
+            ledger_txn = payment_transactions_collection.find_one(
+                {"transaction_id": req_doc["payment_transaction_id"]}
+            )
+
+        req_doc["_id"] = str(req_doc["_id"])
+
+        return render_template(
+            "settlement_receipt.html",
+            req=req_doc,
+            driver=driver,
+            ledger_txn=ledger_txn
+        )
 
     return app

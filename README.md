@@ -95,6 +95,45 @@ static/                      # CSS, images, uploaded driver documents
    ```
    The app runs at `http://127.0.0.1:5000` by default.
 
+## Testing
+
+Automated tests live in `tests/` and run against a fake, in-memory MongoDB
+(via `mongomock`) — no real database connection needed, and nothing in the
+tests touches your actual data.
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+`pytest.ini` at the project root already points pytest at `Backend/` and
+`tests/`, so this works from the repo root without any extra setup.
+
+What's covered: signup validation + OTP verification, login (correct/wrong
+password, unknown account, blocked account), booking creation validation
+(missing map pin, invalid quantity/phone, no drivers available), a customer
+cancelling their own unpaid booking, the admin block/unblock + messaging
+endpoints, the delivery OTP handoff (correct code, wrong code, brute-force
+lockout, wrong driver), coupon application (percent discount, invalid code,
+one-time-per-customer), and wallet recharge signature verification (valid,
+forged, and duplicate-callback cases). 32 tests in total.
+See `tests/helpers.py` for reusable fixtures — `create_user()`, `login()`,
+`submit_booking()`, `login_as_admin()`, `login_as_driver()` — when adding more.
+
+## Continuous Integration (CI)
+
+Every push and pull request to `main` automatically runs, via GitHub Actions
+(`.github/workflows/ci.yml`): lint (`ruff check Backend/`) then the full test
+suite (`pytest`) — in a clean, disposable environment, the same way a
+teammate's machine would run it. The result shows up as a ✅ or ❌ directly
+on the commit/PR on GitHub — proof the code was actually verified, not just
+"looked fine locally."
+
+The lint rule set (`ruff.toml`) is deliberately narrow for now — real bugs
+only (unused imports/variables, undefined names, syntax errors, duplicate
+dict keys), not style opinions — so CI fails on things worth fixing, not on
+noise. It can be widened later as the codebase's style settles.
+
 ## Security notes
 
 - Passwords are hashed with **bcrypt** before being stored — never stored in plain text.

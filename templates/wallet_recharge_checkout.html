@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Money to Wallet | AquaFlow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+        body{background:radial-gradient(circle at 20% 20%,#eef3ff,#e6ecff 45%,#eef3f9 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+        .card{background:#fff;border-radius:24px;padding:36px 34px;max-width:440px;width:100%;box-shadow:0 20px 50px rgba(45,60,150,.14);text-align:center;position:relative;overflow:hidden;}
+        .card::before{content:'';position:absolute;top:-60px;right:-60px;width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,#7b9dff,#4f6df5);opacity:.14;}
+        .icon-wrap{width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,#4f6df5,#2140d6);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 10px 24px rgba(79,109,245,.35);}
+        .icon-wrap i{color:#fff;font-size:1.4rem;}
+        h1{font-size:1.25rem;margin-bottom:4px;color:#131c33;font-weight:700;}
+        .sub{color:#7a86a3;font-size:.85rem;margin-bottom:18px;}
+        .amount{font-size:2.2rem;font-weight:800;color:#131c33;margin:4px 0 16px;letter-spacing:-.5px;}
+
+        .upi-note{display:flex;align-items:center;gap:10px;background:#eef1ff;color:#3452d6;padding:11px 14px;border-radius:12px;font-size:.78rem;font-weight:600;margin-bottom:18px;text-align:left;line-height:1.4;}
+        .upi-note i{font-size:1rem;flex-shrink:0;}
+
+        .timer-wrap{display:none;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;padding:9px 14px;border-radius:12px;background:#f3f6fd;font-weight:700;font-size:.85rem;color:#2140d6;}
+        .timer-wrap.show{display:flex;}
+        .timer-wrap.urgent{background:#fde3e3;color:#b3261e;}
+        .timer-wrap i{font-size:.9rem;}
+
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border-radius:14px;border:none;font-weight:600;font-size:1rem;cursor:pointer;text-decoration:none;margin-bottom:12px;transition:transform .15s ease, box-shadow .15s ease;}
+        .btn:active{transform:scale(.98);}
+        .btn-primary{background:linear-gradient(135deg,#4f6df5,#2140d6);color:#fff;box-shadow:0 12px 24px rgba(45,80,220,.28);}
+        .btn-primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
+        .btn-outline{background:#fff;border:1.5px solid #e3e7f3;color:#131c33;}
+        .status{margin-top:14px;font-size:.86rem;color:#7a86a3;min-height:18px;}
+        .status.error{color:#d64545;}
+        .status.success{color:#137a3f;font-weight:600;}
+        .trust{margin-top:20px;display:flex;align-items:center;justify-content:center;gap:6px;color:#9aa4bf;font-size:.76rem;}
+        .trust i{color:#3fbf6f;}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-wrap"><i class="fa-solid fa-shield-halved"></i></div>
+        <h1>Secure Wallet Top-up</h1>
+        <div class="sub">You're adding money to your AquaFlow wallet</div>
+        <div class="amount">₹{{ "{:,.0f}".format(amount) }}</div>
+
+        <div class="upi-note"><i class="fa-solid fa-mobile-screen-button"></i> Tap "Pay Securely", then choose your UPI app (GPay, PhonePe, Paytm, etc.) - it opens directly with the amount filled in. Just approve with your UPI PIN.</div>
+
+        <div class="timer-wrap" id="timerWrap"><i class="fa-solid fa-clock"></i> <span id="timerText">5:00</span> to complete the payment</div>
+
+        <button id="payBtn" class="btn btn-primary">
+            <i class="fa-solid fa-bolt"></i> Pay Securely
+        </button>
+        <a href="{{ url_for('user_wallet') }}" id="cancelLink" class="btn btn-outline">
+            <i class="fa-solid fa-arrow-left"></i> Cancel
+        </a>
+
+        <div id="statusMsg" class="status"></div>
+        <div class="trust"><i class="fa-solid fa-lock"></i> Payments verified server-side via Razorpay</div>
+    </div>
+
+    <script>
+        const topupId = "{{ topup_id }}";
+        const amountVal = "{{ '{:,.0f}'.format(amount) }}";
+        let countdownInterval = null;
+        let expired = false;
+        let paid = false;
+
+        function cancelTopup() {
+            fetch("/wallet/recharge/cancel/" + topupId, { method: "POST" }).catch(function(){});
+        }
+        document.getElementById('cancelLink').addEventListener('click', cancelTopup);
+
+        function setStatus(text, cls) {
+            const el = document.getElementById('statusMsg');
+            el.innerText = text;
+            el.className = "status" + (cls ? " " + cls : "");
+        }
+
+        // Advisory countdown - UPI apps typically give 3-15 minutes to
+        // approve a payment before Razorpay's own session expires it;
+        // this just gives a clear ~5 minute target so it doesn't feel
+        // open-ended. If a genuine payment still comes back after this
+        // (e.g. slow bank confirmation), it's honoured either way -
+        // the wallet is credited off Razorpay's verified response, not
+        // off this timer.
+        function startCountdown() {
+            let secondsLeft = 5 * 60;
+            const wrap = document.getElementById('timerWrap');
+            const text = document.getElementById('timerText');
+            wrap.classList.add('show');
+
+            countdownInterval = setInterval(function () {
+                if (paid) { clearInterval(countdownInterval); return; }
+                secondsLeft--;
+                const m = Math.floor(secondsLeft / 60);
+                const s = secondsLeft % 60;
+                text.innerText = m + ':' + (s < 10 ? '0' : '') + s;
+                if (secondsLeft <= 60) wrap.classList.add('urgent');
+
+                if (secondsLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    expired = true;
+                    cancelTopup();
+                    document.getElementById('payBtn').disabled = true;
+                    document.getElementById('payBtn').innerHTML = '<i class="fa-solid fa-hourglass-end"></i> Request Expired';
+                    setStatus("This payment request timed out. If you already paid in your UPI app, don't worry - it'll still be verified. Otherwise, go back and start a new recharge.", "error");
+                }
+            }, 1000);
+        }
+
+        const options = {
+            key: "{{ razorpay_key_id }}",
+            amount: {{ (amount * 100) | int }},
+            currency: "INR",
+            name: "AquaFlow",
+            description: "Wallet Recharge",
+            order_id: "{{ order_id }}",
+            prefill: { email: "{{ customer_email }}" },
+            method: { upi: true, card: true, netbanking: true, wallet: true },
+            handler: function (response) {
+                paid = true;
+                clearInterval(countdownInterval);
+                setStatus("Verifying payment...");
+                fetch("{{ url_for('wallet_recharge_verify') }}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        topup_id: topupId,
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        setStatus("Payment verified! ₹" + amountVal + " added to your wallet.", "success");
+                        setTimeout(function () {
+                            window.location.href = "{{ url_for('user_wallet') }}?recharged=1";
+                        }, 900);
+                    } else {
+                        setStatus("Payment could not be verified. Please contact support if money was deducted.", "error");
+                    }
+                })
+                .catch(() => {
+                    setStatus("Network error while verifying payment.", "error");
+                });
+            },
+            modal: {
+                ondismiss: function () {
+                    if (paid || expired) return;
+                    cancelTopup();
+                    clearInterval(countdownInterval);
+                    setStatus("Payment cancelled. Taking you back...");
+                    setTimeout(function () {
+                        window.location.href = "{{ url_for('user_wallet') }}";
+                    }, 1200);
+                }
+            },
+            theme: { color: "#4f6df5" }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+            clearInterval(countdownInterval);
+            setStatus("Payment failed: " + response.error.description + ". Taking you back...", "error");
+            setTimeout(function () {
+                window.location.href = "{{ url_for('user_wallet') }}";
+            }, 1800);
+        });
+
+        document.getElementById('payBtn').addEventListener('click', function () {
+            if (!countdownInterval && !expired) startCountdown();
+            rzp.open();
+        });
+    </script>
+
+    <!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+    <script>
+    (function () {
+        var HOME_URL = "{{ url_for('dashboard') }}";
+        if (window.history && window.history.pushState) {
+            history.pushState(null, "", location.href);
+            window.addEventListener("popstate", function () {
+                if (!paid) cancelTopup();
+                history.pushState(null, "", location.href);
+                window.location.href = HOME_URL;
+            });
+        }
+    })();
+    </script>
+</body>
+</html>

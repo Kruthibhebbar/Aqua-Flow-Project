@@ -3,68 +3,184 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AquaFlow | Live Fleet Command Center</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<meta name="theme-color" content="#EEF3F4">
+<title>AquaFlow Console | Live ETA Tracking</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
-    body { background: radial-gradient(circle at 20% 20%, #0d1526, #03060c); color:#eef5ff; min-height:100vh; padding:24px; }
-    .top-bar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
-    h1 { font-size:1.9rem; font-weight:800; display:flex; align-items:center; gap:10px; }
-    h1 i { color:#2d7aff; }
-    .back-link { color:#9fb4d6; text-decoration:none; font-weight:600; font-size:13px; }
-    .back-link:hover { color:#fff; }
-    .stat-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
-    .stat-chip { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:10px 16px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; }
-    .live-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 8px #22c55e; animation:pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
-    .grid { display:grid; grid-template-columns: 1.3fr 1fr; gap:18px; }
+    :root {
+        --ink: #0A1A22;
+        --ink-soft: #55707A;
+        --ink-faint: #93A8AF;
+        --teal-900: #073239;
+        --teal-700: #0E6672;
+        --teal-600: #0E7C86;
+        --cyan-glow: #26D0C9;
+        --teal-050: #EAF4F5;
+        --teal-100: #DCEEEF;
+        --amber-600: #A5690C; --amber-100: #FBF0DC;
+        --green-600: #157A50; --green-100: #E1F5EA;
+        --red-600: #B23B30; --red-100: #FBEAE8;
+        --blue-600: #2C5F9E; --blue-100: #E8EFFA;
+        --bg: #EEF3F4; --surface: #FFFFFF; --border: #DCE6E8; --border-soft: #E7EEEF;
+        --r-lg: 16px; --r-pill: 999px;
+        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .topbar {
+        background: var(--ink);
+        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
+        padding: 0 32px; display: flex; align-items: center; justify-content: space-between;
+        height: 72px; flex-shrink: 0; position: relative; z-index: 30;
+        border-top: 4px solid var(--cyan-glow);
+    }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(155deg, #17A6B4, var(--teal-700));
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .brand-mark i { font-size: 17px; color: #fff; }
+    .brand-text h1 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #fff;
+        display: flex; align-items: center; gap: 9px; line-height: 1.1;
+    }
+    .brand-text .tag {
+        font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; font-weight: 600; color: var(--cyan-glow);
+        background: rgba(38,208,201,.12); border: 1px solid rgba(38,208,201,.25);
+        padding: 2.5px 8px; border-radius: var(--r-pill); letter-spacing: .6px; text-transform: uppercase;
+    }
+    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; }
+    .dispatch-link {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+        padding: 7px 14px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+        color: #C7D6DB; font-weight: 600; font-size: 11.5px;
+    }
+    .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+    .flow-line {
+        height: 3px; width: 100%; flex-shrink: 0; overflow: hidden;
+        background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900));
+        background-size: 200% 100%; animation: flowMove 5s linear infinite;
+    }
+    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
+
+    .instrument-strip {
+        background: var(--surface); border-bottom: 1px solid var(--border);
+        padding: 0 32px; display: flex; align-items: stretch; flex-wrap: wrap; flex-shrink: 0;
+    }
+    .instrument { display: flex; align-items: center; gap: 11px; padding: 13px 26px 13px 0; margin-right: 26px; border-right: 1px solid var(--border-soft); flex-shrink: 0; }
+    .instrument:last-of-type { border-right: none; margin-right: 0; }
+    .instrument-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; flex-shrink: 0; }
+    .instrument-icon.live { background: var(--green-100); color: var(--green-600); }
+    .instrument-icon.active { background: var(--teal-050); color: var(--teal-700); }
+    .instrument-icon.online { background: var(--blue-100); color: var(--blue-600); }
+    .instrument-copy h4 { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .55px; color: var(--ink-faint); margin-bottom: 3px; }
+    .instrument-copy .val { font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1; }
+    .instrument-spacer { flex: 1; }
+    .instrument-time { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-faint); padding: 13px 0; }
+    .live-dot { width: 7px; height: 7px; background: var(--green-600); border-radius: 50%; box-shadow: 0 0 0 0 rgba(21,122,80,.6); animation: pulseDot 1.8s infinite; }
+    @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(21,122,80,.55); } 70% { box-shadow: 0 0 0 7px rgba(21,122,80,0); } 100% { box-shadow: 0 0 0 0 rgba(21,122,80,0); } }
+
+    .main-content { flex: 1; padding: 22px 32px 40px; }
+    .section-head h2 { font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+    .section-head h2 i { color: var(--teal-600); font-size: 15px; }
+
+    .grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
     @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
-    #fleetMap { height:520px; border-radius:20px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); }
-    .panel { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:16px; max-height:520px; overflow-y:auto; }
-    .panel h3 { font-size:14px; text-transform:uppercase; letter-spacing:.5px; color:#9fb4d6; margin-bottom:12px; }
-    .delivery-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
-    .delivery-card .row1 { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-    .delivery-card .cust { font-weight:700; font-size:14px; }
-    .status-pill { font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:20px; }
-    .st-online { background:#16a34a33; color:#4ade80; }
-    .st-offline { background:#dc262633; color:#f87171; }
-    .st-stopped { background:#d9770633; color:#fbbf24; }
-    .meta-row { font-size:12px; color:#b8c7e0; display:flex; justify-content:space-between; margin-top:4px; }
-    .empty { text-align:center; color:#7c8aa5; padding:40px 10px; }
-    .deviation-tag { color:#f87171; font-size:11.5px; font-weight:700; margin-top:6px; }
-    .refresh-note { text-align:center; color:#7c8aa5; font-size:12px; margin-top:16px; }
+
+    #fleetMap { height: 520px; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; max-height: 520px; overflow-y: auto; box-shadow: var(--shadow-sm); }
+    .panel h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-faint); margin-bottom: 12px; }
+
+    .delivery-card { background: var(--bg); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; transition: background .12s; }
+    .delivery-card:hover { background: #E7EFF0; }
+    .delivery-card .row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .delivery-card .cust { font-weight: 700; font-size: 13.5px; color: var(--ink); }
+
+    .status-pill { font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill); }
+    .st-online { background: var(--green-100); color: var(--green-600); }
+    .st-offline { background: var(--red-100); color: var(--red-600); }
+    .st-stopped { background: var(--amber-100); color: var(--amber-600); }
+
+    .meta-row { font-size: 11.5px; color: var(--ink-soft); display: flex; justify-content: space-between; margin-top: 4px; gap: 8px; }
+    .empty { text-align: center; color: var(--ink-faint); padding: 40px 10px; font-size: 13px; }
+    .deviation-tag { color: var(--red-600); font-size: 11px; font-weight: 700; margin-top: 6px; }
+    .refresh-note { text-align: center; color: var(--ink-faint); font-size: 12px; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 7px; }
+
+    /* Leaflet popup restyle to match light theme */
+    .leaflet-popup-content-wrapper { border-radius: 10px; }
+    .leaflet-popup-content { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--ink); }
+
+    @media (max-width: 700px) {
+        .topbar, .instrument-strip, .main-content { padding-left: 16px; padding-right: 16px; }
+        .instrument { padding-right: 16px; margin-right: 16px; }
+    }
 </style>
 </head>
 <body>
+<div class="app-shell">
 
-<div class="top-bar">
-    <h1><i class="fa-solid fa-satellite-dish"></i> Live Fleet Command Center</h1>
-    <a href="/admin-dashboard" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Admin Dashboard</a>
-</div>
+    <!-- ================= TOP BAR ================= -->
+    <div class="topbar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fas fa-satellite-dish"></i></div>
+            <div class="brand-text">
+                <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+                <p>Live fleet command center</p>
+            </div>
+        </div>
+        <a href="/admin-dashboard" class="dispatch-link"><i class="fas fa-arrow-left"></i>Back to Admin Dashboard</a>
+    </div>
+    <div class="flow-line"></div>
 
-<div class="stat-row">
-    <div class="stat-chip"><span class="live-dot"></span> Live</div>
-    <div class="stat-chip"><i class="fa-solid fa-truck-fast"></i> Active Deliveries: <span id="statActive">0</span></div>
-    <div class="stat-chip"><i class="fa-solid fa-tower-broadcast"></i> Drivers Online: <span id="statOnline">0</span> / <span id="statTotal">0</span></div>
-    <div class="stat-chip"><i class="fa-regular fa-clock"></i> Updated: <span id="statUpdated">--</span></div>
-</div>
+    <!-- ================= INSTRUMENT STRIP ================= -->
+    <div class="instrument-strip">
+        <div class="instrument">
+            <div class="instrument-icon live"><div class="live-dot"></div></div>
+            <div class="instrument-copy"><h4>Status</h4><div class="val" style="font-size:13px;">Live</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon active"><i class="fas fa-truck-fast"></i></div>
+            <div class="instrument-copy"><h4>Active Deliveries</h4><div class="val" id="statActive">0</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon online"><i class="fas fa-tower-broadcast"></i></div>
+            <div class="instrument-copy"><h4>Drivers Online</h4><div class="val"><span id="statOnline">0</span> / <span id="statTotal">0</span></div></div>
+        </div>
+        <div class="instrument-spacer"></div>
+        <div class="instrument-time"><i class="far fa-clock"></i> Updated <span id="statUpdated">--</span></div>
+    </div>
 
-<div class="grid">
-    <div id="fleetMap"></div>
-    <div class="panel">
-        <h3>Active Deliveries — real GPS, real routing</h3>
-        <div id="deliveryList"><div class="empty">Loading live fleet data…</div></div>
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main-content">
+        <div class="section-head">
+            <h2><i class="fas fa-map-marked-alt"></i> Live Fleet Command Center</h2>
+        </div>
+
+        <div class="grid">
+            <div id="fleetMap"></div>
+            <div class="panel">
+                <h3>Active Deliveries — real GPS, real routing</h3>
+                <div id="deliveryList"><div class="empty">Loading live fleet data…</div></div>
+            </div>
+        </div>
+
+        <p class="refresh-note"><i class="fas fa-rotate"></i> Auto-refreshes from live driver GPS every 5 seconds — no simulated data</p>
     </div>
 </div>
 
-<p class="refresh-note"><i class="fa-solid fa-rotate"></i> Auto-refreshes from live driver GPS every 5 seconds — no simulated data</p>
-
 <script>
 const map = L.map('fleetMap').setView([20.5937, 78.9629], 5);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
 }).addTo(map);
 
@@ -74,16 +190,16 @@ let routeLines = {};      // booking_id -> polyline
 let firstFit = true;
 
 function statusColor(status) {
-    if (status === 'Arrived') return '#22c55e';
-    if (status === 'On The Way') return '#f59e0b';
-    if (status === 'Accepted') return '#3b82f6';
-    return '#8ca0a9';
+    if (status === 'Arrived') return '#157A50';
+    if (status === 'On The Way') return '#A5690C';
+    if (status === 'Accepted') return '#2C5F9E';
+    return '#93A8AF';
 }
 
 function truckIcon(color) {
     return L.divIcon({
         className: '',
-        html: `<div style="background:${color}; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 4px ${color}33;"><i class="fa-solid fa-truck" style="color:#03060c; font-size:12px;"></i></div>`,
+        html: `<div style="background:${color}; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 4px ${color}33, 0 2px 6px rgba(10,26,34,.25);"><i class="fa-solid fa-truck" style="color:#fff; font-size:12px;"></i></div>`,
         iconSize: [26, 26],
         iconAnchor: [13, 13]
     });
@@ -144,7 +260,7 @@ async function refreshFleet() {
             if (d.customer_lat != null && d.customer_lng != null) {
                 if (!customerMarkers[d.booking_id]) {
                     customerMarkers[d.booking_id] = L.circleMarker([d.customer_lat, d.customer_lng], {
-                        radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2
+                        radius: 6, color: '#fff', fillColor: '#B23B30', fillOpacity: 1, weight: 2
                     }).addTo(map).bindPopup(`<strong>📍 ${escapeHtml(d.customer || 'Customer')}</strong>`);
                 } else {
                     customerMarkers[d.booking_id].setLatLng([d.customer_lat, d.customer_lng]);
@@ -169,7 +285,7 @@ async function refreshFleet() {
                     if (routeLines[d.booking_id]) map.removeLayer(routeLines[d.booking_id]);
                     routeLines[d.booking_id] = L.polyline(
                         [[d.driver_lat, d.driver_lng], [d.customer_lat, d.customer_lng]],
-                        { color, weight: 3, dashArray: '6,6', opacity: 0.7 }
+                        { color, weight: 3, dashArray: '6,6', opacity: 0.8 }
                     ).addTo(map);
                 }
             }

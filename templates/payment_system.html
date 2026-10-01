@@ -179,6 +179,24 @@
             outline: none;
         }
 
+        .filter-group input[type="date"] {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            color: #cbd5e1;
+            font-weight: 500;
+            outline: none;
+            color-scheme: dark;
+        }
+
+        a.btn-primary {
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .btn-primary {
             background: linear-gradient(95deg, #2563eb, #1e40af);
             border: none;
@@ -355,72 +373,69 @@
         </div>
     </div>
 
-    <!-- dynamic control bar : search, filter, add demo -->
+    <!-- dynamic control bar : search, filter, export -->
     <div class="action-bar">
         <div class="search-container">
             <i class="fas fa-search" style="color:#94a3b8;"></i>
-            <input type="text" id="searchInput" placeholder="Customer, Booking ID, TXN..." autocomplete="off">
+            <input type="text" id="searchInput" placeholder="TXN ID, Booking ID, email..." autocomplete="off">
             <button id="searchBtn"><i class="fas fa-arrow-right"></i> Filter</button>
         </div>
         <div class="filter-group">
             <select id="statusFilter">
                 <option value="all">All statuses</option>
-                <option value="paid">✅ Successful</option>
-                <option value="pending">⏳ Pending</option>
+                <option value="Paid">✅ Paid</option>
+                <option value="Settled">✅ Settled</option>
+                <option value="Pending">⏳ Pending</option>
+                <option value="Waiting Admin Approval">⏳ Waiting Admin Approval</option>
+                <option value="Failed">❌ Failed</option>
+                <option value="Verification Failed">❌ Verification Failed</option>
+                <option value="Rejected">❌ Rejected</option>
+                <option value="Withdrawn">💸 Withdrawn</option>
             </select>
-            <select id="methodFilter">
-                <option value="all">All methods</option>
-                <option value="UPI">UPI</option>
-                <option value="Cash On Delivery">Cash On Delivery</option>
-                <option value="Card">Card</option>
-                <option value="NetBanking">NetBanking</option>
+            <select id="typeFilter">
+                <option value="all">All types</option>
+                <option value="booking_payment">Booking Payment</option>
+                <option value="wallet_topup">Wallet Top-up</option>
+                <option value="cod_collection">COD Collection</option>
+                <option value="withdrawal">Withdrawal</option>
             </select>
+            <select id="gatewayFilter">
+                <option value="all">All gateways</option>
+                <option value="razorpay">Razorpay</option>
+                <option value="cash">Cash</option>
+                <option value="wallet">Wallet</option>
+                <option value="bank_transfer">Bank Transfer</option>
+            </select>
+            <input type="date" id="dateFrom" title="From date">
+            <input type="date" id="dateTo" title="To date">
         </div>
-        <button id="addSamplePayment" class="btn-primary"><i class="fas fa-plus-circle"></i> Simulate new payment</button>
+        <a id="exportBtn" class="btn-primary" href="#"><i class="fas fa-file-export"></i> Export CSV</a>
     </div>
 
     <!-- dynamic payments grid injected via JS -->
     <div id="paymentsContainer" class="payments-grid"></div>
+    <div id="paginationBar" style="display:flex; justify-content:center; gap:10px; margin-top:1.5rem; align-items:center;"></div>
     <footer>
-        <i class="fas fa-shield-alt"></i> PCI-DSS compliant sandbox • real-time analytics & smart filtering
+        <i class="fas fa-shield-alt"></i> Live data from the payment ledger • every transaction verified server-side
     </footer>
 </div>
 <div id="toastRoot" class="toast-msg" style="display: none;"></div>
 
 <script>
-    // ------------------- EXTRAORDINARY MODERN PAYMENT SYSTEM -------------------
-    // Initial dataset based on given example but extended with modern fields + more entries (20+ payments for rich demo)
-    let paymentsData = [
-        { id: 1, bookingId: "#2045", customer: "Kruthik", amount: 2500, method: "UPI", transactionId: "TXN9837465", status: "paid", date: "2025-04-01" },
-        { id: 2, bookingId: "#2050", customer: "Akash", amount: 1800, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-02" },
-        { id: 3, bookingId: "#2067", customer: "Meera S.", amount: 4200, method: "Card", transactionId: "TXN93HG82D", status: "paid", date: "2025-04-03" },
-        { id: 4, bookingId: "#2072", customer: "Rohan Verma", amount: 750, method: "UPI", transactionId: "TXN89FJ293", status: "paid", date: "2025-04-04" },
-        { id: 5, bookingId: "#2089", customer: "Ishita Roy", amount: 3200, method: "NetBanking", transactionId: "TXN902HJK", status: "pending", date: "2025-04-05" },
-        { id: 6, bookingId: "#2095", customer: "Devansh Nair", amount: 5900, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-06" },
-        { id: 7, bookingId: "#2101", customer: "Sanya Kapoor", amount: 1120, method: "UPI", transactionId: "TXNQWE123", status: "paid", date: "2025-04-07" },
-        { id: 8, bookingId: "#2114", customer: "Arjun Menon", amount: 2700, method: "Card", transactionId: "TXN76FGT54", status: "paid", date: "2025-04-08" },
-        { id: 9, bookingId: "#2120", customer: "Tara Krish", amount: 499, method: "UPI", transactionId: "TXN45HJK89", status: "pending", date: "2025-04-09" },
-        { id: 10, bookingId: "#2133", customer: "Vikram Rathore", amount: 8350, method: "NetBanking", transactionId: "TXN83JKD40", status: "paid", date: "2025-04-10" },
-        { id: 11, bookingId: "#2147", customer: "Anjali B.", amount: 1550, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-11" },
-        { id: 12, bookingId: "#2158", customer: "Kavya S.", amount: 2780, method: "Card", transactionId: "TXN99LKJ22", status: "paid", date: "2025-04-12" },
-        { id: 13, bookingId: "#2169", customer: "Ritwik Das", amount: 4300, method: "UPI", transactionId: "TXN56MNB78", status: "paid", date: "2025-04-13" },
-        { id: 14, bookingId: "#2173", customer: "Priya G.", amount: 825, method: "Cash On Delivery", transactionId: "Pending", status: "pending", date: "2025-04-14" }
-    ];
+    // ------------------- REAL PAYMENT MANAGEMENT (reads payment_transactions via the API) -------------------
+    let currentPage = 1;
+    let latestStats = null;
 
-    // Helper: generate random TXN for demo new payment
-    function generateTxn() {
-        return "TXN" + Math.random().toString(36).substring(2, 10).toUpperCase();
-    }
-
-    let nextId = 15;
-
-    // DOM references
     const paymentsContainer = document.getElementById('paymentsContainer');
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
     const statusFilter = document.getElementById('statusFilter');
-    const methodFilter = document.getElementById('methodFilter');
-    const addSampleBtn = document.getElementById('addSamplePayment');
+    const typeFilter = document.getElementById('typeFilter');
+    const gatewayFilter = document.getElementById('gatewayFilter');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const exportBtn = document.getElementById('exportBtn');
+    const paginationBar = document.getElementById('paginationBar');
     const totalPaidSpan = document.getElementById('totalPaidCount');
     const totalPendingSpan = document.getElementById('totalPendingCount');
     const totalRevenueSpan = document.getElementById('totalRevenue');
@@ -429,41 +444,63 @@
 
     let revenueChart, methodChart;
 
-    // Toast message system
     function showToast(message, isError = false) {
         const toast = document.getElementById('toastRoot');
         toast.style.display = 'block';
         toast.textContent = message;
         toast.style.borderLeftColor = isError ? '#f97316' : '#3b82f6';
         toast.style.background = '#111827ee';
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 2600);
+        setTimeout(() => { toast.style.display = 'none'; }, 2600);
     }
 
-    // Core functions: aggregate stats, update UI & charts
-    function computeStats(data) {
-        const paid = data.filter(p => p.status === 'paid').length;
-        const pending = data.filter(p => p.status === 'pending').length;
-        const totalRev = data.reduce((acc, cur) => cur.status === 'paid' ? acc + cur.amount : acc, 0);
-        const successRateVal = data.length === 0 ? 0 : (paid / data.length) * 100;
-        return { paid, pending, totalRev, successRateVal };
+    function currentParams(page) {
+        const params = new URLSearchParams();
+        if (searchInput.value.trim()) params.set('q', searchInput.value.trim());
+        if (statusFilter.value !== 'all') params.set('status', statusFilter.value);
+        if (typeFilter.value !== 'all') params.set('type', typeFilter.value);
+        if (gatewayFilter.value !== 'all') params.set('gateway', gatewayFilter.value);
+        if (dateFrom.value) params.set('date_from', dateFrom.value);
+        if (dateTo.value) params.set('date_to', dateTo.value);
+        params.set('page', page || currentPage);
+        return params;
     }
 
-    function updateHeaderStats(data) {
-        const { paid, pending, totalRev, successRateVal } = computeStats(data);
-        totalPaidSpan.innerText = paid;
-        totalPendingSpan.innerText = pending;
-        totalRevenueSpan.innerText = totalRev.toLocaleString('en-IN');
-        successRateSpan.innerText = Math.floor(successRateVal);
-        rateFillDiv.style.width = `${successRateVal}%`;
+    async function loadTransactions(page = 1) {
+        currentPage = page;
+        try {
+            const res = await fetch('/api/admin/payment-transactions?' + currentParams(page).toString());
+            const data = await res.json();
+            if (!data.success) {
+                showToast(data.message || 'Could not load payments', true);
+                return;
+            }
+            latestStats = data.stats;
+            renderPaymentCards(data.transactions);
+            updateHeaderStats(data.stats);
+            updateRevenueChart(data.transactions);
+            updateMethodChart(data.stats);
+            renderPagination(data.page, data.total_pages);
+        } catch (err) {
+            showToast('Network error loading payments', true);
+        }
     }
 
-    // Update revenue chart based on last 6 PAID transactions (sorted by id desc)
-    function updateRevenueChart(data) {
-        const paidSorted = [...data].filter(p => p.status === 'paid').sort((a,b) => b.id - a.id).slice(0,6).reverse();
-        const labels = paidSorted.map(p => `#${p.bookingId}`);
-        const amounts = paidSorted.map(p => p.amount);
+    function updateHeaderStats(stats) {
+        const paidCount = (stats.by_status['Paid']?.count || 0) + (stats.by_status['Settled']?.count || 0);
+        totalPaidSpan.innerText = paidCount;
+        totalPendingSpan.innerText = stats.pending_count;
+        totalRevenueSpan.innerText = stats.total_revenue.toLocaleString('en-IN');
+        successRateSpan.innerText = stats.success_rate;
+        rateFillDiv.style.width = `${stats.success_rate}%`;
+    }
+
+    function updateRevenueChart(transactions) {
+        const paidSorted = [...transactions]
+            .filter(t => t.status === 'Paid' || t.status === 'Settled')
+            .slice(0, 6)
+            .reverse();
+        const labels = paidSorted.map(t => t.booking_id ? `#${t.booking_id.slice(-6)}` : t.transaction_id.slice(-6));
+        const amounts = paidSorted.map(t => t.amount || 0);
         if (revenueChart) revenueChart.destroy();
         const ctx = document.getElementById('revenueChart').getContext('2d');
         revenueChart = new Chart(ctx, {
@@ -473,171 +510,71 @@
         });
     }
 
-    function updateMethodChart(data) {
-        const methodsCount = {};
-        data.forEach(p => { methodsCount[p.method] = (methodsCount[p.method] || 0) + 1; });
-        const labels = Object.keys(methodsCount);
-        const counts = Object.values(methodsCount);
+    function updateMethodChart(stats) {
+        const labels = Object.keys(stats.by_status);
+        const counts = labels.map(k => stats.by_status[k].count);
         if (methodChart) methodChart.destroy();
         const ctx = document.getElementById('methodChart').getContext('2d');
         methodChart = new Chart(ctx, {
             type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: counts, backgroundColor: ['#3b82f6', '#f97316', '#10b981', '#a855f7', '#ec489a'], borderWidth: 0 }] },
+            data: { labels: labels, datasets: [{ data: counts, backgroundColor: ['#3b82f6', '#f97316', '#10b981', '#a855f7', '#ec4899', '#eab308', '#6366f1'], borderWidth: 0 }] },
             options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e6', font: { size: 10 } } } } }
         });
     }
 
-    // filter & render logic
-    function filterAndRender() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const statusVal = statusFilter.value;
-        const methodVal = methodFilter.value;
-
-        let filtered = [...paymentsData];
-        if (searchTerm !== "") {
-            filtered = filtered.filter(p => p.customer.toLowerCase().includes(searchTerm) || p.bookingId.toLowerCase().includes(searchTerm) || p.transactionId.toLowerCase().includes(searchTerm));
-        }
-        if (statusVal !== "all") {
-            filtered = filtered.filter(p => p.status === statusVal);
-        }
-        if (methodVal !== "all") {
-            filtered = filtered.filter(p => p.method === methodVal);
-        }
-
-        renderPaymentCards(filtered);
-        updateHeaderStats(paymentsData); // global stats based on original (not filtered)
-        updateRevenueChart(paymentsData);
-        updateMethodChart(paymentsData);
-    }
-
-    // Render dynamic card grid with actions (Mark as paid / pending, delete)
     function renderPaymentCards(items) {
         if (!paymentsContainer) return;
         if (items.length === 0) {
             paymentsContainer.innerHTML = `<div class="glass-card" style="grid-column:1/-1; text-align:center; padding:3rem;"><i class="fas fa-inbox fa-2x"></i><p>No matching payments found</p></div>`;
             return;
         }
-        paymentsContainer.innerHTML = items.map(payment => {
-            const statusClass = payment.status === 'paid' ? 'status-paid' : 'status-pending';
-            const statusIcon = payment.status === 'paid' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-hourglass-half"></i>';
-            const statusText = payment.status === 'paid' ? 'Payment Successful' : 'Payment Pending';
-            const txnDisplay = payment.transactionId === "Pending" ? '<span class="transaction-id"><i class="fas fa-spinner"></i> Pending</span>' : `<span class="transaction-id"><i class="fas fa-receipt"></i> ${payment.transactionId}</span>`;
+        const successStatuses = ['Paid', 'Settled', 'Withdrawn'];
+        const failStatuses = ['Failed', 'Verification Failed', 'Rejected', 'Expired'];
+        paymentsContainer.innerHTML = items.map(t => {
+            const isSuccess = successStatuses.includes(t.status);
+            const isFail = failStatuses.includes(t.status);
+            const statusClass = isSuccess ? 'status-paid' : (isFail ? 'status-pending' : 'status-pending');
+            const statusIcon = isSuccess ? '<i class="fas fa-check-circle"></i>' : (isFail ? '<i class="fas fa-times-circle"></i>' : '<i class="fas fa-hourglass-half"></i>');
             return `
-                <div class="payment-card-modern" data-payment-id="${payment.id}">
+                <div class="payment-card-modern" data-txn="${t.transaction_id}">
                     <div style="display:flex; justify-content: space-between; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
-                        <h3 style="font-family:'Space Grotesk'; letter-spacing:-0.3px;"><i class="fas fa-ticket-alt"></i> ${payment.bookingId}</h3>
-                        <span class="badge-status ${statusClass}">${statusIcon} ${statusText}</span>
+                        <h3 style="font-family:'Space Grotesk'; letter-spacing:-0.3px;"><i class="fas fa-ticket-alt"></i> ${t.booking_id ? '#' + t.booking_id.slice(-8) : t.type}</h3>
+                        <span class="badge-status ${statusClass}">${statusIcon} ${t.status}</span>
                     </div>
                     <div class="payment-details">
-                        <p><i class="fas fa-user-astronaut"></i> Customer : ${payment.customer}</p>
-                        <p><i class="fas fa-rupee-sign"></i> Amount : ₹${payment.amount.toLocaleString('en-IN')}</p>
-                        <p><i class="fas fa-credit-card"></i> Payment Method : ${payment.method}</p>
-                        <p><i class="fas fa-fingerprint"></i> Transaction ID : ${txnDisplay}</p>
-                        <p><i class="far fa-calendar-alt"></i> Date : ${payment.date}</p>
-                    </div>
-                    <div class="action-buttons">
-                        ${payment.status === 'pending' ? `<button class="small-btn mark-paid-btn" data-id="${payment.id}"><i class="fas fa-thumbs-up"></i> Mark Success</button>` : `<button class="small-btn mark-pending-btn" data-id="${payment.id}"><i class="fas fa-undo-alt"></i> Mark Pending</button>`}
-                        <button class="small-btn delete-btn" data-id="${payment.id}"><i class="fas fa-trash-alt"></i> Delete</button>
+                        <p><i class="fas fa-user-astronaut"></i> ${t.user_email || t.driver_email || '—'}</p>
+                        <p><i class="fas fa-rupee-sign"></i> Amount : ₹${(t.amount || 0).toLocaleString('en-IN')}</p>
+                        <p><i class="fas fa-credit-card"></i> ${t.type.replace('_', ' ')} · ${t.gateway || '—'}</p>
+                        <p><i class="fas fa-fingerprint"></i> ${t.transaction_id}</p>
+                        <p><i class="far fa-calendar-alt"></i> ${t.created_at || '—'}</p>
                     </div>
                 </div>
             `;
         }).join('');
-
-        // attach event listeners to dynamically generated buttons
-        document.querySelectorAll('.mark-paid-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = parseInt(btn.getAttribute('data-id'));
-                changePaymentStatus(id, 'paid');
-            });
-        });
-        document.querySelectorAll('.mark-pending-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = parseInt(btn.getAttribute('data-id'));
-                changePaymentStatus(id, 'pending');
-            });
-        });
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = parseInt(btn.getAttribute('data-id'));
-                deletePaymentById(id);
-            });
-        });
     }
 
-    function changePaymentStatus(paymentId, newStatus) {
-        const index = paymentsData.findIndex(p => p.id === paymentId);
-        if (index !== -1) {
-            const old = paymentsData[index].status;
-            if (old === newStatus) {
-                showToast(`⚠️ Payment already ${newStatus === 'paid' ? 'successful' : 'pending'}`, false);
-                return;
-            }
-            paymentsData[index].status = newStatus;
-            if (newStatus === 'paid' && paymentsData[index].transactionId === "Pending") {
-                paymentsData[index].transactionId = generateTxn();
-                showToast(`✅ ${paymentsData[index].customer} : payment completed! TXN: ${paymentsData[index].transactionId}`, false);
-            } else if(newStatus === 'pending') {
-                paymentsData[index].transactionId = "Pending";
-                showToast(`⏳ ${paymentsData[index].customer} moved to pending`, false);
-            } else {
-                showToast(`💰 ${paymentsData[index].customer} status updated to ${newStatus}`, false);
-            }
-            filterAndRender(); // full refresh sync
-        }
+    function renderPagination(page, totalPages) {
+        if (totalPages <= 1) { paginationBar.innerHTML = ''; return; }
+        let html = '';
+        if (page > 1) html += `<button class="small-btn" onclick="loadTransactions(${page - 1})"><i class="fas fa-chevron-left"></i> Prev</button>`;
+        html += `<span style="color:#94a3b8; font-size:0.85rem;">Page ${page} of ${totalPages}</span>`;
+        if (page < totalPages) html += `<button class="small-btn" onclick="loadTransactions(${page + 1})">Next <i class="fas fa-chevron-right"></i></button>`;
+        paginationBar.innerHTML = html;
     }
 
-    function deletePaymentById(paymentId) {
-        const exists = paymentsData.some(p => p.id === paymentId);
-        if(exists) {
-            paymentsData = paymentsData.filter(p => p.id !== paymentId);
-            showToast(`🗑️ Payment record #${paymentId} removed`, true);
-            filterAndRender();
-        }
-    }
+    searchBtn.addEventListener('click', () => loadTransactions(1));
+    statusFilter.addEventListener('change', () => loadTransactions(1));
+    typeFilter.addEventListener('change', () => loadTransactions(1));
+    gatewayFilter.addEventListener('change', () => loadTransactions(1));
+    dateFrom.addEventListener('change', () => loadTransactions(1));
+    dateTo.addEventListener('change', () => loadTransactions(1));
+    searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') loadTransactions(1); });
+    exportBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/api/admin/payment-transactions/export?' + currentParams(1).toString();
+    });
 
-    // Add new random payment (extraordinary feature)
-    function addRandomPayment() {
-        const names = ["Diya Mehta", "Reyansh Chopra", "Sai Krishna", "Neha Jadhav", "Aadhya Nair", "Ibrahim Ali"];
-        const methodsList = ["UPI", "Card", "Cash On Delivery", "NetBanking"];
-        const randomName = names[Math.floor(Math.random() * names.length)];
-        const randomMethod = methodsList[Math.floor(Math.random() * methodsList.length)];
-        const randomAmount = Math.floor(Math.random() * (8200 - 300 + 1) + 300);
-        const randomStatus = Math.random() > 0.6 ? "pending" : "paid";
-        const newBooking = "#" + (2100 + nextId);
-        const newId = nextId++;
-        const newTxn = randomStatus === 'paid' ? generateTxn() : "Pending";
-        const newPayment = {
-            id: newId,
-            bookingId: newBooking,
-            customer: randomName,
-            amount: randomAmount,
-            method: randomMethod,
-            transactionId: newTxn,
-            status: randomStatus,
-            date: new Date().toISOString().slice(0,10)
-        };
-        paymentsData.unshift(newPayment); // newest on top
-        showToast(`✨ New payment from ${randomName} | ${randomMethod} | ₹${randomAmount}`, false);
-        filterAndRender();
-    }
-
-    // reset filters/search via button
-    function resetFilterVisual() {
-        filterAndRender();
-    }
-
-    // Event listeners
-    searchBtn.addEventListener('click', () => filterAndRender());
-    statusFilter.addEventListener('change', () => filterAndRender());
-    methodFilter.addEventListener('change', () => filterAndRender());
-    addSampleBtn.addEventListener('click', () => addRandomPayment());
-    searchInput.addEventListener('keyup', (e) => { if(e.key === 'Enter') filterAndRender(); });
-
-    // initial load
-    function init() {
-        filterAndRender();
-    }
-    init();
+    loadTransactions(1);
 </script>
 
 <!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->

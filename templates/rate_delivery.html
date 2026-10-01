@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate Your Delivery | AquaFlow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+        body{background:#eef3f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+        .card{background:#fff;border-radius:20px;padding:36px 32px;max-width:440px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,.08);}
+        .head{text-align:center;margin-bottom:24px;}
+        .icon{font-size:2.2rem;color:#f5a623;margin-bottom:8px;}
+        h1{font-size:1.3rem;color:#1f2d3d;}
+        .sub{color:#6b7684;font-size:.88rem;margin-top:4px;}
+
+        .flash{padding:11px 14px;border-radius:10px;font-size:.85rem;font-weight:600;margin-bottom:14px;}
+        .flash-danger{background:#fbeae8;color:#c0392b;}
+        .flash-info{background:#e8f0fb;color:#2c5f9e;}
+        .flash-success{background:#e1f5ea;color:#157a50;}
+
+        .stars{display:flex;justify-content:center;gap:10px;margin:18px 0 22px;direction:rtl;}
+        .stars input{display:none;}
+        .stars label{font-size:2.4rem;color:#dfe4ea;cursor:pointer;transition:color .15s;}
+        .stars input:checked ~ label,
+        .stars label:hover,
+        .stars label:hover ~ label{color:#f5a623;}
+
+        textarea{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid #dee2e6;font-size:.9rem;font-family:inherit;resize:vertical;min-height:90px;}
+        textarea:focus{outline:none;border-color:#2d7aff;}
+
+        .submit-btn{width:100%;margin-top:18px;padding:13px;border:none;border-radius:999px;background:#2d7aff;color:#fff;font-weight:700;font-size:.92rem;cursor:pointer;}
+        .submit-btn:hover{background:#1f66e0;}
+
+        .skip-link{display:block;text-align:center;margin-top:14px;color:#9aa5b1;font-size:.82rem;text-decoration:none;}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="head">
+            <div class="icon"><i class="fa-solid fa-star"></i></div>
+            <h1>How was your delivery?</h1>
+            <div class="sub">Booking #{{ booking_id[-6:] }} · {{ booking.quantity }} L delivered</div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="stars">
+                <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
+                <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+                <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+                <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+                <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+            </div>
+
+            <textarea name="review_text" maxlength="500" placeholder="Tell us about your delivery experience (optional)"></textarea>
+
+            <button type="submit" class="submit-btn"><i class="fa-solid fa-paper-plane"></i> Submit Rating</button>
+        </form>
+
+        <a href="{{ url_for('history') }}" class="skip-link">Skip for now</a>
+    </div>
+</body>
+</html>

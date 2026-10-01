@@ -3,109 +3,258 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#EEF3F4">
 <title>AquaFlow Console | Transaction Table</title>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
 <style>
     :root {
-        --ink: #0A1A22; --ink-2: #123039; --ink-soft: #55707A; --ink-faint: #93A8AF;
-        --teal-900: #073239; --teal-700: #0E6672; --teal-050: #EAF4F5;
+        --ink: #0A1A22;
+        --ink-soft: #55707A;
+        --ink-faint: #93A8AF;
+        --teal-900: #073239;
+        --teal-700: #0E6672;
+        --teal-600: #0E7C86;
+        --teal-500: #17A6B4;
+        --cyan-glow: #26D0C9;
+        --teal-050: #EAF4F5;
+        --teal-100: #DCEEEF;
+
         --amber-600: #A5690C; --amber-100: #FBF0DC;
         --green-600: #157A50; --green-100: #E1F5EA;
         --red-600: #B23B30; --red-100: #FBEAE8;
         --blue-600: #2C5F9E; --blue-100: #E8EFFA;
+
         --bg: #EEF3F4; --surface: #FFFFFF; --border: #DCE6E8; --border-soft: #E7EEEF;
-        --r-lg: 18px; --r-pill: 999px;
-        --shadow-xs: 0 2px 8px rgba(10,26,34,0.05);
+        --r-lg: 16px; --r-sm: 7px; --r-pill: 999px;
+        --shadow-xs: 0 1px 2px rgba(10,26,34,.05);
+        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); padding: 32px 4%; }
-    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-    .page-head h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--teal-900); display: flex; align-items: center; gap: 10px; }
-    .back-link { text-decoration: none; color: var(--ink-soft); font-weight: 600; font-size: 13.5px; display: inline-flex; align-items: center; gap: 6px; }
-    .back-link:hover { color: var(--teal-700); }
+    html { -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--ink); min-height: 100vh; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    a { color: inherit; }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #C3D3D6; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--teal-600); }
 
-    .filter-bar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-    .filter-chip { text-decoration: none; padding: 7px 16px; border-radius: var(--r-pill); font-size: 12.5px; font-weight: 700; background: var(--surface); color: var(--ink-soft); border: 1px solid var(--border); }
-    .filter-chip.active { background: var(--teal-700); color: #fff; border-color: var(--teal-700); }
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
-    .card { background: var(--surface); border-radius: var(--r-lg); padding: 24px; box-shadow: var(--shadow-xs); }
-    table { width: 100%; border-collapse: collapse; }
-    thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-faint); padding: 10px 10px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
-    tbody td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+    /* ===== TOP BAR ===== */
+    .topbar {
+        background: var(--ink);
+        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
+        padding: 0 32px; display: flex; align-items: center; justify-content: space-between;
+        height: 72px; flex-shrink: 0; position: relative; z-index: 30;
+        border-top: 4px solid var(--cyan-glow);
+    }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(155deg, var(--teal-500), var(--teal-700));
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
+    }
+    .brand-mark i { font-size: 17px; color: #fff; }
+    .brand-text h1 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #fff;
+        letter-spacing: -.1px; display: flex; align-items: center; gap: 9px; line-height: 1.1;
+    }
+    .brand-text .tag {
+        font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; font-weight: 600; color: var(--cyan-glow);
+        background: rgba(38,208,201,.12); border: 1px solid rgba(38,208,201,.25);
+        padding: 2.5px 8px; border-radius: var(--r-pill); letter-spacing: .6px; text-transform: uppercase;
+    }
+    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; font-weight: 400; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .dispatch-link {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+        padding: 7px 14px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+        color: #C7D6DB; font-weight: 600; font-size: 11.5px; transition: background .15s, color .15s;
+    }
+    .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .admin-chip {
+        display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 5px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    }
+    .admin-avatar {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(155deg,#3A5A63,#1B343C);
+        display: flex; align-items: center; justify-content: center;
+        color: #DCEBEE; font-size: 10.5px; font-weight: 700; font-family:'Space Grotesk',sans-serif;
+    }
+    .admin-chip span { font-size: 11.5px; font-weight: 600; color: #D6E4E7; }
 
-    .txn-id { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--teal-700); }
-    .type-pill { padding: 3px 9px; border-radius: var(--r-pill); font-size: 10.5px; font-weight: 700; }
+    .flow-line {
+        height: 3px; width: 100%; flex-shrink: 0; position: relative; overflow: hidden;
+        background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900));
+        background-size: 200% 100%; animation: flowMove 5s linear infinite;
+    }
+    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
+
+    /* ===== CONTROL BAR (filters) ===== */
+    .control-bar {
+        background: var(--surface); border-bottom: 1px solid var(--border);
+        padding: 13px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        position: sticky; top: 0; z-index: 20;
+    }
+    .seg-filters { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-pill); padding: 3px; gap: 2px; }
+    .pill-filter {
+        text-decoration: none; padding: 7px 15px; border-radius: var(--r-pill);
+        font-weight: 600; font-size: 12px; color: var(--ink-soft);
+        transition: all .15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .pill-filter.active { background: var(--ink); color: #fff; box-shadow: var(--shadow-xs); }
+    .pill-filter:hover:not(.active) { color: var(--teal-700); }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content { flex: 1; padding: 22px 32px 48px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+    .section-head h2 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 700; color: var(--ink);
+        display: flex; align-items: center; gap: 9px;
+    }
+    .section-head h2 i { color: var(--teal-600); font-size: 15px; }
+    .section-head .count-chip {
+        background: var(--teal-050); border: 1px solid var(--teal-100); border-radius: var(--r-pill);
+        padding: 3px 12px; font-size: 11.5px; font-weight: 700; color: var(--teal-700); font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .ledger-wrap {
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+        box-shadow: var(--shadow-sm); overflow: hidden; overflow-x: auto;
+    }
+    table.ledger { width: 100%; border-collapse: collapse; min-width: 900px; }
+    .ledger thead th {
+        text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+        color: var(--ink-faint); background: #FBFDFD; padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .ledger thead th:first-child { padding-left: 20px; }
+    .ledger tbody tr { border-bottom: 1px solid var(--border-soft); transition: background .12s; }
+    .ledger tbody tr:last-child { border-bottom: none; }
+    .ledger tbody tr:hover { background: #FAFCFC; }
+    .ledger tbody td { padding: 14px 16px; vertical-align: middle; font-size: 13px; }
+    .ledger tbody td:first-child { padding-left: 20px; }
+
+    .txn-id { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--teal-700); font-weight: 600; }
+    .cell-secondary { font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; }
+    .amount-cell { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 13.5px; color: var(--ink); }
+
+    .type-pill, .status-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 12px; border-radius: var(--r-pill); font-weight: 700; font-size: 11px;
+    }
     .type-customer_payment { background: var(--blue-100); color: var(--blue-600); }
-    .type-refund { background: var(--red-100); color: var(--red-600); }
     .type-settlement { background: var(--amber-100); color: var(--amber-600); }
+    .type-other { background: #F1F3F4; color: var(--ink-soft); }
 
-    .status-pill { padding: 3px 9px; border-radius: var(--r-pill); font-size: 10.5px; font-weight: 700; }
-    .status-completed, .status-Completed { background: var(--green-100); color: var(--green-600); }
-    .status-pending, .status-Pending { background: var(--amber-100); color: var(--amber-600); }
-    .status-rejected, .status-Rejected { background: var(--red-100); color: var(--red-600); }
-    .status-processing, .status-Processing { background: var(--blue-100); color: var(--blue-600); }
+    .status-pill i { font-size: 7px; }
+    .status-Completed, .status-completed { background: var(--green-100); color: var(--green-600); }
+    .status-Pending, .status-pending { background: var(--amber-100); color: var(--amber-600); }
+    .status-Rejected, .status-rejected { background: var(--red-100); color: var(--red-600); }
+    .status-Processing, .status-processing { background: var(--blue-100); color: var(--blue-600); }
 
-    .amount-cell { font-weight: 700; }
+    .empty-ledger { text-align: center; padding: 70px 20px; color: var(--ink-faint); }
+    .empty-ledger i { font-size: 40px; opacity: .35; color: var(--teal-600); }
+    .empty-ledger h3 { margin-top: 16px; font-family: 'Space Grotesk', sans-serif; color: var(--ink-soft); font-size: 15px; }
+    .empty-ledger p { margin-top: 4px; font-size: 12.5px; }
 
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--ink-faint); }
-    .empty-state i { font-size: 28px; margin-bottom: 10px; display: block; }
+    @media (max-width: 980px) {
+        .ledger thead { display: none; }
+        table.ledger, .ledger tbody, .ledger tbody tr, .ledger tbody td { display: block; width: 100%; min-width: 0; }
+        .ledger tbody tr { padding: 14px 16px; }
+        .ledger tbody td { padding: 4px 0; }
+    }
+    @media (max-width: 700px) {
+        .topbar, .control-bar, .main-content { padding-left: 16px; padding-right: 16px; }
+    }
 </style>
 </head>
 <body>
+<div class="app-shell">
 
-    <div class="page-head">
-        <h1><i class="fas fa-table-list"></i> Transaction Table</h1>
-        <a href="/admin-dashboard" class="back-link"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-    </div>
-
-    <div class="filter-bar">
-        <a href="/transaction-table?type=all" class="filter-chip {{ 'active' if active_type == 'all' }}">All</a>
-        <a href="/transaction-table?type=customer_payment" class="filter-chip {{ 'active' if active_type == 'customer_payment' }}">Customer Payments</a>
-        <a href="/transaction-table?type=refund" class="filter-chip {{ 'active' if active_type == 'refund' }}">Refunds</a>
-        <a href="/transaction-table?type=settlement" class="filter-chip {{ 'active' if active_type == 'settlement' }}">Driver Settlements</a>
-    </div>
-
-    <div class="card">
-        {% if transactions %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Transaction / Booking</th>
-                    <th>Type</th>
-                    <th>User / Driver</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in transactions %}
-                <tr>
-                    <td>
-                        <span class="txn-id">{{ t.get('transaction_id', t._id|string) }}</span><br>
-                        {% if t.get('booking_id') %}<span style="color:var(--ink-faint); font-size:11.5px;">Booking #{{ t.booking_id[-6:] }}</span>{% endif %}
-                    </td>
-                    <td><span class="type-pill type-{{ t.get('type', 'other') }}">{{ t.get('type', 'other')|replace('_',' ')|title }}</span></td>
-                    <td>{{ t.get('user_email') or t.get('driver_email') or '—' }}</td>
-                    <td class="amount-cell">₹{{ "{:,.0f}".format(t.get('amount', 0)) }}</td>
-                    <td>{{ t.get('payment_method', '—') }}</td>
-                    <td><span class="status-pill status-{{ t.get('status', 'Pending') }}">{{ t.get('status', 'Pending') }}</span></td>
-                    <td>{{ (t.get('created_at') or t.get('requested_at')).strftime('%d %b %Y, %I:%M %p') if (t.get('created_at') or t.get('requested_at')) else '—' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state">
-            <i class="fas fa-receipt"></i>
-            No transactions recorded yet.
+    <!-- ================= TOP BAR ================= -->
+    <div class="topbar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fas fa-droplet"></i></div>
+            <div class="brand-text">
+                <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+                <p>Payments &amp; driver settlement ledger</p>
+            </div>
         </div>
-        {% endif %}
+        <div class="topbar-right">
+            <a href="/admin-dashboard" class="dispatch-link"><i class="fas fa-arrow-left"></i>Back to Dashboard</a>
+            <div class="admin-chip">
+                <div class="admin-avatar">A</div>
+                <span>Admin</span>
+            </div>
+        </div>
+    </div>
+    <div class="flow-line"></div>
+
+    <!-- ================= CONTROL BAR ================= -->
+    <div class="control-bar">
+        <div class="seg-filters">
+            <a href="/transaction-table?type=all" class="pill-filter {{ 'active' if active_type == 'all' }}"><i class="fas fa-globe"></i>All</a>
+            <a href="/transaction-table?type=customer_payment" class="pill-filter {{ 'active' if active_type == 'customer_payment' }}"><i class="fas fa-user"></i>Customer Payments</a>
+            <a href="/transaction-table?type=settlement" class="pill-filter {{ 'active' if active_type == 'settlement' }}"><i class="fas fa-truck"></i>Driver Settlements</a>
+        </div>
     </div>
 
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main-content">
+        <div class="section-head">
+            <h2><i class="fas fa-table-list"></i> Transaction Table
+                <span class="count-chip">{{ transactions|length }} entries</span>
+            </h2>
+        </div>
+
+        <div class="ledger-wrap">
+            {% if transactions %}
+            <table class="ledger">
+                <thead>
+                    <tr>
+                        <th>Transaction / Booking</th>
+                        <th>Type</th>
+                        <th>User / Driver</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>
+                            <div class="txn-id">{{ t.get('transaction_id', t._id|string) }}</div>
+                            {% if t.get('booking_id') %}<div class="cell-secondary">Booking #{{ t.booking_id[-6:] }}</div>{% endif %}
+                        </td>
+                        <td><span class="type-pill type-{{ t.get('type', 'other') }}">{{ t.get('type', 'other')|replace('_',' ')|title }}</span></td>
+                        <td>{{ t.get('user_email') or t.get('driver_email') or '—' }}</td>
+                        <td class="amount-cell">₹{{ "{:,.0f}".format(t.get('amount', 0)) }}</td>
+                        <td>{{ t.get('payment_method', '—') }}</td>
+                        <td><span class="status-pill status-{{ t.get('status', 'Pending') }}"><i class="fas fa-circle"></i>{{ t.get('status', 'Pending') }}</span></td>
+                        <td class="cell-secondary" style="color:var(--ink-soft); font-size:12.5px;">{{ (t.get('created_at') or t.get('requested_at')).strftime('%d %b %Y, %I:%M %p') if (t.get('created_at') or t.get('requested_at')) else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <div class="empty-ledger">
+                    <i class="fas fa-receipt"></i>
+                    <h3>No transactions recorded yet</h3>
+                    <p>Customer payments and driver settlements will appear here automatically.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -199,26 +199,27 @@
         .stats-grid{
             display:grid;
             grid-template-columns:repeat(5,1fr);
-            gap:14px;
+            gap:18px;
         }
 
         .stat-card{
             background:linear-gradient(135deg,#0077ff,#00c6ff);
             color:white;
-            border-radius:20px;
-            padding:18px 12px;
+            border-radius:22px;
+            padding:32px 16px;
             text-align:center;
             min-width:0;
         }
 
         .stat-card h1{
-            font-size:30px;
-            margin-bottom:8px;
+            font-size:40px;
+            margin-bottom:10px;
             white-space:nowrap;
         }
 
         .stat-card p{
-            font-size:13px;
+            font-size:14px;
+            font-weight:500;
         }
 
         .main-card{
@@ -658,26 +659,26 @@
 
             <!-- MAIN INFO -->
 
-            <div class="card main-card" style="margin-top:25px;">
+            <div class="card main-card" style="margin-top:25px; padding-bottom:22px;">
 
                 <div class="section-title">
                     <i class="fa-solid fa-water"></i>
                     Water Booking Preferences
                 </div>
-                <p style="color:#94a3b8;font-size:13px;margin-top:-14px;margin-bottom:20px;">
+                <p style="color:#94a3b8;font-size:13px;margin-top:-14px;margin-bottom:24px;">
                     Set these from <a href="{{ url_for('edit_profile') }}" style="color:#0077ff;font-weight:600;">Edit Profile</a> — they'll prefill your next booking.
                 </p>
 
                 <div class="detail-grid">
 
-                    <div class="detail-box">
+                    <div class="detail-box" style="padding:28px 20px; min-height:100px;">
                         <h4>Favorite Tanker</h4>
                         <p>
                             {{ user.favorite_tanker if user.favorite_tanker else "Not Selected" }}
                         </p>
                     </div>
 
-                    <div class="detail-box">
+                    <div class="detail-box" style="padding:28px 20px; min-height:100px;">
                         <h4>Preferred Water</h4>
                         <p>
                             {{ user.preferred_water if user.preferred_water else "Not Selected" }}

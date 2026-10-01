@@ -20,7 +20,8 @@ from image_utils import compress_image_file
 def init_driver_auth(
     app,
     drivers_collection,
-    mail
+    mail,
+    activity_collection=None
 ):
     # =====================================================
     # DRIVER REGISTER
@@ -180,7 +181,7 @@ Do not share this OTP with anyone.
 
 This OTP is valid for 10 minutes.
 """
-                sent = send_mail_capped(mail, msg, timeout_seconds=6)
+                sent = send_mail_capped(app, mail, msg, timeout_seconds=6)
                 print(f"OTP email {'sent' if sent else 'still sending in background / failed'} for {email}")
             except Exception as e:
                 print(f"Email sending failed: {e}")
@@ -275,6 +276,14 @@ This OTP is valid for 10 minutes.
                     except (TypeError, ValueError):
                         pass
 
+                if activity_collection is not None:
+                    activity_collection.insert_one({
+                        "driver_email": session["driver_email"],
+                        "type": "Login",
+                        "detail": "Logged in",
+                        "at": datetime.now()
+                    })
+
                 return redirect(url_for("driver_dashboard"))
             else:
                 print("OTP VERIFICATION FAILED!")
@@ -329,7 +338,7 @@ Do not share this OTP with anyone.
 
 This OTP is valid for 10 minutes.
 """
-            sent = send_mail_capped(mail, msg, timeout_seconds=6)
+            sent = send_mail_capped(app, mail, msg, timeout_seconds=6)
             print(f"Resent OTP email {'sent' if sent else 'still sending in background / failed'} for {email}")
             # Redirect with success message parameter regardless - the OTP
             # is already valid in the session even if the email is slow;

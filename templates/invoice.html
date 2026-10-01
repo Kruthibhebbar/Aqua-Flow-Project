@@ -8,26 +8,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-        body{background:#eef3f9;min-height:100vh;padding:32px 16px;display:flex;flex-direction:column;align-items:center;}
+        body{background:#eef3f9;min-height:100vh;padding:22px 16px;display:flex;flex-direction:column;align-items:center;}
 
-        .toolbar{max-width:640px;width:100%;display:flex;justify-content:flex-end;margin-bottom:14px;}
+        .toolbar{max-width:640px;width:100%;display:flex;justify-content:flex-end;margin-bottom:10px;}
         .download-btn{background:#2d7aff;color:#fff;border:none;padding:11px 22px;border-radius:999px;font-weight:600;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
         .download-btn:hover{background:#1f66e0;}
 
-        .invoice{background:#fff;max-width:640px;width:100%;border-radius:16px;padding:40px;box-shadow:0 10px 25px rgba(0,0,0,.06);}
+        .invoice{background:#fff;max-width:640px;width:100%;border-radius:16px;padding:32px 40px;box-shadow:0 10px 25px rgba(0,0,0,.06);}
 
-        .inv-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #eef1f4;}
+        .inv-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #eef1f4;}
         .brand{font-size:1.4rem;font-weight:700;color:#1f2d3d;}
         .brand span{color:#2d7aff;}
         .inv-meta{text-align:right;font-size:.82rem;color:#8b95a3;}
         .inv-title{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#2d7aff;margin-bottom:4px;}
 
-        .grid-two{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:26px;}
+        .grid-two{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
         .block-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#9aa5b1;margin-bottom:6px;}
         .block-value{font-size:.92rem;color:#1f2d3d;line-height:1.5;}
         .block-value strong{display:block;font-size:.98rem;margin-bottom:2px;}
 
-        table{width:100%;border-collapse:collapse;margin-bottom:22px;}
+        table{width:100%;border-collapse:collapse;margin-bottom:16px;}
         thead th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#9aa5b1;padding:8px 0;border-bottom:1.5px solid #eef1f4;}
         thead th:last-child{text-align:right;}
         tbody td{padding:10px 0;font-size:.9rem;color:#3a4451;border-bottom:1px solid #f4f6f8;}
@@ -53,6 +53,14 @@
 
         .txn-id{font-family:'IBM Plex Mono',monospace;}
 
+        #firstScreen{display:flex;flex-direction:column;}
+        #firstScreen .totals{margin-top:auto;padding-top:24px;}
+
+        @media print {
+            #firstScreen{display:block;min-height:0 !important;}
+            #firstScreen .totals{margin-top:0;}
+        }
+
         @media print {
             body{background:#fff;padding:0;}
             .toolbar{display:none;}
@@ -66,72 +74,71 @@
     </div>
 
     <div class="invoice">
-        <div class="inv-head">
-            <div class="brand">Aqua<span>Flow</span></div>
-            <div class="inv-meta">
-                <div class="inv-title">Invoice</div>
-                Booking ID: {{ booking_id }}
-            </div>
-        </div>
-
-        <div class="grid-two">
-            <div>
-                <div class="block-label">Billed To</div>
-                <div class="block-value">
-                    <strong>{{ booking.fullname }}</strong>
-                    {{ booking.address }}<br>
-                    {{ booking.phone }}<br>
-                    {{ booking.user_email }}
+        <div id="firstScreen">
+            <div class="inv-head">
+                <div class="brand">Aqua<span>Flow</span></div>
+                <div class="inv-meta">
+                    <div class="inv-title">Invoice</div>
+                    Invoice No: <strong style="color:#1f2d3d;">{{ invoice_number }}</strong><br>
+                    Booking ID: {{ booking_id }}
                 </div>
             </div>
-            <div>
-                <div class="block-label">Payment Details</div>
-                <div class="block-value">
-                    Payment ID: <span class="txn-id">{{ booking.get('payment_id') or booking.get('razorpay_payment_id') or '—' }}</span><br>
-                    Method: {{ booking.get('payment_method', '—') }}<br>
-                    Date: {{ booking.get('payment_time').strftime('%d %b %Y, %I:%M %p') if booking.get('payment_time') else (booking.get('created_at').strftime('%d %b %Y') if booking.get('created_at') else '—') }}<br>
-                    Status: {{ booking.get('payment_status', '—') }}
+
+            <div class="grid-two">
+                <div>
+                    <div class="block-label">Billed To</div>
+                    <div class="block-value">
+                        <strong>{{ booking.fullname }}</strong>
+                        {{ booking.address }}<br>
+                        {{ booking.phone }}<br>
+                        {{ booking.user_email }}
+                    </div>
+                </div>
+                <div>
+                    <div class="block-label">Payment Details</div>
+                    <div class="block-value">
+                        {% if booking.get('payment_method') == 'Cash on Delivery' %}
+                        Method: Cash on Delivery{% if booking.get('payment_verified_at') %} (collected & verified){% endif %}<br>
+                        Date: {{ (booking.get('payment_verified_at') or booking.get('created_at')).strftime('%d %b %Y, %I:%M %p') if (booking.get('payment_verified_at') or booking.get('created_at')) else '—' }}<br>
+                        {% else %}
+                        Payment ID: <span class="txn-id">{{ booking.get('payment_id') or booking.get('razorpay_payment_id') or '—' }}</span><br>
+                        Method: {{ booking.get('payment_method', '—') }}<br>
+                        Date: {{ booking.get('payment_time').strftime('%d %b %Y, %I:%M %p') if booking.get('payment_time') else (booking.get('created_at').strftime('%d %b %Y') if booking.get('created_at') else '—') }}<br>
+                        {% endif %}
+                        Status: {{ booking.get('payment_status', '—') }}
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <table>
-            <thead>
-                <tr><th>Description</th><th>Amount</th></tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        Water Tanker Delivery ({{ booking.quantity }} L)<br>
-                        <span style="color:#9aa5b1;font-size:.78rem;">Delivered to: {{ booking.address }}</span>
-                    </td>
-                    <td>₹{{ "{:,.2f}".format(base_amount) }}</td>
-                </tr>
-                <tr>
-                    <td>GST (18%, included in price)</td>
-                    <td>₹{{ "{:,.2f}".format(gst_amount) }}</td>
-                </tr>
-            </tbody>
-        </table>
+            <table>
+                <thead>
+                    <tr><th>Description</th><th>Amount</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            Water Tanker Delivery ({{ booking.quantity }} L)<br>
+                            <span style="color:#9aa5b1;font-size:.78rem;">Delivered {{ booking.get('delivery_date', '') }}{% if booking.get('delivery_time') %} · {{ booking.get('delivery_time') }}{% endif %}</span>
+                        </td>
+                        <td>₹{{ "{:,.2f}".format(base_amount) }}</td>
+                    </tr>
+                    <tr>
+                        <td>GST (18%, included in price)</td>
+                        <td>₹{{ "{:,.2f}".format(gst_amount) }}</td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <div class="totals">
-            <div class="t-row"><span>Subtotal</span><span>₹{{ "{:,.2f}".format(base_amount) }}</span></div>
-            <div class="t-row"><span>GST</span><span>₹{{ "{:,.2f}".format(gst_amount) }}</span></div>
-            <div class="t-row grand"><span>Total Paid</span><span>₹{{ "{:,.2f}".format(amount) }}</span></div>
+            <div class="totals" id="foldEnd">
+                <div class="t-row"><span>Subtotal</span><span>₹{{ "{:,.2f}".format(base_amount) }}</span></div>
+                <div class="t-row"><span>GST</span><span>₹{{ "{:,.2f}".format(gst_amount) }}</span></div>
+                <div class="t-row grand"><span>Total Paid</span><span>₹{{ "{:,.2f}".format(amount) }}</span></div>
+            </div>
         </div>
 
         <div class="timeline">
             <div class="timeline-title">Order Timeline</div>
-            {% set stages = [
-                ('Booking Created', booking.get('created_at')),
-                ('Admin Approved', booking.get('approved_at')),
-                ('Payment Successful', booking.get('payment_time') or booking.get('paid_at')),
-                ('Driver Assigned', booking.get('driver_assigned_at')),
-                ('Driver Started', booking.get('started_at')),
-                ('OTP Verified', booking.get('otp_verified_at')),
-                ('Delivered', booking.get('delivered_at')),
-            ] %}
-            {% for label, ts in stages %}
+            {% for label, ts in timeline_stages %}
             <div class="tl-item">
                 <div class="tl-dot {{ 'done' if ts else 'pending' }}">
                     {% if ts %}<i class="fa-solid fa-check"></i>{% endif %}
@@ -148,5 +155,36 @@
             This is a system-generated invoice from AquaFlow and does not require a signature.
         </div>
     </div>
+
+    <script>
+        // Pins the totals block (Subtotal/GST/Total Paid) to the exact
+        // bottom edge of the first screen, and pushes Order Timeline
+        // (and everything after it) to start at the next screen -
+        // regardless of how long this particular invoice's address or
+        // line items are. #firstScreen is a column flexbox; growing its
+        // min-height to fill the viewport lets `margin-top:auto` on
+        // .totals absorb all the slack and shove the totals block down
+        // to hug the bottom, instead of leaving blank space below it.
+        function fitFirstScreen() {
+            const firstScreen = document.getElementById('firstScreen');
+            if (!firstScreen) return;
+
+            // Reset first so we measure natural (unstretched) height
+            firstScreen.style.minHeight = '0px';
+
+            const topOfScreen = firstScreen.getBoundingClientRect().top;
+            const viewportHeight = window.innerHeight;
+            const available = viewportHeight - topOfScreen;
+
+            const naturalHeight = firstScreen.getBoundingClientRect().height;
+
+            // Only stretch forward - if this invoice's content is already
+            // taller than one screen, there's nothing sensible to trim.
+            firstScreen.style.minHeight = Math.max(available, naturalHeight) + 'px';
+        }
+
+        window.addEventListener('load', fitFirstScreen);
+        window.addEventListener('resize', fitFirstScreen);
+    </script>
 </body>
 </html>

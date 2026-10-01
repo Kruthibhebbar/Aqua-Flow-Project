@@ -5,23 +5,28 @@ from flask import (
     url_for,
     request,
     jsonify,
-    flash,
-    abort
+    flash
 )
 from bson.objectid import ObjectId
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 from flask_mail import Message
 from mail_utils import send_mail_capped
 import random
+import re
+import os
 import logging
-from typing import Dict, Any, List, Optional
+from werkzeug.utils import secure_filename
+from typing import Dict, Any
 
+from payment_ledger import log_transaction
+from image_utils import compress_image_file
 from payment_admin import (
     get_bank_details_masked as get_bank_details,
     get_driver_wallet_summary,
     get_driver_settlement_summary,
-    save_payment_screenshot
+    save_payment_screenshot,
+    DRIVER_SHARE_RATE
 )
  
 # Configure logging
@@ -34,8 +39,10 @@ _bookings_collection = None
 _notifications_collection = None
 _earnings_collection = None
 _documents_collection = None
+_activity_collection = None
 _settings_collection = None
 _transactions_collection = None
+_payment_transactions_collection = None
 _mail = None
  
 # =====================================================
@@ -85,69 +92,80 @@ def init_driver_dashboard(
     notifications_collection,
     earnings_collection=None,
     documents_collection=None,
+    activity_collection=None,
     mail=None,
     settings_collection=None,
-    transactions_collection=None
+    transactions_collection=None,
+    payment_transactions_collection=None
 ):
     # Set global variables
     global _drivers_collection, _bookings_collection, _notifications_collection
-    global _earnings_collection, _documents_collection, _mail, _settings_collection
-    global _transactions_collection
+    global _earnings_collection, _documents_collection, _activity_collection, _mail, _settings_collection
+    global _transactions_collection, _payment_transactions_collection
     
     _drivers_collection = drivers_collection
     _bookings_collection = bookings_collection
     _notifications_collection = notifications_collection
     _earnings_collection = earnings_collection
     _documents_collection = documents_collection
+    _activity_collection = activity_collection
     _mail = mail
     _settings_collection = settings_collection
     _transactions_collection = transactions_collection
+    _payment_transactions_collection = payment_transactions_collection
     
     # =====================================================
     # HELPER FUNCTIONS
     # =====================================================
     
     def calculate_driver_earnings(driver_email: str) -> Dict[str, Any]:
-        """Calculate comprehensive earnings for driver"""
+        """Calculate comprehensive earnings for driver.
+
+        IMPORTANT: this must report the driver's actual commission
+        share (DRIVER_SHARE_RATE), not the full fare - the wallet page
+        (get_driver_wallet_summary/get_driver_settlement_summary) and
+        the admin dashboard's top-drivers leaderboard both use the
+        commission share. If this function used the full fare instead,
+        a driver would see two different "earnings" numbers for the
+        same deliveries depending on which page they're looking at.
+        """
         # Get all completed deliveries
         completed_deliveries = list(_bookings_collection.find({
             "driver_email": driver_email,
             "status": "Delivered"
         }))
-        
+
         total_earnings = sum([
-            order.get("delivery_fee", 500) + order.get("tip_amount", 0)
+            round(order.get("delivery_fee", 500) * DRIVER_SHARE_RATE) + order.get("tip_amount", 0)
             for order in completed_deliveries
         ])
-        
+
         # Calculate pending payments (delivered but not paid)
         pending_payments = sum([
-            order.get("delivery_fee", 500)
+            round(order.get("delivery_fee", 500) * DRIVER_SHARE_RATE)
             for order in completed_deliveries
             if not order.get("payment_processed", False)
         ])
-        
+
         # Calculate approved payments
         approved_payments = sum([
-            order.get("delivery_fee", 500)
+            round(order.get("delivery_fee", 500) * DRIVER_SHARE_RATE)
             for order in completed_deliveries
             if order.get("payment_processed", False)
         ])
-        
+
         # Calculate weekly earnings
-        today = datetime.now()
-        start_of_week = today - timedelta(days=today.weekday())
         weekly_earnings = {
             "Mon": 0, "Tue": 0, "Wed": 0, "Thu": 0, "Fri": 0, "Sat": 0, "Sun": 0
         }
-        
+
         for order in completed_deliveries:
             delivered_at = order.get("delivered_at")
             if delivered_at and isinstance(delivered_at, datetime):
                 day_name = delivered_at.strftime("%a")
                 if day_name in weekly_earnings:
-                    weekly_earnings[day_name] += order.get("delivery_fee", 500)
-        
+                    weekly_earnings[day_name] += round(order.get("delivery_fee", 500) * DRIVER_SHARE_RATE)
+
         return {
             "total_earnings": total_earnings,
             "pending_payments": pending_payments,
@@ -369,35 +387,197 @@ def init_driver_dashboard(
     @app.route("/driver-profile")
     @driver_login_required
     def driver_profile():
-        driver = _drivers_collection.find_one({"email": session["driver_email"]})
-        return render_template("driver_profile.html", driver=driver)
+        driver_email = session["driver_email"]
+
+        # Refresh stats first (same helper the main dashboard uses) so
+        # total_deliveries / total_earnings / average_rating are never stale.
+        update_driver_stats(driver_email)
+        driver = _drivers_collection.find_one({"email": driver_email})
+
+        all_orders = list(
+            _bookings_collection.find({"driver_email": driver_email}).sort("created_at", -1)
+        )
+
+        active_deliveries = [
+            o for o in all_orders if o.get("status") not in ("Delivered", "Cancelled")
+        ][:5]
+
+        completed_orders = [o for o in all_orders if o.get("status") == "Delivered"]
+        cancelled_orders = [o for o in all_orders if o.get("status") == "Cancelled"]
+
+        # Completion rate replaces the old fake "98% On-Time Rate" - there's
+        # no real on-time tracking in this app, so rather than invent one,
+        # this uses real math the data actually supports.
+        if completed_orders or cancelled_orders:
+            completion_rate = round(
+                len(completed_orders) / (len(completed_orders) + len(cancelled_orders)) * 100
+            )
+        else:
+            completion_rate = None
+
+        recent_completed = sorted(
+            completed_orders,
+            key=lambda o: o.get("delivered_at") or datetime.min,
+            reverse=True
+        )[:3]
+        for o in recent_completed:
+            o["driver_earning"] = round(
+                o.get("delivery_fee", 500) * DRIVER_SHARE_RATE
+            ) + o.get("tip_amount", 0)
+
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        todays_deliveries = [o for o in all_orders if o.get("delivery_date") == today_str][:5]
+
+        # Real reviews only - a booking only shows up here if a customer
+        # actually left a rating. No fabricated names or quotes.
+        reviews = sorted(
+            [o for o in completed_orders if o.get("customer_rating")],
+            key=lambda o: o.get("delivered_at") or datetime.min,
+            reverse=True
+        )[:5]
+
+        # Profile completeness based on which fields are actually filled in.
+        completeness_fields = [
+            driver.get("photo"),
+            driver.get("phone"),
+            driver.get("address"),
+            driver.get("truck_number"),
+            driver.get("truck_capacity"),
+            driver.get("license_number"),
+            driver.get("experience_years"),
+        ]
+        filled = sum(1 for f in completeness_fields if f not in (None, "", 0))
+        profile_completion = round((filled / len(completeness_fields)) * 100)
+
+        # Driver ID - derived deterministically from the real Mongo _id
+        # (no separate driver_id field exists in the schema), so every
+        # existing driver gets a stable, real ID with no migration needed.
+        driver_id = "AF-DR-" + str(driver["_id"])[-6:].upper()
+
+        # "Verified" reuses the real admin approval workflow that already
+        # gates driver login - an Approved driver's identity/vehicle info
+        # has genuinely been checked by an admin.
+        is_verified = driver.get("approval_status") == "Approved"
+        registration_status = "Verified" if is_verified else driver.get("approval_status", "Pending")
+
+        # Documents - one current record per required type, from the real
+        # upload flow (re-uploading replaces the old one).
+        documents = {}
+        if _documents_collection is not None:
+            for d in _documents_collection.find({"driver_email": driver_email}):
+                documents[d.get("document_type")] = d
+
+        # Recent Activity - a real merged feed: delivery/order events come
+        # from bookings, Login/Profile/Vehicle events come from the real
+        # activity log written by the login and profile-update routes.
+        activity_feed = []
+        for o in completed_orders:
+            if o.get("delivered_at"):
+                activity_feed.append({
+                    "type": "Delivery Completed",
+                    "detail": o.get("fullname", "a customer"),
+                    "at": o["delivered_at"]
+                })
+        for o in all_orders:
+            if o.get("driver_assigned_at") and o.get("status") not in ("Pending",):
+                activity_feed.append({
+                    "type": "Order Accepted",
+                    "detail": o.get("fullname", "a customer"),
+                    "at": o["driver_assigned_at"]
+                })
+        if _activity_collection is not None:
+            for a in _activity_collection.find({"driver_email": driver_email}):
+                activity_feed.append({
+                    "type": a.get("type"),
+                    "detail": a.get("detail", ""),
+                    "at": a.get("at")
+                })
+        activity_feed = [a for a in activity_feed if a.get("at")]
+        activity_feed.sort(key=lambda a: a["at"], reverse=True)
+        activity_feed = activity_feed[:5]
+
+        return render_template(
+            "driver_profile.html",
+            driver=driver,
+            active_deliveries=active_deliveries,
+            recent_completed=recent_completed,
+            todays_deliveries=todays_deliveries,
+            reviews=reviews,
+            completion_rate=completion_rate,
+            profile_completion=profile_completion,
+            driver_id=driver_id,
+            is_verified=is_verified,
+            registration_status=registration_status,
+            documents=documents,
+            activity_feed=activity_feed,
+            current_time=datetime.now()
+        )
     
     @app.route("/update-driver-profile", methods=["POST"])
     @driver_login_required
     def update_driver_profile():
         try:
+            driver_email = session["driver_email"]
+            existing = _drivers_collection.find_one({"email": driver_email}) or {}
+
             update_data = {
                 "phone": request.form.get("phone"),
+                "address": request.form.get("address"),
+                "emergency_contact": request.form.get("emergency_contact"),
                 "truck_number": request.form.get("truck_number"),
+                "truck_capacity": request.form.get("truck_capacity"),
                 "license_number": request.form.get("license_number"),
-                "experience_years": int(request.form.get("experience_years", 0)),
+                "experience_years": int(request.form.get("experience_years") or 0),
                 "updated_at": datetime.now()
             }
-            
-            # Remove None values
+
+            # Remove None values (fields not present in this particular form)
             update_data = {k: v for k, v in update_data.items() if v is not None}
-            
-            # Handle photo upload if present
+
+            # Handle photo upload if present - actually persist the file this
+            # time (it was previously only storing the raw filename string
+            # with nothing saved to disk).
             if "photo" in request.files:
                 photo = request.files["photo"]
                 if photo and photo.filename:
-                    update_data["photo"] = photo.filename
-            
+                    ext = os.path.splitext(photo.filename)[1].lower()
+                    if ext in {".png", ".jpg", ".jpeg", ".webp"}:
+                        os.makedirs("static/uploads/drivers", exist_ok=True)
+                        filename = f"{int(datetime.now().timestamp())}_{secure_filename(photo.filename)}"
+                        photo_path = f"static/uploads/drivers/{filename}"
+                        photo.save(photo_path)
+                        compress_image_file(photo_path)  # safe no-op on failure
+                        update_data["photo"] = photo_path
+
             _drivers_collection.update_one(
-                {"email": session["driver_email"]},
+                {"email": driver_email},
                 {"$set": update_data}
             )
-            
+
+            # Real activity log - distinguish a vehicle-info edit from a
+            # personal-info edit so Recent Activity reflects what actually
+            # changed, instead of always saying the same generic thing.
+            if _activity_collection is not None:
+                vehicle_fields = {"truck_number", "truck_capacity", "license_number"}
+                changed_vehicle = any(
+                    k in vehicle_fields and existing.get(k) != v
+                    for k, v in update_data.items()
+                )
+                changed_personal = any(
+                    k not in vehicle_fields and k != "updated_at" and existing.get(k) != v
+                    for k, v in update_data.items()
+                )
+                if changed_vehicle:
+                    _activity_collection.insert_one({
+                        "driver_email": driver_email, "type": "Vehicle Updated",
+                        "detail": "Vehicle details updated", "at": datetime.now()
+                    })
+                if changed_personal:
+                    _activity_collection.insert_one({
+                        "driver_email": driver_email, "type": "Profile Updated",
+                        "detail": "Profile details updated", "at": datetime.now()
+                    })
+
             flash("Profile updated successfully", "success")
         except Exception as e:
             logger.error(f"Profile update error: {str(e)}")
@@ -933,6 +1113,19 @@ def init_driver_dashboard(
                 except Exception as notify_err:
                     logger.error(f"Payment submission notification error: {str(notify_err)}")
 
+            log_transaction(
+                _payment_transactions_collection,
+                type="cod_collection",
+                status="Waiting Admin Approval",
+                amount=amount,
+                booking_id=booking_id,
+                user_email=booking.get("user_email"),
+                driver_email=session["driver_email"],
+                gateway="cash",
+                payment_screenshot=screenshot_path,
+                notes=f"{method} ref: {transaction_ref}" + (f" — {note}" if note else "")
+            )
+
             return jsonify({
                 "success": True,
                 "message": "Payment submission recorded. Admin will verify it against the bank statement and confirm receipt."
@@ -1015,7 +1208,7 @@ Please share this OTP with the driver only after your delivery has arrived.
 Thank You,
 AquaFlow Team
 """
-                    send_mail_capped(_mail, msg, timeout_seconds=6)
+                    send_mail_capped(app, _mail, msg, timeout_seconds=6)
                 except Exception as mail_err:
                     logger.error(f"Failed to email delivery OTP to customer: {mail_err}")
                     return jsonify({"success": False, "message": "Could not send OTP to customer email"}), 500
@@ -1166,6 +1359,67 @@ AquaFlow Team
             completed_deliveries_count=completed_deliveries_count,
             deliveries_to_next_bonus=deliveries_to_next_bonus
         )
+
+    # =====================================================
+    # DRIVER SUBMITS / UPDATES BANK DETAILS FOR PAYOUTS
+    # =====================================================
+    # A driver must have admin-approved bank details on file before
+    # they're allowed to request a withdrawal (enforced in
+    # payment_admin.request_driver_withdrawal). Any edit here resets
+    # approval back to Pending - a driver can't quietly change the
+    # account a payout would go to without admin re-checking it.
+
+    @app.route("/driver/bank-details", methods=["POST"])
+    @driver_login_required
+    def submit_driver_bank_details():
+        driver_email = session["driver_email"]
+
+        account_holder_name = request.form.get("account_holder_name", "").strip()
+        account_number = request.form.get("account_number", "").strip()
+        ifsc = request.form.get("ifsc", "").strip().upper()
+
+        if not account_holder_name:
+            flash("Enter the account holder's name.", "danger")
+            return redirect(url_for("driver_earnings"))
+
+        if not re.fullmatch(r"\d{9,18}", account_number):
+            flash("Enter a valid bank account number (9-18 digits).", "danger")
+            return redirect(url_for("driver_earnings"))
+
+        if not re.fullmatch(r"[A-Z]{4}0[A-Z0-9]{6}", ifsc):
+            flash("Enter a valid IFSC code (e.g. HDFC0001234).", "danger")
+            return redirect(url_for("driver_earnings"))
+
+        _drivers_collection.update_one(
+            {"email": driver_email},
+            {"$set": {
+                "bank_details": {
+                    "account_holder_name": account_holder_name,
+                    "account_number": account_number,
+                    "ifsc": ifsc,
+                    "approval_status": "Pending",
+                    "submitted_at": datetime.now(),
+                    "approved_at": None,
+                    "approved_by": None,
+                }
+            }}
+        )
+
+        if _notifications_collection is not None:
+            _notifications_collection.insert_one({
+                "user_email": None,
+                "title": "Driver Bank Details Submitted",
+                "message": f"{driver_email} submitted bank details for payout approval.",
+                "type": "driver_bank_details",
+                "status": "info",
+                "icon": "🏦",
+                "read": False,
+                "created_at": datetime.now(),
+                "audience": "admin"
+            })
+
+        flash("Bank details submitted. Withdrawals are unlocked once admin approves them.", "success")
+        return redirect(url_for("driver_earnings"))
     
     # =====================================================
     # EMERGENCY MESSAGE
@@ -1406,29 +1660,46 @@ AquaFlow Team
         try:
             doc_type = request.form.get("document_type")
             doc_file = request.files.get("document")
-            
-            if not doc_file or not doc_type:
-                flash("Please select a document to upload", "warning")
-                return redirect(url_for("driver_documents"))
-            
-            # Implement file upload logic here
-            # For now, just record the upload
+
+            allowed_types = {"driving_license", "aadhaar", "vehicle_rc"}
+            if not doc_file or not doc_file.filename or doc_type not in allowed_types:
+                flash("Please select a valid document to upload", "warning")
+                return redirect(url_for("driver_profile"))
+
+            ext = os.path.splitext(doc_file.filename)[1].lower()
+            if ext not in {".png", ".jpg", ".jpeg", ".webp", ".pdf"}:
+                flash("Please upload a PNG, JPG, WEBP, or PDF file", "warning")
+                return redirect(url_for("driver_profile"))
+
             if _documents_collection is not None:
-                _documents_collection.insert_one({
-                    "driver_email": session["driver_email"],
-                    "document_type": doc_type,
-                    "filename": doc_file.filename,
-                    "status": "pending_review",
-                    "uploaded_at": datetime.now()
-                })
-            
-            flash("Document uploaded successfully", "success")
-            
+                os.makedirs("static/uploads/driver_documents", exist_ok=True)
+                filename = f"{secure_filename(session['driver_email'])}_{doc_type}_{int(datetime.now().timestamp())}{ext}"
+                file_path = f"static/uploads/driver_documents/{filename}"
+                doc_file.save(file_path)
+                if ext != ".pdf":
+                    compress_image_file(file_path)  # safe no-op on failure
+
+                # One current record per document type - a re-upload replaces
+                # the old one and resets it to Pending Review.
+                _documents_collection.update_one(
+                    {"driver_email": session["driver_email"], "document_type": doc_type},
+                    {"$set": {
+                        "driver_email": session["driver_email"],
+                        "document_type": doc_type,
+                        "file_path": file_path,
+                        "status": "Pending Review",
+                        "uploaded_at": datetime.now()
+                    }},
+                    upsert=True
+                )
+
+            flash("Document uploaded successfully - pending review", "success")
+
         except Exception as e:
             logger.error(f"Document upload error: {str(e)}")
             flash("Error uploading document", "danger")
         
-        return redirect(url_for("driver_documents"))
+        return redirect(url_for("driver_profile"))
     
     # =====================================================
     # DRIVER LOGOUT

@@ -1,532 +1,390 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        New Driver Requests
-    </title>
-
-    <!-- GOOGLE FONT -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
-
-    <!-- FONT AWESOME -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    >
-
-    <style>
-
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:'Poppins',sans-serif;
-        }
-
-        body{
-
-            background:#f4f7fb;
-            min-height:100vh;
-            padding:30px;
-            color:#1e293b;
-        }
-
-        .container{
-
-            width:100%;
-        }
-
-        .top-header{
-
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:35px;
-            flex-wrap:wrap;
-            gap:20px;
-        }
-
-        .page-title{
-
-            font-size:38px;
-            font-weight:700;
-            color:#0f172a;
-        }
-
-        .page-subtitle{
-
-            color:#64748b;
-            margin-top:8px;
-            font-size:15px;
-        }
-
-        .request-badge{
-
-            background:#dbeafe;
-            color:#2563eb;
-            padding:14px 24px;
-            border-radius:18px;
-            font-weight:600;
-            font-size:16px;
-        }
-
-        .table-wrapper{
-
-            background:white;
-            border-radius:30px;
-            padding:25px;
-            border:1px solid #e2e8f0;
-            box-shadow:0 10px 30px rgba(0,0,0,0.05);
-            overflow-x:auto;
-        }
-
-        table{
-
-            width:100%;
-            border-collapse:collapse;
-            min-width:1400px;
-        }
-
-        thead{
-
-            background:#eff6ff;
-        }
-
-        th{
-
-            padding:18px;
-            text-align:left;
-            color:#1e3a8a;
-            font-size:14px;
-            font-weight:600;
-        }
-
-        td{
-
-            padding:18px;
-            border-bottom:1px solid #e2e8f0;
-            color:#334155;
-            font-size:14px;
-            vertical-align:middle;
-        }
-
-        tr:hover{
-
-            background:#f8fafc;
-        }
-
-        .driver-box{
-
-            display:flex;
-            align-items:center;
-            gap:14px;
-        }
-
-        .driver-photo{
-
-            width:70px;
-            height:70px;
-            border-radius:50%;
-            object-fit:cover;
-            border:3px solid #dbeafe;
-        }
-
-        .driver-name{
-
-            font-weight:700;
-            color:#0f172a;
-            font-size:15px;
-        }
-
-        .driver-email{
-
-            color:#64748b;
-            font-size:13px;
-            margin-top:4px;
-        }
-
-        .truck-badge{
-
-            background:#eff6ff;
-            color:#2563eb;
-            padding:8px 14px;
-            border-radius:12px;
-            font-weight:600;
-            display:inline-block;
-        }
-
-        .capacity-badge{
-
-            background:#ecfeff;
-            color:#0891b2;
-            padding:8px 14px;
-            border-radius:12px;
-            font-weight:600;
-            display:inline-block;
-        }
-
-        .address{
-
-            max-width:250px;
-            line-height:1.5;
-            color:#475569;
-        }
-
-        .action-buttons{
-
-            display:flex;
-            gap:12px;
-            flex-wrap:wrap;
-        }
-
-        .approve-btn{
-
-            background:#22c55e;
-            color:white;
-            padding:12px 18px;
-            border-radius:14px;
-            text-decoration:none;
-            font-size:14px;
-            font-weight:600;
-            transition:0.3s;
-        }
-
-        .approve-btn:hover{
-
-            background:#16a34a;
-            transform:translateY(-2px);
-        }
-
-        .reject-btn{
-
-            background:#ef4444;
-            color:white;
-            padding:12px 18px;
-            border-radius:14px;
-            text-decoration:none;
-            font-size:14px;
-            font-weight:600;
-            transition:0.3s;
-        }
-
-        .reject-btn:hover{
-
-            background:#dc2626;
-            transform:translateY(-2px);
-        }
-
-        .pending-badge{
-
-            background:#fef3c7;
-            color:#d97706;
-            padding:8px 16px;
-            border-radius:30px;
-            font-size:13px;
-            font-weight:600;
-            display:inline-block;
-        }
-
-        .empty-box{
-
-            background:white;
-            padding:90px 30px;
-            border-radius:30px;
-            text-align:center;
-            border:1px solid #e2e8f0;
-        }
-
-        .empty-box i{
-
-            font-size:80px;
-            color:#cbd5e1;
-            margin-bottom:20px;
-        }
-
-        .empty-title{
-
-            font-size:28px;
-            font-weight:700;
-            color:#0f172a;
-            margin-bottom:10px;
-        }
-
-        .empty-subtitle{
-
-            color:#64748b;
-            font-size:15px;
-        }
-
-        @media(max-width:768px){
-
-            body{
-
-                padding:16px;
-            }
-
-            .page-title{
-
-                font-size:28px;
-            }
-        }
-
-    </style>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#EEF3F4">
+<title>AquaFlow Console | New Driver Requests</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --ink: #0A1A22;
+        --ink-2: #123039;
+        --ink-soft: #55707A;
+        --ink-faint: #93A8AF;
+        --teal-900: #073239;
+        --teal-700: #0E6672;
+        --teal-600: #0E7C86;
+        --teal-500: #17A6B4;
+        --cyan-glow: #26D0C9;
+        --teal-050: #EAF4F5;
+        --teal-100: #DCEEEF;
+
+        --amber-600: #A5690C;
+        --amber-100: #FBF0DC;
+        --green-600: #157A50;
+        --green-100: #E1F5EA;
+        --red-600: #B23B30;
+        --red-100: #FBEAE8;
+        --blue-600: #2C5F9E;
+        --blue-100: #E8EFFA;
+        --violet-600: #5B4AA8;
+        --violet-100: #ECE9F9;
+
+        --bg: #EEF3F4;
+        --surface: #FFFFFF;
+        --border: #DCE6E8;
+        --border-soft: #E7EEEF;
+
+        --r-lg: 16px;
+        --r-md: 10px;
+        --r-sm: 7px;
+        --r-pill: 999px;
+
+        --shadow-xs: 0 1px 2px rgba(10,26,34,.05);
+        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
+        --shadow-md: 0 16px 40px -18px rgba(10,26,34,.28);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
+
+    body {
+        background: var(--bg);
+        font-family: 'Inter', system-ui, sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+    }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    a { color: inherit; }
+
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #C3D3D6; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--teal-600); }
+
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ===== TOP BAR (same language as Booking Management) ===== */
+    .topbar {
+        background: var(--ink);
+        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 72px;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 30;
+        border-top: 4px solid var(--cyan-glow);
+    }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(155deg, var(--teal-500), var(--teal-700));
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
+    }
+    .brand-mark i { font-size: 17px; color: #fff; }
+    .brand-text h1 {
+        font-size: 18px; font-weight: 700; color: #fff;
+        letter-spacing: -.1px; display: flex; align-items: center; gap: 9px; line-height: 1.1;
+    }
+    .brand-text .tag {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 9.5px; font-weight: 600; color: var(--cyan-glow);
+        background: rgba(38,208,201,.12);
+        border: 1px solid rgba(38,208,201,.25);
+        padding: 2.5px 8px; border-radius: var(--r-pill);
+        letter-spacing: .6px; text-transform: uppercase;
+    }
+    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; font-weight: 400; }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .dispatch-link {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+        padding: 7px 14px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+        color: #C7D6DB; font-weight: 600; font-size: 11.5px; transition: background .15s, color .15s;
+    }
+    .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+    .admin-chip {
+        display: flex; align-items: center; gap: 9px;
+        padding: 5px 12px 5px 5px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    }
+    .admin-avatar {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(155deg,#3A5A63,#1B343C);
+        display: flex; align-items: center; justify-content: center;
+        color: #DCEBEE; font-size: 10.5px; font-weight: 700;
+    }
+    .admin-chip span { font-size: 11.5px; font-weight: 600; color: #D6E4E7; }
+
+    /* ===== FLOW LINE ===== */
+    .flow-line {
+        height: 3px; width: 100%; flex-shrink: 0; position: relative; overflow: hidden;
+        background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900));
+        background-size: 200% 100%;
+        animation: flowMove 5s linear infinite;
+    }
+    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
+
+    /* ===== COMPACT INSTRUMENT STRIP ===== */
+    .instrument-strip {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+        display: flex;
+        align-items: stretch;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+    .instrument {
+        display: flex; align-items: center; gap: 11px;
+        padding: 13px 26px 13px 0;
+        margin-right: 26px;
+        border-right: 1px solid var(--border-soft);
+        flex-shrink: 0;
+    }
+    .instrument:last-of-type { border-right: none; margin-right: 0; }
+    .instrument-icon {
+        width: 30px; height: 30px; border-radius: var(--r-sm);
+        display: flex; align-items: center; justify-content: center; font-size: 12.5px; flex-shrink: 0;
+    }
+    .instrument-icon.pending { background: var(--amber-100); color: var(--amber-600); }
+    .instrument-copy h4 {
+        font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .55px;
+        color: var(--ink-faint); margin-bottom: 3px;
+    }
+    .instrument-copy .val {
+        font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 600; color: var(--ink); line-height: 1;
+    }
+    .instrument-spacer { flex: 1; }
+    .instrument-time {
+        display: flex; align-items: center; gap: 7px;
+        font-size: 11px; color: var(--ink-faint); padding: 13px 0;
+    }
+    .instrument-time i { color: var(--teal-600); }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content { flex: 1; padding: 22px 32px 48px; }
+
+    .section-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+    }
+    .section-head h2 {
+        font-size: 16.5px; font-weight: 700; color: var(--ink);
+        display: flex; align-items: center; gap: 9px;
+    }
+    .section-head h2 i { color: var(--teal-600); font-size: 15px; }
+    .section-head p {
+        font-size: 12.5px; color: var(--ink-soft); margin-top: 3px;
+    }
+    .section-head .count-chip {
+        background: var(--teal-050); border: 1px solid var(--teal-100);
+        border-radius: var(--r-pill); padding: 3px 12px; font-size: 11.5px; font-weight: 700;
+        color: var(--teal-700); font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* ===== DRIVER REQUEST LEDGER (matches Booking Management's ledger table) ===== */
+    .ledger-wrap {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        overflow-x: auto;
+    }
+    table.ledger { width: 100%; border-collapse: collapse; table-layout: auto; min-width: 980px; }
+    .ledger thead th {
+        text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .6px; color: var(--ink-faint);
+        background: #FBFDFD; padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    .ledger thead th:first-child { padding-left: 20px; }
+    .ledger tbody tr {
+        border-bottom: 1px solid var(--border-soft);
+        transition: background .12s;
+    }
+    .ledger tbody tr:last-child { border-bottom: none; }
+    .ledger tbody tr:hover { background: #FAFCFC; }
+    .ledger tbody td { padding: 14px 16px; vertical-align: middle; font-size: 13px; }
+    .ledger tbody td:first-child { padding-left: 20px; }
+
+    .status-rail-cell { width: 4px; padding: 0 !important; }
+    .status-rail { width: 4px; height: 100%; min-height: 60px; border-radius: 3px; background: var(--amber-600); }
+
+    .driver-box { display: flex; align-items: center; gap: 12px; }
+    .driver-photo {
+        width: 42px; height: 42px; border-radius: 50%; object-fit: cover;
+        border: 2px solid var(--teal-100); flex-shrink: 0;
+    }
+    .cell-primary { font-weight: 600; color: var(--ink); font-size: 13.3px; }
+    .cell-secondary { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+    .cell-address { max-width: 230px; line-height: 1.45; font-size: 12.5px; color: var(--ink-soft); }
+
+    .info-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 11px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 11px;
+        background: var(--blue-100); color: var(--blue-600);
+    }
+    .info-chip.cap { background: var(--teal-050); color: var(--teal-700); }
+
+    .status-pill {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        padding: 4px 12px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 11px; letter-spacing: .2px;
+        background: var(--amber-100); color: var(--amber-600);
+        white-space: nowrap;
+    }
+    .status-pill i { font-size: 7px; }
+
+    .actions-cell { text-align: right; white-space: nowrap; padding-right: 16px !important; }
+    .action-stack { display: inline-flex; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; }
+    .action-btn {
+        border: none; padding: 7px 14px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 11px; cursor: pointer;
+        transition: filter .15s, transform .1s;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        font-family: 'Inter', sans-serif; white-space: nowrap; text-decoration: none;
+    }
+    .action-btn:active { transform: scale(0.96); }
+    .btn-approve { background: var(--green-100); color: var(--green-600); }
+    .btn-approve:hover { background: #CFEEDD; }
+    .btn-reject { background: var(--red-100); color: var(--red-600); }
+    .btn-reject:hover { background: #F7D9D5; }
+
+    .empty-ledger { text-align: center; padding: 70px 20px; color: var(--ink-faint); }
+    .empty-ledger i { font-size: 40px; opacity: .35; color: var(--teal-600); }
+    .empty-ledger h3 { margin-top: 16px; color: var(--ink-soft); font-size: 15px; }
+    .empty-ledger p { margin-top: 4px; font-size: 12.5px; }
+
+    @media (max-width: 980px) {
+        .ledger thead { display: none; }
+        table.ledger, .ledger tbody, .ledger tbody tr, .ledger tbody td { display: block; width: 100%; min-width: 0; }
+        .ledger tbody tr { padding: 14px 16px; position: relative; }
+        .status-rail-cell { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; height: auto; }
+        .status-rail { min-height: 100%; }
+        .ledger tbody td { padding: 4px 0 4px 8px; }
+        .cell-address { max-width: none; }
+        .actions-cell { text-align: left; margin-top: 8px; }
+        .action-stack { justify-content: flex-start; }
+    }
+    @media (max-width: 700px) {
+        .topbar, .instrument-strip, .main-content { padding-left: 16px; padding-right: 16px; }
+        .instrument { padding-right: 16px; margin-right: 16px; }
+    }
+</style>
 </head>
-
 <body>
+<div class="app-shell">
 
-    <div class="container">
-
-        <!-- HEADER -->
-
-        <div class="top-header">
-
-            <div>
-
-                <h1 class="page-title">
-
-                    New Driver Requests
-
-                </h1>
-
-                <p class="page-subtitle">
-
-                    Review and approve newly registered AquaFlow drivers
-
-                </p>
-
+    <!-- ================= TOP BAR ================= -->
+    <div class="topbar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fas fa-droplet"></i></div>
+            <div class="brand-text">
+                <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+                <p>New driver requests &amp; approvals</p>
             </div>
-
-            <div class="request-badge">
-
-                {{ total_requests }} Pending Requests
-
-            </div>
-
         </div>
-
-        <!-- TABLE -->
-
-        {% if pending_drivers %}
-
-        <div class="table-wrapper">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>
-                            Driver
-                        </th>
-
-                        <th>
-                            Phone
-                        </th>
-
-                        <th>
-                            Address
-                        </th>
-
-                        <th>
-                            Truck Number
-                        </th>
-
-                        <th>
-                            Capacity
-                        </th>
-
-                        <th>
-                            Status
-                        </th>
-
-                        <th>
-                            Actions
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    {% for driver in pending_drivers %}
-
-                    <tr>
-
-                        <!-- DRIVER -->
-
-                        <td>
-
-                            <div class="driver-box">
-
-                                <img
-
-                                    src="{{ url_for('static', filename=driver.photo) }}"
-
-                                    class="driver-photo"
-                                    loading="lazy"
-                                >
-
-                                <div>
-
-                                    <div class="driver-name">
-
-                                        {{ driver.full_name }}
-
-                                    </div>
-
-                                    <div class="driver-email">
-
-                                        {{ driver.email }}
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                        <!-- PHONE -->
-
-                        <td>
-
-                            {{ driver.phone }}
-
-                        </td>
-
-                        <!-- ADDRESS -->
-
-                        <td>
-
-                            <div class="address">
-
-                                {{ driver.address }}
-
-                            </div>
-
-                        </td>
-
-                        <!-- TRUCK -->
-
-                        <td>
-
-                            <span class="truck-badge">
-
-                                {{ driver.truck_number }}
-
-                            </span>
-
-                        </td>
-
-                        <!-- CAPACITY -->
-
-                        <td>
-
-                            <span class="capacity-badge">
-
-                                {{ driver.truck_capacity }} L
-
-                            </span>
-
-                        </td>
-
-                        <!-- STATUS -->
-
-                        <td>
-
-                            <span class="pending-badge">
-
-                                Pending Approval
-
-                            </span>
-
-                        </td>
-
-                        <!-- ACTIONS -->
-
-                        <td>
-
-                            <div class="action-buttons">
-
-                                <a
-
-                                    href="/approve-driver-request/{{ driver._id }}"
-
-                                    class="approve-btn"
-                                >
-
-                                    <i class="fas fa-check"></i>
-
-                                    Approve
-
-                                </a>
-
-                                <a
-
-                                    href="/reject-driver-request/{{ driver._id }}"
-
-                                    class="reject-btn"
-                                >
-
-                                    <i class="fas fa-xmark"></i>
-
-                                    Reject
-
-                                </a>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-        {% else %}
-
-        <div class="empty-box">
-
-            <i class="fas fa-user-check"></i>
-
-            <div class="empty-title">
-
-                No New Driver Requests
-
+        <div class="topbar-right">
+            <a href="/admin-dashboard" class="dispatch-link"><i class="fas fa-arrow-left"></i>Back to Dashboard</a>
+            <div class="admin-chip">
+                <div class="admin-avatar">A</div>
+                <span>Admin</span>
             </div>
-
-            <div class="empty-subtitle">
-
-                All driver requests have been reviewed
-
-            </div>
-
         </div>
+    </div>
+    <div class="flow-line"></div>
 
-        {% endif %}
-
+    <!-- ================= INSTRUMENT STRIP ================= -->
+    <div class="instrument-strip">
+        <div class="instrument">
+            <div class="instrument-icon pending"><i class="fas fa-user-clock"></i></div>
+            <div class="instrument-copy"><h4>Pending Requests</h4><div class="val">{{ total_requests }}</div></div>
+        </div>
+        <div class="instrument-spacer"></div>
+        <div class="instrument-time"><i class="far fa-clock"></i> Updated {{ current_time.strftime('%d %b, %I:%M %p') }}</div>
     </div>
 
-</body>
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main-content">
+        <div class="section-head">
+            <div>
+                <h2><i class="fas fa-user-plus"></i> New Driver Requests</h2>
+                <p>Review and approve newly registered AquaFlow drivers</p>
+            </div>
+            <span class="count-chip">{{ total_requests }} pending</span>
+        </div>
 
+        <div class="ledger-wrap">
+            {% if pending_drivers %}
+            <table class="ledger">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Driver</th>
+                        <th>Phone</th>
+                        <th>Address</th>
+                        <th>Truck</th>
+                        <th>Capacity</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for driver in pending_drivers %}
+                    <tr>
+                        <td class="status-rail-cell"><div class="status-rail"></div></td>
+                        <td>
+                            <div class="driver-box">
+                                <img src="{{ url_for('static', filename=driver.photo) }}" class="driver-photo" loading="lazy">
+                                <div>
+                                    <div class="cell-primary">{{ driver.full_name }}</div>
+                                    <div class="cell-secondary">{{ driver.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="cell-primary">{{ driver.phone }}</td>
+                        <td class="cell-address">{{ driver.address }}</td>
+                        <td><span class="info-chip"><i class="fas fa-truck"></i>{{ driver.truck_number }}</span></td>
+                        <td><span class="info-chip cap"><i class="fas fa-gauge-high"></i>{{ driver.truck_capacity }} L</span></td>
+                        <td><span class="status-pill"><i class="fas fa-circle"></i>Pending</span></td>
+                        <td class="actions-cell">
+                            <div class="action-stack">
+                                <a href="/approve-driver-request/{{ driver._id }}" class="action-btn btn-approve">
+                                    <i class="fas fa-check-circle"></i>Approve
+                                </a>
+                                <a href="/reject-driver-request/{{ driver._id }}" class="action-btn btn-reject">
+                                    <i class="fas fa-times-circle"></i>Reject
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <div class="empty-ledger">
+                    <i class="fas fa-user-check"></i>
+                    <h3>No New Driver Requests</h3>
+                    <p>All driver requests have been reviewed</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</body>
 </html>

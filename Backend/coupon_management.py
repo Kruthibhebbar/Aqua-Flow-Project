@@ -50,6 +50,10 @@ def validate_coupon(coupons_collection, coupon_redemptions_collection, code, use
     if not coupon:
         return None, 0, "Invalid or inactive coupon code"
 
+    expiry_at = coupon.get("expiry_at")
+    if expiry_at and expiry_at < datetime.now():
+        return None, 0, f"{code} expired on {expiry_at.strftime('%d %b %Y, %I:%M %p')}"
+
     if coupon.get("one_time_per_user") and coupon_redemptions_collection is not None:
         already_used = coupon_redemptions_collection.find_one({
             "user_email": user_email,
@@ -107,6 +111,7 @@ def init_coupon_management(app, coupons_collection, bookings_collection, coupon_
         return render_template(
             "coupon_management.html",
             coupons=coupons,
+            now=datetime.now(),
             admin_name="Admin",
             admin_email=session.get("admin_email", "admin@aquaflow.com")
         )
@@ -126,6 +131,19 @@ def init_coupon_management(app, coupons_collection, bookings_collection, coupon_
             discount_type = request.form.get("discount_type", "flat").strip().lower()
             value_raw = request.form.get("value", "0").strip()
             one_time_per_user = request.form.get("one_time_per_user") == "on"
+            expiry_raw = request.form.get("expiry_at", "").strip()
+
+            expiry_at = None
+            if expiry_raw:
+                try:
+                    expiry_at = datetime.strptime(expiry_raw, "%Y-%m-%dT%H:%M")
+                except ValueError:
+                    flash("Please enter a valid expiry date and time.", "danger")
+                    return redirect(url_for("coupon_management"))
+
+                if expiry_at <= datetime.now():
+                    flash("Coupon expiry must be a future date and time.", "danger")
+                    return redirect(url_for("coupon_management"))
 
             if not code or len(code) < 3:
                 flash("Please enter a valid coupon code (min 3 characters).", "danger")
@@ -155,6 +173,7 @@ def init_coupon_management(app, coupons_collection, bookings_collection, coupon_
                 "discount_type": discount_type,
                 "value": value,
                 "one_time_per_user": one_time_per_user,
+                "expiry_at": expiry_at,
                 "active": True,
                 "created_at": datetime.now()
             })
@@ -209,6 +228,44 @@ def init_coupon_management(app, coupons_collection, bookings_collection, coupon_
         except Exception as e:
             flash(f"Could not delete coupon: {str(e)}", "danger")
             return redirect(url_for("coupon_management"))
+
+    # =========================================
+    # CUSTOMER - LIST ACTIVE, UNEXPIRED COUPONS
+    # (shown on the booking page so users can see and
+    # apply available offers without knowing a code)
+    # =========================================
+
+    @app.route("/api/active-coupons")
+    def api_active_coupons():
+
+        if "user_email" not in session:
+            return jsonify({"success": False, "message": "Not logged in"}), 401
+
+        now = datetime.now()
+        query = {
+            "active": True,
+            "$or": [
+                {"expiry_at": None},
+                {"expiry_at": {"$exists": False}},
+                {"expiry_at": {"$gt": now}}
+            ]
+        }
+
+        coupons = list(coupons_collection.find(query).sort("created_at", -1))
+
+        return jsonify({
+            "success": True,
+            "coupons": [
+                {
+                    "code": c["code"],
+                    "discount_type": c["discount_type"],
+                    "value": c["value"],
+                    "one_time_per_user": bool(c.get("one_time_per_user")),
+                    "expiry_at": c["expiry_at"].isoformat() if c.get("expiry_at") else None
+                }
+                for c in coupons
+            ]
+        })
 
     # =========================================
     # CUSTOMER - APPLY COUPON (payment page, Feature 3)

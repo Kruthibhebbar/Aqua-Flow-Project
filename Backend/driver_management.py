@@ -12,8 +12,8 @@ from bson.objectid import ObjectId
 from datetime import datetime
 
 from payment_admin import (
-    get_bank_details,
-    get_driver_wallet_summary
+    get_driver_wallet_summary,
+    get_driver_settlement_summary
 )
 
 
@@ -22,7 +22,8 @@ def init_driver_management(
     drivers_collection,
     bookings_collection,
     settings_collection=None,
-    transactions_collection=None
+    transactions_collection=None,
+    documents_collection=None
 ):
 
     # =====================================================
@@ -111,7 +112,9 @@ def init_driver_management(
             # REAL-MONEY WALLET: how much cash
             # this driver has collected from
             # customers and still owes the
-            # company right now.
+            # company right now. (Finance-side
+            # detail - full breakdown now lives
+            # on the Finance Management page.)
             # ===============================
 
             driver["wallet"] = get_driver_wallet_summary(
@@ -119,55 +122,54 @@ def init_driver_management(
                 driver_email
             )
 
-        # =========================================
-        # COMPANY BANK / UPI DETAILS
-        # (shown on this page for the admin to
-        # edit, and on every driver's dashboard so
-        # they know where to send collected cash)
-        # =========================================
+            # ===============================
+            # PENDING PAYOUT: the actual amount
+            # still payable TO this driver right
+            # now (earned commission minus what's
+            # already been settled/in-flight,
+            # minus any cash they still haven't
+            # remitted). Computed live from
+            # MongoDB every time - never
+            # hardcoded. This is the driver-
+            # centric number that belongs on
+            # THIS page (the opposite direction
+            # of the finance-side "pending
+            # deposit" above).
+            # ===============================
 
-        bank_details = get_bank_details(settings_collection)
+            driver["pending_payout"] = get_driver_settlement_summary(
+                transactions_collection,
+                bookings_collection,
+                driver_email
+            )["withdrawable"]
 
-        # =========================================
-        # PENDING PAYMENT VERIFICATIONS
-        # every delivery where a driver has
-        # submitted a transaction reference /
-        # screenshot that admin hasn't checked yet
-        # =========================================
+            # ===============================
+            # UPLOADED DOCUMENTS (for the
+            # admin document viewer on this
+            # driver's card)
+            # ===============================
 
-        pending_verifications = list(
-            bookings_collection.find({
-                "payment_submitted": True,
-                "payment_submission_status": "Pending Verification"
-            }).sort("payment_submitted_at", -1)
-        )
+            driver_documents = {}
 
-        recent_verifications = list(
-            bookings_collection.find({
-                "payment_submission_status": {"$in": ["Approved", "Rejected"]}
-            }).sort("payment_verified_at", -1).limit(15)
-        )
+            if documents_collection is not None:
+                for doc in documents_collection.find({"driver_email": driver_email}):
+                    driver_documents[doc.get("document_type")] = {
+                        "status": doc.get("status", "Pending"),
+                        "file_path": doc.get("file_path"),
+                        "uploaded_at": (
+                            doc["uploaded_at"].strftime("%d %b %Y")
+                            if doc.get("uploaded_at") else None
+                        )
+                    }
 
-        total_pending_deposit = sum(
-            d["wallet"]["pending_deposit"] for d in approved_drivers
-        )
-
-        # =========================================
-        # PENDING DRIVER SETTLEMENT (WITHDRAWAL)
-        # REQUESTS
-        # =========================================
-
-        pending_settlements = []
-        if transactions_collection is not None:
-            pending_settlements = list(
-                transactions_collection.find({
-                    "type": "settlement",
-                    "status": {"$in": ["Pending", "Processing"]}
-                }).sort("requested_at", -1)
-            )
+            driver["documents"] = driver_documents
 
         # =========================================
         # GET NEW DRIVER REQUESTS
+        # (Finance-side data - company bank details,
+        # cash verification, settlement requests and
+        # driver bank approvals - now lives entirely
+        # on the Finance Management page.)
         # =========================================
 
         new_driver_requests = list(
@@ -211,6 +213,18 @@ def init_driver_management(
         })
 
         # =========================================
+        # TOTAL PENDING PAYOUTS (driver-centric
+        # money-owed total, shown as a quick stat
+        # on this page - the mirror-image number,
+        # money owed the other way, lives on the
+        # Finance Management page)
+        # =========================================
+
+        total_pending_payouts = sum(
+            d["pending_payout"] for d in approved_drivers
+        )
+
+        # =========================================
         # RENDER PAGE
         # =========================================
 
@@ -230,15 +244,7 @@ def init_driver_management(
 
             pending_requests=pending_requests,
 
-            bank_details=bank_details,
-
-            pending_verifications=pending_verifications,
-
-            recent_verifications=recent_verifications,
-
-            total_pending_deposit=total_pending_deposit,
-
-            pending_settlements=pending_settlements,
+            total_pending_payouts=total_pending_payouts,
 
             current_time=datetime.now()
         )

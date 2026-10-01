@@ -53,6 +53,10 @@
         </div>
       </div>
       <div class="header-actions">
+        <a href="{{ url_for('my_payments') }}" class="btn btn-on-dark">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.2" stroke="currentColor" stroke-width="1.6"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.6"/></svg>
+          My Payments
+        </a>
         <a href="{{ url_for('booking') }}" class="btn btn-on-dark">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           New Booking
@@ -215,7 +219,6 @@
         <div class="track-btn" style="background:#fbeae8; color:#b23b30; cursor:default;">
           <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           {{ "Rejected" if booking.status == "Rejected" else "Cancelled" }}
-          {% if booking.get('refund_status') == 'Completed' %} · Refunded{% elif booking.get('refund_status') == 'Requested' %} · Refund Pending{% endif %}
         </div>
         <a href="/booking" class="track-btn" style="background:#eef4ff; color:#2d7aff;">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>

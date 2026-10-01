@@ -117,6 +117,14 @@
 
     .topbar-right { display: flex; align-items: center; gap: 10px; }
 
+    .dispatch-link {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+        padding: 7px 14px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+        color: #C7D6DB; font-weight: 600; font-size: 11.5px; transition: background .15s, color .15s;
+    }
+    .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+
     .sync-chip {
         background: rgba(38,208,201,.10);
         border: 1px solid rgba(38,208,201,.22);
@@ -330,7 +338,7 @@
         box-shadow: var(--shadow-sm);
         overflow: hidden;
     }
-    table.ledger { width: 100%; border-collapse: collapse; }
+    table.ledger { width: 100%; border-collapse: collapse; table-layout: auto; }
     .ledger thead th {
         text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
         letter-spacing: .6px; color: var(--ink-faint);
@@ -377,14 +385,15 @@
     .pay-status-line { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
 
     .status-pill {
-        display: inline-flex; align-items: center; gap: 6px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
         padding: 4px 12px; border-radius: var(--r-pill);
         font-weight: 700; font-size: 11px; letter-spacing: .2px;
+        width: 104px; box-sizing: border-box;
     }
     .status-pill i { font-size: 7px; }
 
-    .actions-cell { text-align: right; white-space: nowrap; }
-    .action-stack { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .actions-cell { text-align: right; white-space: nowrap; padding-right: 16px !important; }
+    .action-stack { display: inline-flex; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; margin-left: auto; }
 
     .action-btn, .btn-assign-driver {
         border: none; padding: 7px 14px; border-radius: var(--r-pill);
@@ -578,6 +587,7 @@
             </div>
         </div>
         <div class="topbar-right">
+            <a href="/driver_assignment" class="dispatch-link" title="Go to Driver Assignment"><i class="fas fa-truck-fast"></i>Driver Assignment</a>
             <div class="sync-chip"><div class="pulse-dot"></div><span>Live sync</span></div>
             <div class="icon-btn" id="bellBtn" title="{% if has_unseen_future %}New order coming on {{ next_unseen_date }}{% else %}No new alerts{% endif %}">
                 <i class="fas fa-bell"></i>
@@ -750,7 +760,9 @@
                             </span>
                             <div class="pay-status-line">
                                 {% set pstatus = booking.get('payment_status', 'Pending') %}
-                                {% if pstatus == 'Paid (Online)' %}
+                                {% if booking.status == 'Cancelled' %}
+                                    <span style="color:var(--red-600);"><i class="fas fa-ban"></i> Cancelled</span>
+                                {% elif pstatus == 'Paid (Online)' %}
                                     <span style="color:var(--green-600);"><i class="fas fa-circle-check"></i> Paid online</span>
                                 {% elif pstatus == 'Submitted - Pending Verification' %}
                                     <span style="color:var(--amber-600);"><i class="fas fa-hourglass-half"></i> Awaiting verification</span>
@@ -807,10 +819,6 @@
                                     </button>
                                 {% endif %}
 
-                                <button class="action-btn btn-details" onclick="viewDetails('{{ booking._id }}')">
-                                    <i class="fas fa-info-circle"></i>Details
-                                </button>
-
                                 {% if booking.get('payment_submitted') and not booking.get('payment_processed') %}
                                     <button class="action-btn btn-confirm-pay"
                                         onclick="confirmPayment('{{ booking._id }}', this)">
@@ -821,6 +829,10 @@
                                         <i class="fas fa-circle-check"></i>Verified
                                     </span>
                                 {% endif %}
+
+                                <button class="action-btn btn-details" onclick="viewDetails('{{ booking._id }}')">
+                                    <i class="fas fa-info-circle"></i>Details
+                                </button>
                             </div>
                         </td>
                     </tr>

@@ -54,6 +54,19 @@ def init_driver_assignment(
         query = {}
 
         # =====================================================
+        # BASE VISIBILITY RULE
+        # =====================================================
+        # The dispatch board shows three tabs client-side (Assign Driver,
+        # Completed Deliveries, Pending Approval). A booking that was
+        # cancelled has nothing to dispatch/track/approve, so it never
+        # appears here regardless of tab.
+        DISPATCHABLE_STATUSES = [
+            "Pending", "Approved", "Waiting Driver Approval", "Assigned",
+            "Accepted", "On The Way", "Arrived", "Delivered"
+        ]
+        query["status"] = {"$in": DISPATCHABLE_STATUSES}
+
+        # =====================================================
         # SEARCH QUERY
         # =====================================================
 
@@ -498,6 +511,20 @@ Please login to your driver portal to ACCEPT or REJECT this request.
             "status"
         )
 
+        update_fields = {
+            "status": status,
+            "last_updated": datetime.now()
+        }
+
+        # Manual status changes make any previously-tracked GPS distance
+        # text stale (e.g. "361.33 km away" left over from live tracking).
+        # Reset it to something that matches the new status instead of
+        # leaving old distance text on screen.
+        if status == "Delivered":
+            update_fields["live_location"] = "Delivered"
+        elif status in ("Pending", "Approved", "Waiting Driver Approval"):
+            update_fields["live_location"] = "Waiting For Dispatch"
+
         bookings_collection.update_one(
 
             {
@@ -505,12 +532,7 @@ Please login to your driver portal to ACCEPT or REJECT this request.
             },
 
             {
-                "$set": {
-
-                    "status": status,
-
-                    "last_updated": datetime.now()
-                }
+                "$set": update_fields
             }
         )
 
@@ -618,7 +640,14 @@ Please login to your driver portal to ACCEPT or REJECT this request.
         
         try:
             # Fetch latest bookings
-            bookings = list(bookings_collection.find({"status": {"$ne": "Awaiting Payment"}}).sort("created_at", -1))
+            # Three client-side tabs (Assign Driver / Completed Deliveries /
+            # Pending Approval) need Pending included too now; only
+            # Cancelled/Awaiting Payment orders are excluded entirely.
+            DISPATCHABLE_STATUSES = [
+                "Pending", "Approved", "Waiting Driver Approval", "Assigned",
+                "Accepted", "On The Way", "Arrived", "Delivered"
+            ]
+            bookings = list(bookings_collection.find({"status": {"$in": DISPATCHABLE_STATUSES}}).sort("created_at", -1))
             print(f"✅ Found {len(bookings)} bookings in MongoDB")
             
             # Convert bookings for JSON response (FIXED)
@@ -650,6 +679,7 @@ Please login to your driver portal to ACCEPT or REJECT this request.
                         "waterQuantity": water_qty,
                         "status": booking.get("status", "Pending"),
                         "liveLocation": booking.get("live_location", "Not Set"),
+                        "address": booking.get("address", ""),
                         "eta": booking.get("ETA", "—"),
                         "driverAssignedAt": booking.get("driver_assigned_at").isoformat() if booking.get("driver_assigned_at") else None,
                         "customerLat": booking.get("latitude"),

@@ -141,6 +141,16 @@ def init_quickrebook(app, bookings_collection, users_collection):
 
         user_email = session["user_email"]
         user = users_collection.find_one({"email": user_email}) or {}
+
+        # Blocked accounts keep their session but lose the ability to
+        # book - same rule enforced on the main /booking route.
+        if user.get("is_blocked"):
+            session.clear()
+            return jsonify({
+                "ok": False,
+                "error": "Your account has been suspended. Contact AquaFlow support for help."
+            }), 403
+
         hidden_keys = set(user.get("hidden_quick_rebook", []))
 
         template = next(

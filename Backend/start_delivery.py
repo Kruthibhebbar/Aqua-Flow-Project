@@ -45,7 +45,6 @@ def init_start_delivery(bookings, notifications):
                 "icon": "🚛",
                 "read": False,  # ✅ Changed from "is_read" to "read"
                 "created_at": datetime.now(),  # ✅ Added created_at field
-                   "created_at": datetime.now()
 
             })
 

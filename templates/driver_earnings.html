@@ -48,6 +48,10 @@
             <div class="value green">₹{{ "{:,.0f}".format(settlement.todays_earnings) }}</div>
         </div>
         <div class="stat">
+            <div class="label">This Month's Earnings</div>
+            <div class="value green">₹{{ "{:,.0f}".format(settlement.monthly_earnings_total) }}</div>
+        </div>
+        <div class="stat">
             <div class="label">Total Earned (all time)</div>
             <div class="value">₹{{ "{:,.0f}".format(settlement.driver_earned_total) }}</div>
         </div>
@@ -60,6 +64,16 @@
             <div class="value blue">₹{{ "{:,.0f}".format(settlement.withdrawable) }}</div>
         </div>
         <div class="stat">
+            <div class="label">Total Withdrawn</div>
+            <div class="value">₹{{ "{:,.0f}".format(settlement.settled_total) }}</div>
+        </div>
+        {% if settlement.rejected_total %}
+        <div class="stat">
+            <div class="label">Rejected Withdrawals</div>
+            <div class="value" style="color:#dc2626;">₹{{ "{:,.0f}".format(settlement.rejected_total) }}</div>
+        </div>
+        {% endif %}
+        <div class="stat">
             <div class="label">Current Bonus <span style="font-weight:400;">(every 25 deliveries)</span></div>
             <div class="value green">₹{{ "{:,.0f}".format(current_bonus) }}</div>
         </div>
@@ -71,18 +85,64 @@
     </p>
 
     <div class="card">
+        <h2><i class="fa-solid fa-building-columns me-2"></i>Bank Account for Payouts</h2>
+        {% set bank = driver.get('bank_details') if driver else None %}
+        {% if bank %}
+        <p style="margin:0 0 10px;">
+            <strong>{{ bank.account_holder_name }}</strong> &middot; A/C ending {{ bank.account_number[-4:] }} &middot; {{ bank.ifsc }}
+            {% if bank.approval_status == 'Approved' %}
+            <span style="background:#d4f4e2; color:#1e9e5a; padding:3px 10px; border-radius:20px; font-size:0.8rem; margin-left:6px;">Approved</span>
+            {% elif bank.approval_status == 'Rejected' %}
+            <span style="background:#fbdada; color:#c0392b; padding:3px 10px; border-radius:20px; font-size:0.8rem; margin-left:6px;">Rejected — please resubmit</span>
+            {% else %}
+            <span style="background:#fef3c7; color:#92400e; padding:3px 10px; border-radius:20px; font-size:0.8rem; margin-left:6px;">Pending admin approval</span>
+            {% endif %}
+        </p>
+        {% else %}
+        <p class="empty" style="text-align:left; padding:0 0 12px;">No bank details on file yet — add them below. Withdrawals stay locked until admin approves them.</p>
+        {% endif %}
+        <form method="POST" action="{{ url_for('submit_driver_bank_details') }}" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+            <div>
+                <label for="account_holder_name" style="display:block; font-size:0.8rem; margin-bottom:4px;">Account Holder Name</label>
+                <input type="text" id="account_holder_name" name="account_holder_name" value="{{ bank.account_holder_name if bank else '' }}" required>
+            </div>
+            <div>
+                <label for="account_number" style="display:block; font-size:0.8rem; margin-bottom:4px;">Account Number</label>
+                <input type="text" id="account_number" name="account_number" value="{{ bank.account_number if bank else '' }}" required>
+            </div>
+            <div>
+                <label for="ifsc" style="display:block; font-size:0.8rem; margin-bottom:4px;">IFSC Code</label>
+                <input type="text" id="ifsc" name="ifsc" value="{{ bank.ifsc if bank else '' }}" placeholder="HDFC0001234" required>
+            </div>
+            <button type="submit"><i class="fa-solid fa-floppy-disk me-1"></i> {{ 'Update' if bank else 'Submit' }}</button>
+        </form>
+        {% if bank %}
+        <p class="empty" style="text-align:left; padding-top:8px;">Editing these resets approval to Pending — admin will re-check before withdrawals unlock again.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
         <h2><i class="fa-solid fa-money-bill-transfer me-2"></i>Withdraw Earnings</h2>
+        {% set bank_approved = driver and driver.get('bank_details', {}).get('approval_status') == 'Approved' %}
         <form class="withdraw-form" method="POST" action="{{ url_for('request_driver_withdrawal') }}">
             <div>
                 <label for="amount">Amount (₹)</label>
                 <input type="number" id="amount" name="amount" min="1" max="{{ settlement.withdrawable }}" step="1" required>
             </div>
-            <button type="submit" {{ 'disabled' if settlement.withdrawable <= 0 else '' }}>
+            <button type="submit" {{ 'disabled' if (settlement.withdrawable <= 0 or not bank_approved) else '' }}>
                 <i class="fa-solid fa-paper-plane me-1"></i> Request Withdrawal
             </button>
         </form>
-        {% if settlement.withdrawable <= 0 %}
+        {% if not bank_approved %}
+        <p class="empty">Add and get your bank details approved above before you can request a withdrawal.</p>
+        {% elif settlement.withdrawable <= 0 %}
         <p class="empty">Nothing to withdraw right now — complete more deliveries to build up your balance.</p>
+        {% endif %}
+        {% if settlement.unremitted_cash_held > 0 %}
+        <p class="empty" style="color:#b45309;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            ₹{{ "{:,.0f}".format(settlement.unremitted_cash_held) }} of your commission is on hold because you're still holding that much cash from customers — submit it under "Payment Collection" and get it admin-approved to unlock it.
+        </p>
         {% endif %}
     </div>
 

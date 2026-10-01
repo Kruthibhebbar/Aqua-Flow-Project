@@ -204,6 +204,13 @@
         box-shadow: var(--shadow-xs);
     }
     .driver-card:hover { box-shadow: var(--shadow-sm); border-color: #CBDBDE; }
+    .driver-card.assign-highlight {
+        animation: orangeBorderPulse 1s ease-in-out infinite;
+    }
+    @keyframes orangeBorderPulse {
+        0%, 100% { border: 1px solid var(--border); box-shadow: var(--shadow-xs); }
+        50% { border: 1.5px solid var(--orange-600); box-shadow: 0 0 0 3px rgba(193,96,15,.16), var(--shadow-sm); }
+    }
 
     /* card header row */
     .driver-card > div:first-child {
@@ -426,6 +433,11 @@
             <button id="clearSearchBtn">Clear</button>
         </div>
         <div class="filter-group" id="filterGroup">
+            <select id="viewTabFilter">
+                <option value="assign">🚚 Assign Driver</option>
+                <option value="completed">✅ Completed Deliveries</option>
+                <option value="pending">⏳ Pending Approval</option>
+            </select>
             <select id="quantityFilter">
                 <option value="all">All Water Qty</option>
                 <option value=">3000">Above 3000 L</option>
@@ -494,10 +506,18 @@
     // ============================================================
     let bookings = [];
     let backendDrivers = [];
+    const initialHighlightId = {{ (booking._id | string) | tojson if booking else 'null' }};
+    let permanentHighlightId = null;
     
     // UI STATE
     let currentFilter = "all";
     let currentSearchTerm = "";
+    let currentTab = "assign";
+    const TAB_STATUS_GROUPS = {
+        assign: ['Approved', 'Waiting Driver Approval', 'Assigned', 'Accepted', 'On The Way', 'Arrived'],
+        completed: ['Delivered'],
+        pending: ['Pending']
+    };
     let activeBookingIdForModal = null;
     
     // AUTO-REFRESH VARIABLES
@@ -517,6 +537,7 @@
     const searchBtn = document.getElementById("searchBtn");
     const clearSearchBtn = document.getElementById("clearSearchBtn");
     const quantityFilterSelect = document.getElementById("quantityFilter");
+    const viewTabFilterSelect = document.getElementById("viewTabFilter");
     const resetFiltersBtn = document.getElementById("resetFiltersBtn");
     const modalOverlay = document.getElementById("assignModal");
     const modalDriverSelect = document.getElementById("modalDriverSelect");
@@ -562,6 +583,8 @@
     
     function getFilteredBookings() {
         let filtered = [...bookings];
+        const tabStatuses = TAB_STATUS_GROUPS[currentTab] || TAB_STATUS_GROUPS.assign;
+        filtered = filtered.filter(b => tabStatuses.includes(b.status));
         if(currentSearchTerm.trim() !== "") {
             const term = currentSearchTerm.trim().toLowerCase();
             filtered = filtered.filter(b => 
@@ -859,7 +882,6 @@
         }
         
         const cardsHtml = filtered.map(booking => {
-            const fillPercent = Math.min(100, (booking.waterQuantity / 10000) * 100);
             let statusColor = "#8CA0A9";
             let statusBadge = booking.status || "Pending";
             if(booking.status === 'Delivered') statusColor = "#157A50";
@@ -871,12 +893,12 @@
             const etaCountdown = computeEtaCountdown(booking);
             
             return `
-                <div class="driver-card" data-id="${booking.id}">
+                <div class="driver-card" id="card-${booking.id}" data-id="${booking.id}">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span class="booking-badge">${escapeHtml(booking.bookingRef)}</span>
                         <span style="font-size:10.5px; font-weight:700; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:3px 11px; color:var(--ink-soft);"><i class="fas fa-truck" style="margin-right:4px;"></i>${escapeHtml(booking.truckNumber || 'Not Assigned')}</span>
                     </div>
-                    <h2>${escapeHtml(booking.customer)} <span style="font-size:0.75rem; font-weight:500; color:var(--ink-soft);">${escapeHtml(booking.phone || '—')}</span></h2>
+                    <h2>${escapeHtml(booking.customer)} <span style="font-size:11px; font-weight:600; color:var(--ink-soft); display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-phone" style="font-size:9px; color:var(--ink-faint);"></i>${escapeHtml(booking.phone || 'Not available')}</span></h2>
                     <div class="info-row">
                         <span class="info-label">Driver</span>
                         <span class="info-value">${escapeHtml(booking.driver && booking.driver !== "Not Assigned" ? booking.driver : 'Unassigned')}
@@ -889,7 +911,9 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label"><i class="fas fa-location-dot" style="color:var(--teal-600);"></i> Location</span>
-                        <span class="info-value"><span style="background:var(--teal-050); color:var(--teal-700); padding:3px 11px; border-radius:20px; font-size:11px; font-weight:600;">${escapeHtml(booking.liveLocation || '—')}</span></span>
+                        <span class="info-value">${booking.status === 'Delivered'
+                            ? `<span style="background:#E9F7EF; color:#157A50; padding:3px 11px; border-radius:20px; font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-flag-checkered"></i> Completed</span><span style="font-size:11.5px; color:var(--ink-soft); font-weight:500;">${escapeHtml(booking.address || 'Address not on file')}</span>`
+                            : `<span style="background:var(--teal-050); color:var(--teal-700); padding:3px 11px; border-radius:20px; font-size:11px; font-weight:600;">${escapeHtml(booking.liveLocation || '—')}</span>`}</span>
                     </div>
                     ${etaCountdown ? `
                     <div class="info-row">
@@ -899,9 +923,6 @@
                     <div class="info-row" style="border-bottom:none;">
                         <span class="info-label">Water Qty</span>
                         <span class="info-value mono">${Number(booking.waterQuantity).toLocaleString()} L</span>
-                    </div>
-                    <div class="quantity-meter">
-                        <div class="meter-fill" style="width: ${fillPercent}%;"></div>
                     </div>
                     <div class="info-row" style="border-bottom:none; margin-top:4px;">
                         <span class="info-label">Status</span>
@@ -917,7 +938,7 @@
                             <option value="Delivered" ${booking.status === "Delivered" ? "selected" : ""}>Delivered</option>
                         </select>
                         <div style="display:flex; gap:8px;">
-                            <button class="action-btn reassign-btn" data-id="${booking.id}"><i class="fas fa-rotate"></i> Assign/Edit</button>
+                            ${['Approved', 'Waiting Driver Approval', 'Assigned', 'Accepted', 'On The Way', 'Arrived'].includes(booking.status) ? `<button class="action-btn reassign-btn" data-id="${booking.id}" data-ref="${escapeHtml(booking.id ? booking.id.slice(-6) : '')}"><i class="fas fa-rotate"></i> Assign/Edit</button>` : ''}
                             <button class="action-btn delete-btn" data-id="${booking.id}"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
@@ -926,11 +947,12 @@
         }).join('');
         
         container.innerHTML = cardsHtml;
+        applyPermanentHighlight(false);
         
         document.querySelectorAll('.reassign-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.getAttribute('data-id');
-                openAssignModal(id);
+                focusAndAssignBooking(id);
             });
         });
         
@@ -1024,6 +1046,22 @@
         if (driverEmailHidden) driverEmailHidden.value = driver.email || "";
         applyRankedDriverToFields(driver);
     });
+
+    function focusAndAssignBooking(id) {
+        permanentHighlightId = id;
+        applyPermanentHighlight(true);
+        openAssignModal(id);
+    }
+
+    function applyPermanentHighlight(scrollToIt) {
+        document.querySelectorAll('.driver-card.assign-highlight').forEach(c => c.classList.remove('assign-highlight'));
+        if (!permanentHighlightId) return;
+        const card = document.getElementById(`card-${permanentHighlightId}`);
+        if (card) {
+            card.classList.add('assign-highlight');
+            if (scrollToIt) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
 
     function openAssignModal(bookingId) {
         const booking = bookings.find(b => b.id === bookingId);
@@ -1145,8 +1183,10 @@
     function resetAllFilters() {
         currentSearchTerm = "";
         currentFilter = "all";
+        currentTab = "assign";
         searchInput.value = "";
         quantityFilterSelect.value = "all";
+        viewTabFilterSelect.value = "assign";
         renderBookings();
         showToast("All filters cleared");
     }
@@ -1162,6 +1202,24 @@
         
         if (!success) {
             container.innerHTML = '<div class="empty-state">Failed to load data. Please check your connection and refresh.</div>';
+            return;
+        }
+
+        // Arrived here via "Assign Driver" on a specific order — jump
+        // straight to that card and open the assignment dialog for it.
+        if (initialHighlightId) {
+            const target = bookings.find(b => b.id === initialHighlightId);
+            if (target) {
+                const neededTab = Object.keys(TAB_STATUS_GROUPS).find(tab => TAB_STATUS_GROUPS[tab].includes(target.status));
+                if (neededTab && neededTab !== currentTab) {
+                    currentTab = neededTab;
+                    viewTabFilterSelect.value = neededTab;
+                    renderBookings();
+                }
+                setTimeout(() => focusAndAssignBooking(initialHighlightId), 150);
+            } else {
+                showToast("That order isn't ready for driver assignment yet.", true);
+            }
         }
     }
     
@@ -1169,6 +1227,10 @@
     searchBtn.addEventListener("click", performSearch);
     clearSearchBtn.addEventListener("click", clearSearch);
     quantityFilterSelect.addEventListener("change", applyQuantityFilter);
+    viewTabFilterSelect.addEventListener("change", () => {
+        currentTab = viewTabFilterSelect.value;
+        renderBookings();
+    });
     resetFiltersBtn.addEventListener("click", resetAllFilters);
     modalConfirmBtn.addEventListener("click", confirmAssignment);
     modalCancelBtn.addEventListener("click", closeModal);

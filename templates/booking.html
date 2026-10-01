@@ -218,6 +218,31 @@
         .coupon-msg.ok { color: #1a9c5a; }
         .coupon-msg.err { color: #c0392b; }
 
+        .available-coupons { margin: 12px 0 4px; }
+        .ac-label {
+            font-size: 0.76rem; font-weight: 700; color: #5b6e8c;
+            text-transform: uppercase; letter-spacing: .03em; margin-bottom: 7px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .ac-list { display: flex; flex-direction: column; gap: 7px; }
+        .ac-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            background: #f5fbfa; border: 1.5px dashed #b9e4de; border-radius: 12px;
+            padding: 9px 12px; cursor: pointer; transition: background .15s, border-color .15s;
+        }
+        .ac-item:hover { background: #eaf7f4; border-color: #17A6B4; }
+        .ac-item.applied { opacity: .6; cursor: default; }
+        .ac-item .ac-code {
+            font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 0.82rem;
+            color: #0E6672; background: #dff2f0; padding: 2px 8px; border-radius: 6px;
+        }
+        .ac-item .ac-meta { flex: 1; min-width: 0; margin-left: 10px; }
+        .ac-item .ac-desc { font-size: 0.8rem; font-weight: 600; color: #1e293b; }
+        .ac-item .ac-expiry { font-size: 0.71rem; color: #7c8aa5; margin-top: 1px; }
+        .ac-item .ac-apply-tag {
+            font-size: 0.72rem; font-weight: 700; color: #2d7aff; white-space: nowrap;
+        }
+
         /* Next-steps note reflecting the real OTP-on-approval flow */
         .next-steps {
             background: #f7faff;
@@ -428,6 +453,15 @@
                         </div>
                         <div class="pb-note" id="pbLocationNote">Pin your delivery location to get an accurate delivery fee.</div>
                     </div>
+                </div>
+
+                <div id="undeliverableBox" style="display:none; background:#fbeae8; border:1.5px solid #f3c6bf; border-radius:12px; padding:14px 16px; margin-top:10px; color:#b23b30; font-size:0.88rem; font-weight:600;">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i> <span id="undeliverableMsg"></span>
+                </div>
+
+                <div class="available-coupons" id="availableCoupons" style="display:none;">
+                    <div class="ac-label"><i class="fa-solid fa-tags"></i> Available offers</div>
+                    <div class="ac-list" id="availableCouponsList"></div>
                 </div>
 
                 <div class="coupon-inline">
@@ -776,6 +810,24 @@ async function updatePriceDisplay() {
 
         if (!data.success) return;
 
+        const undeliverableBox = document.getElementById('undeliverableBox');
+        const priceBreakdown = document.getElementById('priceBreakdown');
+        const submitBtn = document.querySelector('.btn-gradient');
+
+        if (data.deliverable === false) {
+            undeliverableBox.style.display = 'block';
+            document.getElementById('undeliverableMsg').innerText = data.reason;
+            priceBreakdown.style.display = 'none';
+            priceSpan.innerText = '—';
+            document.getElementById('perLiterRate').innerText = 'Not deliverable to this address';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
+            return;
+        }
+
+        undeliverableBox.style.display = 'none';
+        priceBreakdown.style.display = 'block';
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+
         document.getElementById('pbTankerCost').innerText = formatPrice(data.tanker_cost);
         document.getElementById('pbDeliveryFee').innerText = formatPrice(data.delivery_fee);
         document.getElementById('pbPlatformFee').innerText = formatPrice(data.platform_fee);
@@ -834,6 +886,7 @@ document.getElementById('applyCouponBtn')?.addEventListener('click', async () =>
             codeInput.disabled = true;
             document.getElementById('applyCouponBtn').innerText = 'Applied';
             document.getElementById('applyCouponBtn').disabled = true;
+            markCouponListApplied(code);
             updatePriceDisplay();
         } else {
             msg.innerText = (data.coupon_error) || 'This coupon can\'t be applied.';
@@ -844,6 +897,71 @@ document.getElementById('applyCouponBtn')?.addEventListener('click', async () =>
         msg.className = 'coupon-msg err';
     }
 });
+
+// ================================================================
+// AVAILABLE COUPONS (Problem 4): every active, unexpired coupon the
+// admin has created is fetched here and shown to the customer, so
+// they don't need to already know a code. Clicking one fills the
+// code box and reuses the exact same Apply flow above.
+// ================================================================
+function formatCouponDiscount(c) {
+    return c.discount_type === 'percent' ? `${c.value % 1 === 0 ? c.value : c.value}% off` : `₹${c.value} off`;
+}
+
+function formatCouponExpiry(isoString) {
+    if (!isoString) return 'No expiry';
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '';
+    return 'Valid till ' + d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function markCouponListApplied(code) {
+    document.querySelectorAll('.ac-item').forEach(item => {
+        if (item.dataset.code === code) {
+            item.classList.add('applied');
+            item.querySelector('.ac-apply-tag').innerText = 'Applied';
+        }
+    });
+}
+
+async function loadAvailableCoupons() {
+    const wrap = document.getElementById('availableCoupons');
+    const listEl = document.getElementById('availableCouponsList');
+    if (!wrap || !listEl) return;
+
+    try {
+        const resp = await fetch('/api/active-coupons');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (!data.success || !Array.isArray(data.coupons) || data.coupons.length === 0) return;
+
+        listEl.innerHTML = data.coupons.map(c => `
+            <div class="ac-item" data-code="${c.code}">
+                <span class="ac-code">${c.code}</span>
+                <div class="ac-meta">
+                    <div class="ac-desc">${formatCouponDiscount(c)}${c.one_time_per_user ? ' · new customers' : ''}</div>
+                    <div class="ac-expiry">${formatCouponExpiry(c.expiry_at)}</div>
+                </div>
+                <span class="ac-apply-tag">Tap to apply</span>
+            </div>
+        `).join('');
+
+        listEl.querySelectorAll('.ac-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (item.classList.contains('applied')) return;
+                const code = item.dataset.code;
+                const codeInput = document.getElementById('couponCodeInput');
+                if (codeInput.disabled) return; // a coupon is already applied
+                codeInput.value = code;
+                document.getElementById('applyCouponBtn').click();
+            });
+        });
+
+        wrap.style.display = 'block';
+    } catch (e) {
+        // Silently skip - manual coupon entry still works.
+    }
+}
 
 function setMinDate() {
     const dateInput = document.getElementById('deliveryDate');
@@ -1007,6 +1125,7 @@ document.getElementById('closeToastBtn')?.addEventListener('click', hideToast);
 window.addEventListener('DOMContentLoaded', () => {
     setMinDate();
     updatePriceDisplay();
+    loadAvailableCoupons();
     const timeField = document.getElementById('deliveryTime');
     if (timeField && !timeField.value) timeField.value = "10:00";
 });

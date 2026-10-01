@@ -16,18 +16,22 @@ from notification import init_notification
 from driver_auth import init_driver_auth
 from driver_dashboard import init_driver_dashboard
 from driver_management import init_driver_management
+from finance_management import init_finance_management
 from new_driver_requests import init_new_driver_requests
 from booking_management import init_booking_management
 from driver_notifications import init_driver_notifications
 from live_status_tracking import init_live_tracking
-from payment_admin import init_payment_admin, get_bank_details, get_finance_overview
+from payment_admin import init_payment_admin, get_bank_details, get_finance_overview, get_ledger_overview, get_top_drivers, get_top_customers
 from razorpay_payments import init_razorpay_payments, razorpay_configured
+from wallet_recharge import init_wallet_recharge
+from payment_management import init_payment_management
 from coupon_management import init_coupon_management, validate_coupon, record_redemption
 from business_insights import init_business_insights
 from pricing_engine import calculate_booking_price
 from quickrebook import init_quickrebook
 from gps_engine import init_gps_engine
 from mail_utils import send_mail_capped
+from admin_user_management import init_admin_user_management
 
 # =====================================================
 # LOAD ENV
@@ -59,17 +63,21 @@ app.secret_key = os.getenv("SECRET_KEY")
 
 
 # =====================================================
-# MAIL CONFIG
+# MAIL CONFIG (Gmail SMTP only - no Resend, no fallback)
+#
+# Port/TLS/SSL are read from the environment with Gmail's normal
+# defaults (587 + STARTTLS) so they can be changed without touching
+# code - useful if a network blocks 587 specifically (common on some
+# ISPs/college networks) and 465 (implicit SSL) needs to be used
+# instead: set MAIL_PORT=465 and MAIL_USE_SSL=true in .env.
 # =====================================================
 
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-
-app.config['MAIL_PORT'] = 587
-
-app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT", 587))
+app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS", "true").strip().lower() == "true"
+app.config['MAIL_USE_SSL'] = os.getenv("MAIL_USE_SSL", "false").strip().lower() == "true"
 
 app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
-
 app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USERNAME")
 
@@ -101,14 +109,6 @@ try:
 except ImportError:
     pass
 
-# ================= MAIL CONFIG =================
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-
-app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
-app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
-
 mail = Mail(app)
 
 client = pymongo.MongoClient(
@@ -129,9 +129,43 @@ earnings_collection = db["earnings"]
 
 settings_collection = db["settings"]
 transactions_collection = db["transactions"]
+
+
+def blocked_user_response():
+    """
+    Shared guard for any customer-facing action that should be denied
+    once an admin has blocked the account (see admin_user_management.py).
+    Blocking already prevents a fresh login, but a user who was already
+    logged in keeps their session - so anything that creates or changes
+    an order also has to check this, not just the login route.
+
+    Returns a Flask response (kicking the user back to login with an
+    explanation) if the currently-signed-in user is blocked, or None
+    if they're clear to proceed.
+    """
+
+    email = session.get("user_email")
+    if not email:
+        return None
+
+    user = users_collection.find_one({"email": email})
+    if user and user.get("is_blocked"):
+        session.clear()
+        return render_template(
+            "login.html",
+            error="Your account has been suspended. Contact AquaFlow support for help."
+        )
+
+    return None
 coupons_collection = db["coupons"]
 wallet_transactions_collection = db["wallet_transactions"]
 coupon_redemptions_collection = db["coupon_redemptions"]
+wallet_topups_collection = db["wallet_topups"]
+counters_collection = db["counters"]
+documents_collection = db["driver_documents"]
+driver_activity_collection = db["driver_activity"]
+from payment_ledger import init_payment_ledger, log_transaction, update_transaction_status
+payment_transactions_collection = init_payment_ledger(db)
 
 
 def expire_stale_awaiting_payment_bookings():
@@ -198,7 +232,8 @@ init_notification(
 init_driver_auth(
     app,
     drivers_collection,
-    mail
+    mail,
+    activity_collection=driver_activity_collection
 )
 init_driver_dashboard(
     app,
@@ -206,16 +241,29 @@ init_driver_dashboard(
     bookings_collection,
     notifications_collection,
     earnings_collection=earnings_collection,
+    documents_collection=documents_collection,
+    activity_collection=driver_activity_collection,
     mail=mail,
     settings_collection=settings_collection,
-    transactions_collection=transactions_collection
+    transactions_collection=transactions_collection,
+    payment_transactions_collection=payment_transactions_collection
 )
 init_driver_management(
     app,
     drivers_collection,
     bookings_collection,
     settings_collection=settings_collection,
-    transactions_collection=transactions_collection
+    transactions_collection=transactions_collection,
+    documents_collection=documents_collection
+)
+init_finance_management(
+    app,
+    drivers_collection,
+    bookings_collection,
+    settings_collection=settings_collection,
+    transactions_collection=transactions_collection,
+    payment_transactions_collection=payment_transactions_collection,
+    notifications_collection=notifications_collection
 )
 init_new_driver_requests(
     app,
@@ -250,14 +298,24 @@ init_payment_admin(
     drivers_collection,
     notifications_collection,
     settings_collection,
-    transactions_collection
+    transactions_collection,
+    payment_transactions_collection
 )
 init_razorpay_payments(
     app,
     bookings_collection,
     settings_collection,
-    notifications_collection
+    notifications_collection,
+    payment_transactions_collection
 )
+init_wallet_recharge(
+    app,
+    users_collection,
+    wallet_transactions_collection,
+    wallet_topups_collection,
+    payment_transactions_collection
+)
+init_payment_management(app, payment_transactions_collection)
 init_coupon_management(
     app,
     coupons_collection,
@@ -281,6 +339,13 @@ init_quickrebook(
     app,
     bookings_collection,
     users_collection
+)
+
+init_admin_user_management(
+    app,
+    users_collection,
+    bookings_collection,
+    notifications_collection
 )
 
 # ================= HOME =================
@@ -348,6 +413,15 @@ def login():
             )
 
         if password_correct:
+
+            # ACCOUNT BLOCKED BY ADMIN (see admin_user_management.py) -
+            # deny login entirely rather than letting them into a
+            # dashboard, even though the password was right.
+            if user.get("is_blocked"):
+                return render_template(
+                    'login.html',
+                    error="Your account has been suspended. Contact AquaFlow support for help."
+                )
 
             # UPDATE LAST LOGIN
             users_collection.update_one(
@@ -436,23 +510,12 @@ Thank You,
 AquaFlow Team
 """
 
-            mail_sent = send_mail_capped(mail, msg, timeout_seconds=6)
-
-            if not mail_sent:
-                print(f"[signup] OTP email to {email} could not be delivered "
-                      f"(see [mail] logs above for the exact reason)")
-                session.pop('signup_otp', None)
-                return render_template(
-                    'signup.html',
-                    error="We couldn't send the verification OTP to that email "
-                          "right now. Please check the address and try again."
-                )
+            send_mail_capped(app, mail, msg, timeout_seconds=6)
 
             return redirect(url_for('verify_otp'))
 
         except Exception as e:
             print("MAIL ERROR:", e)
-            session.pop('signup_otp', None)
 
             return render_template(
                 'signup.html',
@@ -701,6 +764,8 @@ def dashboard():
 #==================payment_system=====================================
 @app.route("/payment_system")
 def payment_system():
+    if 'admin' not in session and 'admin_email' not in session:
+        return redirect(url_for('admin_login'))
     return render_template("payment_system.html")
 
 #=================analytics_charts======================================
@@ -847,6 +912,125 @@ def history():
     )
 
 
+# ================= MY PAYMENTS (customer-facing, own data only) =================
+# Separate from /payment_system (admin-only, platform-wide monitoring).
+# This page shows exactly one customer's own payments - never another
+# customer's name, transaction ID, or amount. Bookings are the base
+# list (so an unpaid/COD booking that hasn't reached the ledger yet
+# still shows up correctly), enriched with the real transaction_id
+# from payment_transactions_collection wherever a ledger entry exists.
+@app.route('/my-payments')
+def my_payments():
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    user_email = session['user_email']
+    expire_stale_awaiting_payment_bookings()
+
+    bookings = list(
+        bookings_collection.find({"user_email": user_email}).sort("created_at", -1)
+    )
+
+    # Pull every ledger row for this user in one query, then match it
+    # to bookings in Python - cheaper than one query per booking, and
+    # keeps payment_transactions_collection as the single source of
+    # truth for the real transaction reference shown to the customer.
+    ledger_rows = list(
+        payment_transactions_collection.find({"user_email": user_email})
+    ) if payment_transactions_collection is not None else []
+    ledger_by_booking = {}
+    for row in ledger_rows:
+        bid = row.get("booking_id")
+        if not bid:
+            continue
+        existing = ledger_by_booking.get(bid)
+        # Prefer the most recent row per booking (e.g. a Verification
+        # Failed attempt followed by a real Paid one).
+        if not existing or row.get("created_at", datetime.min) > existing.get("created_at", datetime.min):
+            ledger_by_booking[bid] = row
+
+    payments = []
+    total_paid_this_month = 0
+    month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    for b in bookings:
+        bid = str(b["_id"])
+        ledger_row = ledger_by_booking.get(bid)
+        amount = b.get("pre_coupon_amount") or b.get("delivery_fee", 0)
+        method = b.get("payment_method", "Cash on Delivery")
+
+        # Plain-language status - a customer should never see internal
+        # ledger vocabulary like "Settled" or "Captured". status_kind
+        # drives the badge color in the template - decided HERE, right
+        # alongside the label, so a new status can never be added here
+        # without also getting a correct color (that's exactly how the
+        # earlier bug happened: colors were mapped separately in the
+        # template and quietly fell out of sync as labels changed).
+        # kinds: green = paid/settled, amber = still pending/waiting,
+        # red = failed/rejected/cancelled, gray = needs a human to look
+        if b.get("status") == "Awaiting Payment":
+            plain_status, can_retry, status_kind = "Payment Pending", True, "amber"
+        elif b.get("payment_status") == "Paid (Online)":
+            plain_status, can_retry, status_kind = "Paid", False, "green"
+        elif b.get("status") == "Cancelled":
+            # Covers both a customer-cancelled booking and the 30-minute
+            # auto-cancel for an abandoned UPI checkout that was never
+            # actually paid (see expire_stale_awaiting_payment_bookings).
+            plain_status, can_retry, status_kind = (
+                ("Cancelled - Never Paid" if b.get("auto_cancelled_reason") else "Cancelled"),
+                False, "red"
+            )
+        elif b.get("status") == "Rejected":
+            plain_status, can_retry, status_kind = "Booking Rejected", False, "red"
+        elif b.get("payment_submission_status") == "Rejected":
+            plain_status, can_retry, status_kind = "Payment Not Verified", False, "red"
+        elif b.get("payment_submission_status") == "Approved":
+            # Cash was collected on delivery AND the driver's remittance
+            # was verified by admin - this is fully settled, not still
+            # owed. Without this check it fell through to the same
+            # "Pay on Delivery" label as money genuinely still due,
+            # which is exactly backwards.
+            plain_status, can_retry, status_kind = "Paid (Cash on Delivery)", False, "green"
+        elif b.get("payment_submission_status") in ("Pending Verification", "Waiting Admin Approval"):
+            plain_status, can_retry, status_kind = "Cash Submitted - Verifying", False, "amber"
+        elif method == "Cash on Delivery":
+            # Genuinely still owed: delivery hasn't happened (or cash
+            # hasn't been submitted/verified) yet.
+            plain_status, can_retry, status_kind = "Not Yet Paid - Due on Delivery", False, "amber"
+        elif method == "UPI":
+            # A UPI booking that reached here is neither Awaiting
+            # Payment, Paid, nor Cancelled - genuinely still waiting on
+            # something (e.g. driver not yet assigned to a booking that
+            # was actually paid through another path). Be explicit that
+            # this isn't a normal COD-style "nothing due yet" state.
+            plain_status, can_retry, status_kind = "Payment Status Unclear - Contact Support", False, "gray"
+        else:
+            plain_status, can_retry, status_kind = "Pending", False, "amber"
+
+        if ledger_row and ledger_row.get("status") in ("Paid", "Settled") and \
+                ledger_row.get("created_at", datetime.min) >= month_start:
+            total_paid_this_month += ledger_row.get("amount") or 0
+
+        payments.append({
+            "booking_id": bid,
+            "date": b.get("created_at"),
+            "amount": amount,
+            "method": method,
+            "status": plain_status,
+            "status_kind": status_kind,
+            "can_retry": can_retry,
+            "can_view_invoice": plain_status in ("Paid", "Paid (Cash on Delivery)"),
+            "transaction_ref": (ledger_row or {}).get("razorpay_payment_id") or (ledger_row or {}).get("transaction_id"),
+        })
+
+    return render_template(
+        'my_payments.html',
+        payments=payments,
+        total_paid_this_month=total_paid_this_month
+    )
+
+
 # ================= CANCEL AN UNPAID "PAY NOW" REQUEST =================
 # Lets the customer explicitly walk away from a booking they started
 # but decided not to pay for, instead of waiting for the 30-minute
@@ -909,12 +1093,27 @@ def calculate_price():
     except (TypeError, ValueError):
         latitude = longitude = None
 
-    price = calculate_booking_price(quantity, latitude, longitude, settings_collection)
+    price = calculate_booking_price(
+        quantity, latitude, longitude, settings_collection,
+        drivers_collection, bookings_collection
+    )
+
+    if not price["deliverable"]:
+        return jsonify({
+            "success": True,
+            "deliverable": False,
+            "reason": price["reason"],
+            "tanker_cost": price["tanker_cost"],
+            "distance_km": price.get("distance_km")
+        })
 
     result = {
         "success": True,
+        "deliverable": True,
+        "awaiting_location": price["awaiting_location"],
         "tanker_cost": price["tanker_cost"],
         "distance_km": price["distance_km"],
+        "nearest_driver_name": price.get("nearest_driver_name"),
         "delivery_fee": price["delivery_fee"],
         "platform_fee": price["platform_fee"],
         "gst_percent": price["gst_percent"],
@@ -926,7 +1125,7 @@ def calculate_price():
         "final_total": price["total"]
     }
 
-    if coupon_code:
+    if coupon_code and not price["awaiting_location"]:
         coupon, discount, coupon_error = validate_coupon(
             coupons_collection, coupon_redemptions_collection,
             coupon_code, session['user_email'], price["total"]
@@ -949,6 +1148,12 @@ def booking():
 
     if 'user_email' not in session:
         return redirect(url_for('login'))
+
+    # Blocked accounts keep their session but lose the ability to book -
+    # catches admins blocking someone who's already logged in.
+    blocked_response = blocked_user_response()
+    if blocked_response:
+        return blocked_response
 
     # =========================
     # BOOKING FORM SUBMIT
@@ -1046,7 +1251,15 @@ def booking():
             flash(" | ".join(errors), "danger")
             return render_template('booking.html')
 
-        price = calculate_booking_price(quantity, latitude, longitude, settings_collection)
+        price = calculate_booking_price(
+            quantity, latitude, longitude, settings_collection,
+            drivers_collection, bookings_collection
+        )
+
+        if not price["deliverable"]:
+            flash(price["reason"], "danger")
+            return render_template('booking.html')
+
         delivery_fee = price["total"]
 
         price_breakdown = {
@@ -1056,7 +1269,8 @@ def booking():
             "platform_fee": price["platform_fee"],
             "gst": price["gst"],
             "gst_percent": price["gst_percent"],
-            "discount": 0
+            "discount": 0,
+            "nearest_driver_name": price.get("nearest_driver_name")
         }
 
         # =========================
@@ -1409,6 +1623,74 @@ def fake_payment_complete(booking_id):
 
 
 # ================= PAYMENT RECEIPT / INVOICE (Feature 6) =================
+
+def _get_or_create_invoice_number(booking_doc, booking_id):
+    """
+    Every booking gets exactly one invoice number, generated the first
+    time its invoice is opened and cached on the booking from then on -
+    so it never changes on repeat views. Sequential per calendar year:
+    INV-2026-000001, INV-2026-000002, ...
+    """
+
+    existing = booking_doc.get("invoice_number")
+    if existing:
+        return existing
+
+    year = datetime.now().year
+
+    counter = counters_collection.find_one_and_update(
+        {"_id": f"invoice_{year}"},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=pymongo.ReturnDocument.AFTER
+    )
+
+    invoice_number = f"INV-{year}-{counter['seq']:06d}"
+
+    bookings_collection.update_one(
+        {"_id": ObjectId(booking_id)},
+        {"$set": {"invoice_number": invoice_number}}
+    )
+
+    return invoice_number
+
+
+def _build_invoice_timeline(booking_doc):
+    """
+    Builds the Order Timeline in the order things actually happened,
+    not a hardcoded guess - because when payment lands in that sequence
+    genuinely varies:
+      - online payments are usually paid before admin even approves
+      - Cash on Delivery is only collected + verified AFTER delivery
+    Steps that already have a timestamp are sorted earliest-first.
+    Steps that haven't happened yet keep the natural fallback order
+    so the "next up" step is easy to spot.
+    """
+
+    if booking_doc.get("payment_method") == "Cash on Delivery":
+        payment_stage = ("Cash Collected & Verified", booking_doc.get("payment_verified_at"))
+    else:
+        payment_stage = ("Payment Successful", booking_doc.get("payment_time") or booking_doc.get("paid_at"))
+
+    all_stages = [
+        ("Booking Created", booking_doc.get("created_at")),
+        ("Admin Approved", booking_doc.get("approved_at")),
+        payment_stage,
+        ("Driver Assigned", booking_doc.get("driver_assigned_at")),
+        ("Driver Started", booking_doc.get("started_at")),
+        ("OTP Verified", booking_doc.get("otp_verified_at")),
+        ("Delivered", booking_doc.get("delivered_at")),
+    ]
+
+    completed = sorted(
+        (s for s in all_stages if s[1]),
+        key=lambda s: s[1]
+    )
+    upcoming = [s for s in all_stages if not s[1]]
+
+    return completed + upcoming
+
+
 @app.route('/invoice/<booking_id>')
 def view_invoice(booking_id):
 
@@ -1436,45 +1718,24 @@ def view_invoice(booking_id):
     gst_amount = round(amount * 18 / 118, 2)
     base_amount = round(amount - gst_amount, 2)
 
+    invoice_number = _get_or_create_invoice_number(booking_doc, booking_id)
+    timeline_stages = _build_invoice_timeline(booking_doc)
+
     return render_template(
         'invoice.html',
         booking=booking_doc,
         booking_id=booking_id,
+        invoice_number=invoice_number,
+        timeline_stages=timeline_stages,
         amount=amount,
         base_amount=base_amount,
         gst_amount=gst_amount
     )
 
 
-# ================= REFUND MANAGEMENT (Feature 14) =================
-@app.route('/refund-management')
-def refund_management():
-
-    if 'admin' not in session:
-        return redirect(url_for('admin_login'))
-
-    requested = list(
-        bookings_collection.find({"refund_status": "Requested"}).sort("refund_requested_at", -1)
-    )
-    resolved = list(
-        bookings_collection.find({"refund_status": {"$in": ["Completed", "Rejected"]}})
-        .sort("refund_requested_at", -1)
-        .limit(50)
-    )
-
-    return render_template(
-        'refund_management.html',
-        requested_refunds=requested,
-        resolved_refunds=resolved,
-        admin_name="Admin",
-        admin_email=session.get('admin_email', 'admin@aquaflow.com')
-    )
-
-
 # ================= TRANSACTION TABLE (Feature 22) =================
 # Unified ledger view across every type of money movement this app
-# tracks: customer payments (Feature 5), refunds (Feature 14), and
-# driver settlements (existing feature) - all already stored in
+# tracks: driver settlements and wallet activity, all already stored in
 # transactions_collection, just not visible in one place until now.
 @app.route('/transaction-table')
 def transaction_table():
@@ -1500,96 +1761,6 @@ def transaction_table():
     )
 
 
-@app.route('/approve-refund/<booking_id>', methods=['POST'])
-def approve_refund(booking_id):
-
-    if 'admin' not in session:
-        return jsonify({"success": False, "message": "Unauthorized"})
-
-    try:
-        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
-        if not booking or booking.get('refund_status') != 'Requested':
-            flash("This refund request is no longer pending.", "danger")
-            return redirect(url_for('refund_management'))
-
-        refund_amount = booking.get('refund_amount', 0)
-
-        bookings_collection.update_one(
-            {"_id": ObjectId(booking_id)},
-            {"$set": {
-                "refund_status": "Completed",
-                "refund_completed_at": datetime.now()
-            }}
-        )
-
-        if transactions_collection is not None:
-            transactions_collection.insert_one({
-                "type": "refund",
-                "booking_id": str(booking_id),
-                "user_email": booking.get('user_email'),
-                "amount": refund_amount,
-                "status": "Completed",
-                "created_at": datetime.now()
-            })
-
-        notifications_collection.insert_one({
-            "user_email": booking.get('user_email'),
-            "title": "Refund Completed",
-            "message": f"Your refund of ₹{refund_amount:,.0f} has been processed.",
-            "type": "refund_completed",
-            "status": "success",
-            "icon": "💸",
-            "read": False,
-            "created_at": datetime.now()
-        })
-
-        flash(f"Refund of ₹{refund_amount:,.0f} marked as completed.", "success")
-        return redirect(url_for('refund_management'))
-
-    except Exception as e:
-        flash(f"Could not approve refund: {str(e)}", "danger")
-        return redirect(url_for('refund_management'))
-
-
-@app.route('/reject-refund/<booking_id>', methods=['POST'])
-def reject_refund(booking_id):
-
-    if 'admin' not in session:
-        return jsonify({"success": False, "message": "Unauthorized"})
-
-    try:
-        booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
-        if not booking or booking.get('refund_status') != 'Requested':
-            flash("This refund request is no longer pending.", "danger")
-            return redirect(url_for('refund_management'))
-
-        bookings_collection.update_one(
-            {"_id": ObjectId(booking_id)},
-            {"$set": {
-                "refund_status": "Rejected",
-                "refund_completed_at": datetime.now()
-            }}
-        )
-
-        notifications_collection.insert_one({
-            "user_email": booking.get('user_email'),
-            "title": "Refund Rejected",
-            "message": "Your refund request was reviewed and rejected. Contact support if you believe this is a mistake.",
-            "type": "refund_rejected",
-            "status": "danger",
-            "icon": "⚠️",
-            "read": False,
-            "created_at": datetime.now()
-        })
-
-        flash("Refund request rejected.", "success")
-        return redirect(url_for('refund_management'))
-
-    except Exception as e:
-        flash(f"Could not reject refund: {str(e)}", "danger")
-        return redirect(url_for('refund_management'))
-
-
 # ================= USER WALLET (Feature 17) =================
 @app.route('/wallet')
 def user_wallet():
@@ -1606,46 +1777,40 @@ def user_wallet():
         .limit(50)
     )
 
+    # Lifetime totals for the stats strip - summed over every
+    # transaction on record, not just the 50 shown in the table.
+    all_txns = list(wallet_transactions_collection.find({"user_email": session['user_email']}))
+    total_recharged = sum(t.get('amount', 0) for t in all_txns if t.get('type') == 'recharge')
+    total_spent = sum(-t.get('amount', 0) for t in all_txns if t.get('type') == 'booking_payment')
+    total_refunded = sum(t.get('amount', 0) for t in all_txns if t.get('type') == 'refund_to_wallet')
+
     return render_template(
         'wallet.html',
         wallet_balance=wallet_balance,
-        history=history
+        history=history,
+        total_recharged=total_recharged,
+        total_spent=total_spent,
+        total_refunded=total_refunded,
+        razorpay_ready=razorpay_configured()
     )
 
 
-@app.route('/recharge-wallet', methods=['POST'])
-def recharge_wallet():
+@app.route('/wallet-receipt/<razorpay_payment_id>')
+def wallet_receipt(razorpay_payment_id):
 
     if 'user_email' not in session:
         return redirect(url_for('login'))
 
-    try:
-        amount = float(request.form.get('amount', '0'))
-    except ValueError:
-        amount = 0
-
-    if amount <= 0:
-        flash("Please enter a valid recharge amount.", "danger")
-        return redirect(url_for('user_wallet'))
-
-    # This project doesn't take real money for a wallet top-up either -
-    # same simulated-success approach as the fake payment gateway
-    # (Feature 5), just instant since there's no gateway UI needed here.
-    users_collection.update_one(
-        {"email": session['user_email']},
-        {"$inc": {"wallet_balance": amount}},
-        upsert=False
-    )
-
-    wallet_transactions_collection.insert_one({
-        "user_email": session['user_email'],
-        "type": "recharge",
-        "amount": amount,
-        "created_at": datetime.now()
+    topup = wallet_topups_collection.find_one({
+        "razorpay_payment_id": razorpay_payment_id,
+        "user_email": session['user_email']
     })
 
-    flash(f"₹{amount:,.0f} added to your wallet.", "success")
-    return redirect(url_for('user_wallet'))
+    if not topup:
+        flash("Receipt not found.", "danger")
+        return redirect(url_for('user_wallet'))
+
+    return render_template('wallet_receipt.html', topup=topup)
 
 
 @app.route('/apply-wallet/<booking_id>', methods=['POST'])
@@ -1803,6 +1968,19 @@ def wallet_full_payment(booking_id):
 
     original_amount = booking.get('pre_coupon_amount') or booking.get('wallet_used') or 0
 
+    log_transaction(
+        payment_transactions_collection,
+        type="booking_payment",
+        status="Paid",
+        amount=original_amount,
+        booking_id=booking_id,
+        user_email=session['user_email'],
+        driver_email=booking.get("driver_email"),
+        gateway=method_label.lower().replace(" + ", "_and_").replace(" ", "_"),
+        gst=booking.get("gst"),
+        notes=f"Closed out with no charge via {method_label}"
+    )
+
     notifications_collection.insert_one({
         "user_email": session['user_email'],
         "title": "Payment Successful",
@@ -1957,23 +2135,12 @@ Thank You,
 AquaFlow Team
 """
 
-            mail_sent = send_mail_capped(mail, msg, timeout_seconds=6)
-
-            if not mail_sent:
-                print(f"[forgot-password] OTP email to {email} could not be "
-                      f"delivered (see [mail] logs above for the exact reason)")
-                session.pop('reset_otp', None)
-                return render_template(
-                    'forgot_password.html',
-                    error="We couldn't send the reset OTP to that email right "
-                          "now. Please try again in a moment."
-                )
+            send_mail_capped(app, mail, msg, timeout_seconds=6)
 
             return redirect(url_for('reset_password_otp'))
 
         except Exception as e:
             print("MAIL ERROR:", e)
-            session.pop('reset_otp', None)
 
             return render_template(
                 'forgot_password.html',
@@ -2186,6 +2353,7 @@ def api_stats():
     })
 
     finance = get_finance_overview(bookings_collection, drivers_collection, transactions_collection)
+    ledger_overview = get_ledger_overview(payment_transactions_collection)
 
     return jsonify({
         "total_users": total_users,
@@ -2200,6 +2368,11 @@ def api_stats():
         "today_commission": finance["today_commission"],
         "pending_driver_deposits": finance["pending_driver_deposits"],
         "pending_driver_payouts": finance["pending_driver_payouts"],
+        "gst_collected": ledger_overview["gst_collected"],
+        "total_withdrawals": ledger_overview["total_withdrawals"],
+        "today_withdrawals": ledger_overview["today_withdrawals"],
+        "cod_total": ledger_overview["cod_total"],
+        "online_total": ledger_overview["online_total"],
         "active_deliveries": active_deliveries
     })
 
@@ -2250,6 +2423,9 @@ def admin_dashboard():
     # =========================
 
     finance = get_finance_overview(bookings_collection, drivers_collection, transactions_collection)
+    ledger_overview = get_ledger_overview(payment_transactions_collection)
+    top_drivers = get_top_drivers(bookings_collection, drivers_collection)
+    top_customers = get_top_customers(bookings_collection)
 
     active_deliveries = bookings_collection.count_documents({
         "status": "Approved"
@@ -2290,6 +2466,9 @@ def admin_dashboard():
             "active_deliveries": active_deliveries
         },
         finance=finance,
+        ledger_overview=ledger_overview,
+        top_drivers=top_drivers,
+        top_customers=top_customers,
         weekly_chart_data=weekly_chart_data,
         weekly_revenue_data=weekly_revenue_data,
         admin_name="Admin",
@@ -2386,37 +2565,20 @@ Thank You,
 AquaFlow Team
 """
 
-        otp_mail_sent = send_mail_capped(mail, msg, timeout_seconds=6)
-
-        if not otp_mail_sent:
-            print(f"[approve-booking] Delivery OTP email to {user_email} "
-                  f"could not be delivered for booking {booking_id} "
-                  f"(see [mail] logs above for the exact reason). The OTP is "
-                  f"still saved on the booking record, so it can be shared "
-                  f"with the customer manually if needed.")
-
-        bookings_collection.update_one(
-            {"_id": ObjectId(booking_id)},
-            {"$set": {"delivery_otp_email_sent": otp_mail_sent}}
-        )
-
+        send_mail_capped(app, mail, msg, timeout_seconds=6)
         notifications_collection.insert_one({
 
     "user_email": user_email,
 
-    "title": "OTP Sent" if otp_mail_sent else "OTP Email Failed",
+    "title": "OTP Sent",
 
-    "message": (
-        "Delivery OTP is sent to your registered Gmail"
-        if otp_mail_sent else
-        "We couldn't email your delivery OTP. Please contact support to get it."
-    ),
+    "message": "Delivery OTP is sent to your registered Gmail",
 
     "type": "otp",
 
-    "status": "success" if otp_mail_sent else "error",
+    "status": "success",
 
-    "icon": "📧" if otp_mail_sent else "⚠️",
+    "icon": "📧",
 
     "read": False,
 
@@ -2455,10 +2617,7 @@ AquaFlow Team
 
         return jsonify({
             "success": True,
-            "message": "Booking approved successfully" if otp_mail_sent else
-                       "Booking approved, but the delivery OTP email failed to "
-                       "send. Check server mail logs / share the OTP manually.",
-            "otp_mail_sent": otp_mail_sent
+            "message": "Booking approved successfully"
         })
 
     except Exception as e:
@@ -2525,42 +2684,34 @@ def cancel_booking(booking_id):
             })
 
         # =========================================
-        # REFUND (Feature 14) + CANCELLATION CHARGE (Feature 15)
-        # Only relevant if money was actually collected online. COD
-        # bookings and never-paid bookings have nothing to refund, so
-        # this leaves their cancellation behaviour exactly as before.
+        # CANCELLATION POLICY
+        # By business decision, this app does not run an automated
+        # refund system at all - once a tanker has actually been paid
+        # for or a driver has been dispatched, it's realistically not
+        # reversible, so cancellation from here is blocked outright
+        # rather than triggering any refund/cancellation-fee logic.
+        # If a customer needs a resolution (e.g. bad water quality),
+        # that's handled by support contacting them directly, not by
+        # anything in this system.
         # =========================================
 
-        refund_fields = {}
-        refund_message_suffix = ""
+        driver_already_assigned = bool(booking.get("driver_name")) or booking.get("status") in (
+            "Assigned", "Accepted", "Arrived", "On The Way"
+        )
 
-        if booking.get("payment_status") == "Paid (Online)" and not booking.get("refund_status"):
-            amount = booking.get("delivery_fee", 0)
+        if booking.get("payment_status") == "Paid (Online)":
+            return jsonify({
+                "success": False,
+                "message": "This booking has already been paid for and can't be cancelled from here. "
+                           "If the customer needs a resolution, contact them directly - refunds aren't handled automatically."
+            })
 
-            driver_already_assigned = bool(booking.get("driver_name")) or booking.get("status") in (
-                "Assigned", "Accepted", "Arrived", "On The Way"
-            )
-
-            # Before a driver is assigned: full refund.
-            # After a driver is assigned: 20% cancellation fee applies.
-            refund_percent = 0.8 if driver_already_assigned else 1.0
-            refund_amount = round(amount * refund_percent, 2)
-            cancellation_fee = round(amount - refund_amount, 2)
-
-            refund_fields = {
-                "refund_status": "Requested",
-                "refund_amount": refund_amount,
-                "cancellation_fee": cancellation_fee,
-                "refund_requested_at": datetime.now()
-            }
-
-            if cancellation_fee > 0:
-                refund_message_suffix = (
-                    f" A refund of ₹{refund_amount:,.0f} has been initiated "
-                    f"(₹{cancellation_fee:,.0f} cancellation fee applied since a driver was already assigned)."
-                )
-            else:
-                refund_message_suffix = f" A full refund of ₹{refund_amount:,.0f} has been initiated."
+        if driver_already_assigned:
+            return jsonify({
+                "success": False,
+                "message": "A driver has already been assigned to this booking, so it can't be cancelled from here. "
+                           "Contact the customer directly if it needs to be resolved."
+            })
 
         # =========================================
         # UPDATE STATUS
@@ -2568,12 +2719,7 @@ def cancel_booking(booking_id):
 
         bookings_collection.update_one(
             {"_id": ObjectId(booking_id)},
-            {
-                "$set": {
-                    "status": "Cancelled",
-                    **refund_fields
-                }
-            }
+            {"$set": {"status": "Cancelled"}}
         )
 
         # =========================================
@@ -2586,7 +2732,7 @@ def cancel_booking(booking_id):
 
             "title": "Booking Cancelled",
 
-            "message": "Your water tanker booking has been cancelled." + refund_message_suffix,
+            "message": "Your water tanker booking has been cancelled.",
 
             "type": "cancelled",
 

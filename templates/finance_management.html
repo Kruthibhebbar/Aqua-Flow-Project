@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AquaFlow | Finance Management</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <style>
+
+        *{ margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+
+        body{ background:#f5f7fb; min-height:100vh; padding:32px; color:#1e293b; }
+
+        .page-container{ width:100%; max-width:1500px; margin:0 auto; }
+
+        /* ===================================================== */
+        /* HEADER */
+        /* ===================================================== */
+
+        .top-header{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:32px; }
+
+        .page-title{ font-size:36px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:14px; }
+
+        .page-title .title-icon{
+            width:52px; height:52px; border-radius:16px;
+            background:linear-gradient(135deg,#0f766e,#0d9488);
+            color:#fff; display:flex; align-items:center; justify-content:center;
+            font-size:22px; box-shadow:0 8px 20px rgba(13,148,136,0.35);
+        }
+
+        .page-subtitle{ color:#64748b; margin-top:8px; font-size:15px; margin-left:66px; }
+
+        .header-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+
+        .btn-nav{
+            display:inline-flex; align-items:center; gap:8px; padding:12px 20px;
+            border-radius:14px; font-size:14px; font-weight:600; text-decoration:none;
+            border:1px solid #e2e8f0; transition:0.2s;
+        }
+        .btn-nav-ghost{ background:#fff; color:#334155; }
+        .btn-nav-ghost:hover{ background:#f1f5f9; transform:translateY(-2px); }
+        .btn-nav-driver{
+            background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none;
+            box-shadow:0 8px 20px rgba(37,99,235,0.3);
+        }
+        .btn-nav-driver:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(37,99,235,0.4); }
+
+        /* ===================================================== */
+        /* STATS */
+        /* ===================================================== */
+
+        .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:20px; margin-bottom:32px; }
+
+        .stat-card{
+            background:#fff; border-radius:22px; padding:26px; border:1px solid #e2e8f0;
+            box-shadow:0 8px 25px rgba(0,0,0,0.05); transition:0.3s;
+        }
+        .stat-card:hover{ transform:translateY(-4px); box-shadow:0 14px 32px rgba(0,0,0,0.08); }
+        .stat-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+        .stat-icon{ width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:20px; background:#eff6ff; color:#2563eb; }
+        .stat-icon.icon-green{ background:#dcfce7; color:#15803d; }
+        .stat-icon.icon-red{ background:#fee2e2; color:#dc2626; }
+        .stat-icon.icon-amber{ background:#fef3c7; color:#92400e; }
+        .stat-icon.icon-teal{ background:#ccfbf1; color:#0f766e; }
+        .stat-icon.icon-purple{ background:#ede9fe; color:#6d28d9; }
+        .stat-value{ font-size:30px; font-weight:800; color:#0f172a; }
+        .stat-label{ color:#64748b; font-size:14px; margin-top:4px; font-weight:500; }
+
+        /* ===================================================== */
+        /* SECTION SHELL */
+        /* ===================================================== */
+
+        .table-container{
+            background:#fff; border-radius:28px; padding:28px; border:1px solid #e2e8f0;
+            box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:28px; scroll-margin-top:24px;
+        }
+        .section-title{ font-size:24px; font-weight:700; margin-bottom:6px; color:#0f172a; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .section-sub{ color:#94a3b8; font-size:13.5px; margin-bottom:22px; }
+        .count-pill{ font-size:13px; font-weight:700; background:#fef3c7; color:#92400e; padding:5px 14px; border-radius:30px; }
+
+        /* ===================================================== */
+        /* BANK DETAILS FORM */
+        /* ===================================================== */
+
+        .bank-form-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+        .bank-form-grid label{ display:block; font-size:13px; font-weight:600; color:#475569; margin-bottom:6px; }
+        .bank-form-grid input[type="text"], .bank-form-grid input[type="file"]{
+            width:100%; padding:12px 14px; border:1px solid #e2e8f0; border-radius:14px;
+            font-size:14px; font-family:'Poppins',sans-serif;
+        }
+        .qr-preview{ width:120px; height:120px; object-fit:cover; border-radius:16px; border:2px solid #dbeafe; }
+
+        .btn-pill{
+            border:none; padding:11px 22px; border-radius:30px; font-weight:600; font-size:13px;
+            cursor:pointer; display:inline-flex; align-items:center; gap:8px; text-decoration:none; transition:0.2s;
+        }
+        .btn-approve{ background:#16a34a; color:#fff; }
+        .btn-approve:hover{ background:#15803d; }
+        .btn-reject{ background:#fff; color:#dc2626; border:1.5px solid #fecaca; }
+        .btn-reject:hover{ background:#fee2e2; }
+        .btn-save-bank{ background:#0d9488; color:#fff; }
+        .btn-save-bank:hover{ background:#0f766e; }
+
+        /* ===================================================== */
+        /* SIMPLE TABLES (bank approvals / COD verification) */
+        /* ===================================================== */
+
+        .table-scroll{ overflow-x:auto; }
+        table{ width:100%; border-collapse:separate; border-spacing:0; }
+        thead{ background:#f8fafc; }
+        th{ padding:14px 16px; text-align:left; color:#64748b; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; border-bottom:2px solid #eef1f4; white-space:nowrap; }
+        td{ padding:14px 16px; border-bottom:1px solid #eef1f4; color:#334155; font-size:13.5px; vertical-align:middle; }
+        tbody tr:hover{ background:#f8fafc; }
+        tbody tr:last-child td{ border-bottom:none; }
+
+        .verify-status{ padding:6px 14px; border-radius:30px; font-size:12px; font-weight:700; display:inline-block; }
+        .verify-approved{ background:#dcfce7; color:#15803d; }
+        .verify-rejected{ background:#fee2e2; color:#b91c1c; }
+        .proof-link{ color:#2563eb; font-weight:600; text-decoration:none; }
+        .proof-link:hover{ text-decoration:underline; }
+        .txn-ref{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#475569; }
+
+        /* ===================================================== */
+        /* EMPTY STATES */
+        /* ===================================================== */
+
+        .empty-box{ background:#f8fafc; padding:64px 30px; border-radius:24px; text-align:center; border:1.5px dashed #e2e8f0; }
+        .empty-box i{ font-size:56px; color:#cbd5e1; margin-bottom:16px; }
+        .empty-title{ font-size:20px; font-weight:700; color:#0f172a; margin-bottom:8px; }
+        .empty-subtitle{ color:#64748b; font-size:14px; }
+
+        /* ===================================================== */
+        /* SETTLEMENT REQUEST CARDS */
+        /* ===================================================== */
+
+        .settlement-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:20px; }
+
+        .settlement-card{
+            border:1px solid #e2e8f0; border-radius:22px; padding:22px;
+            background:#fbfcfe; transition:0.2s;
+        }
+        .settlement-card:hover{ box-shadow:0 12px 30px rgba(0,0,0,0.06); border-color:#cbd5e1; }
+
+        .settlement-head{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+        .settlement-photo{ width:52px; height:52px; border-radius:50%; object-fit:cover; border:3px solid #dbeafe; }
+        .settlement-name{ font-weight:700; color:#0f172a; font-size:15.5px; }
+        .settlement-meta{ font-size:12px; color:#94a3b8; margin-top:2px; }
+
+        .settlement-amount-row{
+            display:flex; justify-content:space-between; align-items:center;
+            background:#fff7ed; border:1px solid #fed7aa; border-radius:16px;
+            padding:14px 16px; margin-bottom:16px;
+        }
+        .settlement-amount-label{ font-size:12px; color:#c2410c; font-weight:600; }
+        .settlement-amount-value{ font-size:22px; font-weight:800; color:#c2410c; }
+
+        .settlement-stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+        .settlement-stat{ background:#fff; border:1px solid #eef1f4; border-radius:14px; padding:10px 12px; }
+        .settlement-stat-label{ font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.03em; font-weight:700; }
+        .settlement-stat-value{ font-size:14.5px; font-weight:700; color:#0f172a; margin-top:2px; }
+
+        .settlement-bank-preview{ font-size:12.5px; color:#64748b; margin-bottom:16px; line-height:1.7; }
+        .settlement-bank-preview strong{ color:#334155; }
+
+        .badge-verify{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
+        .badge-verify.Approved{ background:#dcfce7; color:#15803d; }
+        .badge-verify.Pending{ background:#fff6e0; color:#93690b; }
+        .badge-verify.Rejected{ background:#fee2e2; color:#b91c1c; }
+        .badge-verify.Not-Submitted{ background:#f1f3f6; color:#7c8b99; }
+
+        .settlement-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+        .btn-tiny{
+            flex:1; min-width:120px; border:none; padding:10px 12px; border-radius:12px;
+            font-weight:600; font-size:12.5px; cursor:pointer; display:inline-flex;
+            align-items:center; justify-content:center; gap:6px; text-decoration:none; transition:0.2s;
+        }
+        .btn-tiny-profile{ background:#eff6ff; color:#2563eb; }
+        .btn-tiny-profile:hover{ background:#dbeafe; }
+        .btn-tiny-bank{ background:#f0fdfa; color:#0f766e; }
+        .btn-tiny-bank:hover{ background:#ccfbf1; }
+        .btn-tiny-pay{ background:#16a34a; color:#fff; flex-basis:100%; }
+        .btn-tiny-pay:hover{ background:#15803d; }
+        .btn-tiny-reject{ background:#fff; color:#dc2626; border:1.5px solid #fecaca; flex-basis:100%; }
+        .btn-tiny-reject:hover{ background:#fee2e2; }
+        .btn-tiny-history{ background:#f8fafc; color:#475569; border:1px solid #e2e8f0; }
+        .btn-tiny-history:hover{ background:#f1f5f9; }
+        .btn-tiny-receipt{ background:#ede9fe; color:#6d28d9; }
+        .btn-tiny-receipt:hover{ background:#ddd6fe; }
+
+        /* ===================================================== */
+        /* MODALS (shared shell) */
+        /* ===================================================== */
+
+        .modal-overlay{
+            display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6);
+            z-index:9998; align-items:center; justify-content:center; padding:20px;
+        }
+        .modal-overlay.open{ display:flex; animation:fadeIn 0.2s ease; }
+        .modal-box{
+            background:#fff; border-radius:26px; width:100%; max-width:520px;
+            max-height:88vh; overflow-y:auto; padding:30px; box-shadow:0 25px 70px rgba(0,0,0,0.3);
+            animation:popIn 0.25s ease;
+        }
+        .modal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+        .modal-header h3{ font-size:20px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:10px; }
+        .modal-close{ border:none; background:#f1f5f9; color:#475569; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; }
+        .modal-sub{ color:#64748b; font-size:13px; margin-bottom:22px; }
+
+        .pay-amount-banner{
+            background:linear-gradient(135deg,#0f766e,#0d9488); color:#fff; border-radius:18px;
+            padding:20px; text-align:center; margin-bottom:20px;
+        }
+        .pay-amount-banner .lbl{ font-size:12px; opacity:0.85; text-transform:uppercase; letter-spacing:0.05em; }
+        .pay-amount-banner .val{ font-size:30px; font-weight:800; margin-top:4px; }
+
+        .copy-row{
+            display:flex; justify-content:space-between; align-items:center;
+            padding:12px 14px; border:1px solid #e2e8f0; border-radius:14px; margin-bottom:10px;
+        }
+        .copy-row .crl{ font-size:12px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; }
+        .copy-row .crv{ font-size:14.5px; font-weight:700; color:#0f172a; font-family:'IBM Plex Mono',monospace; }
+        .copy-btn{
+            border:none; background:#eff6ff; color:#2563eb; width:34px; height:34px;
+            border-radius:10px; cursor:pointer; font-size:13px; flex-shrink:0;
+        }
+        .copy-btn:hover{ background:#dbeafe; }
+        .copy-btn.copied{ background:#dcfce7; color:#15803d; }
+
+        .pay-qr-wrap{ text-align:center; margin:18px 0; }
+        .pay-qr-wrap img{ width:160px; height:160px; border-radius:16px; border:2px solid #dbeafe; object-fit:cover; }
+
+        .confirm-form{ margin-top:20px; }
+        .confirm-note{
+            background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:12.5px;
+            padding:12px 14px; border-radius:14px; margin-bottom:16px; line-height:1.5;
+        }
+        .btn-confirm-payment{ width:100%; background:#16a34a; color:#fff; padding:14px; border-radius:16px; border:none; font-weight:700; font-size:14.5px; cursor:pointer; }
+        .btn-confirm-payment:hover{ background:#15803d; }
+
+        .profile-loading{ text-align:center; padding:40px 0; color:#94a3b8; }
+        .profile-row{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eef1f4; font-size:13.5px; }
+        .profile-row:last-child{ border-bottom:none; }
+        .profile-row .pl{ color:#94a3b8; font-weight:600; }
+        .profile-row .pv{ color:#0f172a; font-weight:700; text-align:right; }
+
+        @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+        @keyframes popIn{ from{opacity:0; transform:scale(0.92);} to{opacity:1; transform:scale(1);} }
+
+        @media(max-width:768px){
+            body{ padding:16px; }
+            .page-title{ font-size:26px; }
+            .page-subtitle{ margin-left:0; margin-top:6px; }
+            .page-title .title-icon{ width:42px; height:42px; font-size:18px; }
+            .section-title{ font-size:20px; }
+            .table-container{ padding:18px; border-radius:20px; }
+            .settlement-grid{ grid-template-columns:1fr; }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div id="flashContainer" style="position:fixed; top:16px; right:16px; z-index:9999; max-width:380px; display:flex; flex-direction:column; gap:10px;">
+            {% for category, message in messages %}
+            <div class="flash-toast" style="background:#fff; border-left:4px solid {{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; box-shadow:0 6px 20px rgba(0,0,0,.12); border-radius:8px; padding:12px 16px; font-size:14px; display:flex; align-items:flex-start; gap:10px;">
+                <i class="fas {{ 'fa-check-circle' if category=='success' else 'fa-triangle-exclamation' if category=='danger' else 'fa-circle-info' }}" style="color:{{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; margin-top:2px;"></i>
+                <span style="flex:1;">{{ message }}</span>
+                <button onclick="this.closest('.flash-toast').remove()" style="background:none; border:none; cursor:pointer; color:#9aa5b1; font-size:14px;">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        <script>
+            setTimeout(function () {
+                document.querySelectorAll('.flash-toast').forEach(function (el) {
+                    el.style.transition = 'opacity .4s'; el.style.opacity = '0';
+                    setTimeout(function () { el.remove(); }, 400);
+                });
+            }, 5000);
+        </script>
+        {% endif %}
+    {% endwith %}
+
+    <div class="page-container">
+
+        <!-- HEADER -->
+        <div class="top-header">
+            <div>
+                <h1 class="page-title">
+                    <span class="title-icon"><i class="fas fa-sack-dollar"></i></span>
+                    Finance Management
+                </h1>
+                <p class="page-subtitle">Company bank details, driver payouts and cash reconciliation</p>
+            </div>
+            <div class="header-actions">
+                <a href="/admin-dashboard" class="btn-nav btn-nav-ghost"><i class="fas fa-arrow-left"></i> Dashboard</a>
+                <a href="/driver-management" class="btn-nav btn-nav-driver"><i class="fas fa-id-card"></i> Driver Management</a>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-top"><div class="stat-icon icon-red"><i class="fas fa-hand-holding-dollar"></i></div></div>
+                <div class="stat-value">₹{{ "{:,.0f}".format(finance.pending_driver_deposits) }}</div>
+                <div class="stat-label">Pending Driver Deposits</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-top"><div class="stat-icon icon-amber"><i class="fas fa-money-bill-transfer"></i></div></div>
+                <div class="stat-value">₹{{ "{:,.0f}".format(finance.pending_driver_payouts) }}</div>
+                <div class="stat-label">Pending Driver Payouts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-top"><div class="stat-icon icon-green"><i class="fas fa-calendar-day"></i></div></div>
+                <div class="stat-value">₹{{ "{:,.0f}".format(finance.today_revenue) }}</div>
+                <div class="stat-label">Today's Revenue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-top"><div class="stat-icon icon-teal"><i class="fas fa-sack-dollar"></i></div></div>
+                <div class="stat-value">₹{{ "{:,.0f}".format(finance.profit) }}</div>
+                <div class="stat-label">Profit</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-top"><div class="stat-icon icon-purple"><i class="fas fa-receipt"></i></div></div>
+                <div class="stat-value">₹{{ "{:,.0f}".format(ledger_overview.gst_collected) }}</div>
+                <div class="stat-label">GST Collected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-top"><div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div></div>
+                <div class="stat-value">₹{{ "{:,.0f}".format(ledger_overview.total_withdrawals) }}</div>
+                <div class="stat-label">Total Withdrawals Paid</div>
+            </div>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- COMPANY BANK / UPI DETAILS -->
+        <!-- ===================================================== -->
+        <div class="table-container">
+            <h2 class="section-title"><i class="fas fa-building-columns"></i> Company Bank &amp; UPI Details</h2>
+            <p class="section-sub">
+                Shown to every driver on their dashboard as the account to send collected cash to.
+                Total the company is currently owed across all drivers:
+                <strong style="color:#b91c1c;">₹{{ "{:,.0f}".format(finance.pending_driver_deposits) }}</strong>
+            </p>
+
+            <form action="{{ url_for('update_bank_details') }}" method="POST" enctype="multipart/form-data">
+                <div class="bank-form-grid">
+                    <div>
+                        <label>Bank Name</label>
+                        <input type="text" name="bank_name" value="{{ bank_details.bank_name if bank_details.bank_name != 'Not set up yet' else '' }}" placeholder="e.g. Canara Bank">
+                    </div>
+                    <div>
+                        <label>Account Holder Name</label>
+                        <input type="text" name="account_holder" value="{{ bank_details.account_holder if bank_details.account_holder != 'Not set up yet' else '' }}" placeholder="e.g. Kruthik B Hebbar">
+                    </div>
+                    <div>
+                        <label>Account Number</label>
+                        <input type="text" name="account_number" value="{{ bank_details.account_number }}" placeholder="e.g. XXXXXXXX1234">
+                    </div>
+                    <div>
+                        <label>IFSC Code</label>
+                        <input type="text" name="ifsc" value="{{ bank_details.ifsc }}" placeholder="e.g. CNRB0001234">
+                    </div>
+                    <div>
+                        <label>UPI ID</label>
+                        <input type="text" name="upi_id" value="{{ bank_details.upi_id }}" placeholder="e.g. aquaflow@upi">
+                    </div>
+                    <div>
+                        <label>Payment QR Code Image</label>
+                        <input type="file" name="qr_image" accept="image/*">
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:20px; margin-top:20px;">
+                    <button type="submit" class="btn-pill btn-save-bank"><i class="fas fa-floppy-disk"></i> Save Bank Details</button>
+                    {% if bank_details.qr_image %}
+                    <img src="{{ url_for('static', filename=bank_details.qr_image) }}" class="qr-preview" alt="Current QR code">
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- DRIVER BANK DETAILS AWAITING APPROVAL -->
+        <!-- ===================================================== -->
+        <div class="table-container">
+            <h2 class="section-title">
+                <i class="fas fa-building-columns"></i> Driver Bank Details Awaiting Approval
+                {% if pending_bank_details %}<span class="count-pill">{{ pending_bank_details|length }} awaiting action</span>{% endif %}
+            </h2>
+            <p class="section-sub">A driver's withdrawal button stays disabled until their bank details are approved here. Check the account holder name matches the driver's identity before approving.</p>
+
+            {% if pending_bank_details %}
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Driver</th><th>Account Holder</th><th>Account Number</th><th>IFSC</th><th>Submitted</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for d in pending_bank_details %}
+                        {% set bank = d.bank_details %}
+                        <tr>
+                            <td>{{ d.name }} ({{ d.email }})</td>
+                            <td>{{ bank.account_holder_name }}</td>
+                            <td class="txn-ref">{{ bank.account_number }}</td>
+                            <td class="txn-ref">{{ bank.ifsc }}</td>
+                            <td>{{ bank.submitted_at.strftime('%d %b %Y, %I:%M %p') if bank.submitted_at else '—' }}</td>
+                            <td style="display:flex; gap:8px;">
+                                <form method="POST" action="{{ url_for('resolve_driver_bank_details', driver_email=d.email, action='approve') }}">
+                                    <button type="submit" class="btn-pill btn-approve"><i class="fas fa-check"></i> Approve</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('resolve_driver_bank_details', driver_email=d.email, action='reject') }}">
+                                    <button type="submit" class="btn-pill btn-reject"><i class="fas fa-xmark"></i> Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-box">
+                <i class="fas fa-circle-check"></i>
+                <div class="empty-title">All Caught Up</div>
+                <div class="empty-subtitle">No bank-details submissions are waiting on approval right now.</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- DRIVER SETTLEMENT (PAYOUT) REQUESTS -->
+        <!-- ===================================================== -->
+        <div class="table-container">
+            <h2 class="section-title">
+                <i class="fas fa-money-bill-transfer"></i> Driver Settlement Requests
+                {% if pending_settlements %}<span class="count-pill">{{ pending_settlements|length }} awaiting action</span>{% endif %}
+            </h2>
+            <p class="section-sub">Money flowing <strong>company → driver</strong>. Review the driver's bank details, transfer manually via your banking app, then confirm the payment here.</p>
+
+            {% if pending_settlements %}
+            <div class="settlement-grid">
+                {% for req in pending_settlements %}
+                {% set photo_url = ('/' + req.driver_photo) if req.driver_photo else 'https://ui-avatars.com/api/?background=0d9488&color=fff&size=104&name=' + (req.driver_name|default('Driver'))|urlencode %}
+                <div class="settlement-card">
+
+                    <div class="settlement-head">
+                        <img src="{{ photo_url }}" class="settlement-photo" loading="lazy"
+                             onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?background=0d9488&color=fff&size=104&name={{ (req.driver_name|default('Driver'))|urlencode }}';">
+                        <div>
+                            <div class="settlement-name">{{ req.driver_name }}</div>
+                            <div class="settlement-meta">{{ req.driver_phone or req.driver_email }} &middot; ID {{ req.driver_id[-6:] if req.driver_id else '—' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="settlement-amount-row">
+                        <div>
+                            <div class="settlement-amount-label">Requested Withdrawal</div>
+                            <div class="settlement-amount-value">₹{{ "{:,.0f}".format(req.amount) }}</div>
+                        </div>
+                        <span class="badge-verify {{ req.bank_verification_status|replace(' ', '-') }}">{{ req.bank_verification_status }} Bank</span>
+                    </div>
+
+                    <div class="settlement-stats">
+                        <div class="settlement-stat"><div class="settlement-stat-label">Total Earnings</div><div class="settlement-stat-value">₹{{ "{:,.0f}".format(req.total_earnings) }}</div></div>
+                        <div class="settlement-stat"><div class="settlement-stat-label">Total Paid</div><div class="settlement-stat-value">₹{{ "{:,.0f}".format(req.total_paid) }}</div></div>
+                        <div class="settlement-stat"><div class="settlement-stat-label">Pending Payout</div><div class="settlement-stat-value">₹{{ "{:,.0f}".format(req.current_pending_payout) }}</div></div>
+                        <div class="settlement-stat"><div class="settlement-stat-label">Requested On</div><div class="settlement-stat-value" style="font-size:12.5px;">{{ req.requested_at.strftime('%d %b %Y') if req.requested_at else '—' }}</div></div>
+                    </div>
+
+                    <div class="settlement-bank-preview">
+                        <strong>{{ req.bank_account_holder or 'Not provided' }}</strong><br>
+                        {{ req.bank_name or 'Bank not specified' }} &middot; {{ req.bank_account_number_masked or '—' }}<br>
+                        IFSC: {{ req.bank_ifsc or '—' }}{% if req.bank_upi_id %} &middot; UPI: {{ req.bank_upi_id }}{% endif %}
+                    </div>
+
+                    <div class="settlement-actions">
+                        <button type="button" class="btn-tiny btn-tiny-profile" onclick="openProfileModal('{{ req.driver_id }}', '{{ req.driver_name }}')">
+                            <i class="fas fa-id-badge"></i> Profile
+                        </button>
+                        <button type="button" class="btn-tiny btn-tiny-bank" onclick="openBankModal(this)"
+                            data-holder="{{ req.bank_account_holder or 'Not provided' }}"
+                            data-bank="{{ req.bank_name or 'Not specified' }}"
+                            data-account="{{ req.bank_account_number_full or 'Not provided' }}"
+                            data-ifsc="{{ req.bank_ifsc or 'Not provided' }}"
+                            data-upi="{{ req.bank_upi_id or '' }}"
+                            data-status="{{ req.bank_verification_status }}">
+                            <i class="fas fa-building-columns"></i> Bank Details
+                        </button>
+                        <a href="#payment-history" class="btn-tiny btn-tiny-history"><i class="fas fa-clock-rotate-left"></i> History</a>
+
+                        <button type="button" class="btn-tiny btn-tiny-pay" onclick="openPayModal(this)"
+                            data-request-id="{{ req._id }}"
+                            data-driver="{{ req.driver_name }}"
+                            data-amount="{{ '%.0f'|format(req.amount) }}"
+                            data-holder="{{ req.bank_account_holder or 'Not provided' }}"
+                            data-bank="{{ req.bank_name or 'Not specified' }}"
+                            data-account="{{ req.bank_account_number_full or 'Not provided' }}"
+                            data-ifsc="{{ req.bank_ifsc or 'Not provided' }}"
+                            data-upi="{{ req.bank_upi_id or '' }}"
+                            data-confirm-url="{{ url_for('resolve_driver_settlement', request_id=req._id, action='complete') }}">
+                            <i class="fas fa-money-check-dollar"></i> Pay Now
+                        </button>
+
+                        <form action="{{ url_for('resolve_driver_settlement', request_id=req._id, action='reject') }}" method="POST" style="flex-basis:100%;">
+                            <button type="submit" class="btn-tiny btn-tiny-reject" style="width:100%;"
+                                onclick="return confirm('Reject this settlement request for {{ req.driver_name }}?');">
+                                <i class="fas fa-ban"></i> Reject Request
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-box">
+                <i class="fas fa-circle-check"></i>
+                <div class="empty-title">No Settlement Requests</div>
+                <div class="empty-subtitle">Every driver has been paid out — new withdrawal requests will show up here.</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- PAYMENT HISTORY -->
+        <!-- ===================================================== -->
+        <div class="table-container" id="payment-history">
+            <h2 class="section-title"><i class="fas fa-clock-rotate-left"></i> Driver Payment History</h2>
+            <p class="section-sub">Complete audit trail of every driver payout that has actually been paid and confirmed.</p>
+
+            {% if payment_history %}
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Transaction Ref</th><th>Driver</th><th>Amount</th><th>Method</th><th>Paid By</th><th>Paid Date &amp; Time</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                        {% for txn in payment_history %}
+                        <tr>
+                            <td class="txn-ref">{{ txn.transaction_id }}</td>
+                            <td>{{ txn.driver_email }}</td>
+                            <td style="font-weight:700;">₹{{ "{:,.0f}".format(txn.amount) }}</td>
+                            <td>{{ (txn.gateway or 'bank_transfer')|replace('_',' ')|title }}</td>
+                            <td>{{ txn.admin_remarks or '—' }}</td>
+                            <td>{{ txn.updated_at.strftime('%d %b %Y, %I:%M %p') if txn.updated_at else '—' }}</td>
+                            <td><span class="verify-status verify-approved">{{ txn.status }}</span></td>
+                            <td>
+                                {% if txn.settlement_request_id %}
+                                <a href="/admin/settlement/{{ txn.settlement_request_id }}/receipt" target="_blank" class="proof-link"><i class="fas fa-file-invoice"></i> Receipt</a>
+                                {% else %}
+                                <span style="color:#94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-box">
+                <i class="fas fa-receipt"></i>
+                <div class="empty-title">No Payments Yet</div>
+                <div class="empty-subtitle">Confirmed driver payouts will be listed here with full transaction details.</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- CASH COLLECTION VERIFICATION (COD) -->
+        <!-- ===================================================== -->
+        <div class="table-container">
+            <h2 class="section-title">
+                <i class="fas fa-money-check-dollar"></i> Cash Collection Verification (COD)
+                {% if pending_verifications %}<span class="count-pill">{{ pending_verifications|length }} awaiting review</span>{% endif %}
+            </h2>
+            <p class="section-sub">Money flowing <strong>driver → company</strong>: cash a driver collected from a customer on delivery, which they're remitting back. Unrelated to the driver payout requests above.</p>
+
+            {% if pending_verifications %}
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Driver</th><th>Booking</th><th>Amount</th><th>Method</th><th>Transaction Ref</th><th>Proof</th><th>Submitted</th><th>Decision</th></tr></thead>
+                    <tbody>
+                        {% for order in pending_verifications %}
+                        <tr>
+                            <td>{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</td>
+                            <td>#{{ order._id|string|truncate(10, True, '') }}</td>
+                            <td style="font-weight:700;">₹{{ "{:,.0f}".format(order.get('cash_submitted_amount', order.get('delivery_fee', 500))) }}</td>
+                            <td>{{ order.get('payment_submission_method', 'UPI') }}</td>
+                            <td class="txn-ref">{{ order.get('payment_transaction_ref', '-') }}</td>
+                            <td>
+                                {% if order.get('payment_screenshot') %}
+                                <a href="{{ url_for('static', filename=order.payment_screenshot) }}" target="_blank" class="proof-link"><i class="fas fa-image"></i> View</a>
+                                {% else %}<span style="color:#94a3b8;">None</span>{% endif %}
+                            </td>
+                            <td>{{ order.payment_submitted_at.strftime('%d %b, %I:%M %p') if order.get('payment_submitted_at') else '-' }}</td>
+                            <td>
+                                <div style="display:flex; gap:8px;">
+                                    <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="btn-pill btn-approve"><i class="fas fa-check"></i> Approve</button>
+                                    </form>
+                                    <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="btn-pill btn-reject"><i class="fas fa-xmark"></i> Reject</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-box">
+                <i class="fas fa-circle-check"></i>
+                <div class="empty-title">All Caught Up</div>
+                <div class="empty-subtitle">No payment submissions are waiting on verification right now.</div>
+            </div>
+            {% endif %}
+
+            {% if recent_verifications %}
+            <h2 class="section-title" style="font-size:19px; margin-top:32px;"><i class="fas fa-clock-rotate-left"></i> Recent Cash Verification Decisions</h2>
+            <p class="section-sub">Approve/reject history for cash a driver submitted — not the same as the payout decisions above.</p>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Driver</th><th>Booking</th><th>Amount</th><th>Reference</th><th>Decided</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for order in recent_verifications %}
+                        <tr>
+                            <td>{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</td>
+                            <td>#{{ order._id|string|truncate(10, True, '') }}</td>
+                            <td style="font-weight:700;">₹{{ "{:,.0f}".format(order.get('cash_submitted_amount', order.get('delivery_fee', 500))) }}</td>
+                            <td class="txn-ref">{{ order.get('payment_transaction_ref', '-') }}</td>
+                            <td>{{ order.payment_verified_at.strftime('%d %b, %I:%M %p') if order.get('payment_verified_at') else '-' }}</td>
+                            <td>
+                                {% set vstatus = order.get('payment_submission_status') %}
+                                <span class="verify-status {% if vstatus == 'Approved' %}verify-approved{% else %}verify-rejected{% endif %}">{{ vstatus }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- PAY NOW MODAL -->
+    <!-- ===================================================== -->
+    <div class="modal-overlay" id="payModalOverlay" onclick="if(event.target === this) closePayModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-money-check-dollar" style="color:#16a34a;"></i> Pay Driver</h3>
+                <button type="button" class="modal-close" onclick="closePayModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <p class="modal-sub" id="payModalDriverLine">Transfer manually via your banking app, then confirm below.</p>
+
+            <div class="pay-amount-banner">
+                <div class="lbl">Requested Amount</div>
+                <div class="val" id="payModalAmount">₹0</div>
+            </div>
+
+            <div class="copy-row">
+                <div><div class="crl">Account Holder</div><div class="crv" id="payHolder">—</div></div>
+            </div>
+            <div class="copy-row">
+                <div><div class="crl">Bank</div><div class="crv" id="payBank">—</div></div>
+            </div>
+            <div class="copy-row">
+                <div><div class="crl">Account Number</div><div class="crv" id="payAccount">—</div></div>
+                <button type="button" class="copy-btn" onclick="copyField('payAccount', this)"><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="copy-row">
+                <div><div class="crl">IFSC Code</div><div class="crv" id="payIfsc">—</div></div>
+                <button type="button" class="copy-btn" onclick="copyField('payIfsc', this)"><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="copy-row" id="payUpiRow" style="display:none;">
+                <div><div class="crl">UPI ID</div><div class="crv" id="payUpi">—</div></div>
+                <button type="button" class="copy-btn" onclick="copyField('payUpi', this)"><i class="fas fa-copy"></i></button>
+            </div>
+
+            {% if bank_details.qr_image %}
+            <div class="pay-qr-wrap">
+                <img src="{{ url_for('static', filename=bank_details.qr_image) }}" alt="Company QR">
+                <div style="font-size:11.5px; color:#94a3b8; margin-top:6px;">Company scan-to-pay QR (for reference)</div>
+            </div>
+            {% endif %}
+
+            <form class="confirm-form" id="confirmPaymentForm" method="POST" action="">
+                <div class="confirm-note">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    Only click "Confirm Payment" after you have actually completed the bank/UPI transfer. This marks the request as <strong>Paid</strong>.
+                </div>
+                <button type="submit" class="btn-confirm-payment"><i class="fas fa-check-double"></i> Confirm Payment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- BANK DETAILS VIEW MODAL -->
+    <!-- ===================================================== -->
+    <div class="modal-overlay" id="bankModalOverlay" onclick="if(event.target === this) closeBankModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-building-columns" style="color:#0f766e;"></i> Bank Details</h3>
+                <button type="button" class="modal-close" onclick="closeBankModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <p class="modal-sub">Where this driver's payout will be sent.</p>
+            <div class="profile-row"><span class="pl">Account Holder</span><span class="pv" id="bankHolder">—</span></div>
+            <div class="profile-row"><span class="pl">Bank</span><span class="pv" id="bankBank">—</span></div>
+            <div class="profile-row"><span class="pl">Account Number</span><span class="pv" id="bankAccount">—</span></div>
+            <div class="profile-row"><span class="pl">IFSC Code</span><span class="pv" id="bankIfsc">—</span></div>
+            <div class="profile-row" id="bankUpiRow" style="display:none;"><span class="pl">UPI ID</span><span class="pv" id="bankUpi">—</span></div>
+            <div class="profile-row"><span class="pl">Verification Status</span><span class="pv" id="bankStatus">—</span></div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- DRIVER PROFILE MODAL -->
+    <!-- ===================================================== -->
+    <div class="modal-overlay" id="profileModalOverlay" onclick="if(event.target === this) closeProfileModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-id-badge" style="color:#2563eb;"></i> <span id="profileModalName">Driver Profile</span></h3>
+                <button type="button" class="modal-close" onclick="closeProfileModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <p class="modal-sub">Live driver details and recent bookings.</p>
+            <div id="profileModalBody"><div class="profile-loading"><i class="fas fa-spinner fa-spin"></i> Loading driver profile…</div></div>
+        </div>
+    </div>
+
+    <script>
+        // ---------- PAY NOW MODAL ----------
+        function openPayModal(btn) {
+            const d = btn.dataset;
+            document.getElementById('payModalDriverLine').textContent = 'Paying ' + d.driver + ' — transfer manually, then confirm.';
+            document.getElementById('payModalAmount').textContent = '₹' + Number(d.amount).toLocaleString('en-IN');
+            document.getElementById('payHolder').textContent = d.holder;
+            document.getElementById('payBank').textContent = d.bank;
+            document.getElementById('payAccount').textContent = d.account;
+            document.getElementById('payIfsc').textContent = d.ifsc;
+            if (d.upi) {
+                document.getElementById('payUpiRow').style.display = 'flex';
+                document.getElementById('payUpi').textContent = d.upi;
+            } else {
+                document.getElementById('payUpiRow').style.display = 'none';
+            }
+            document.getElementById('confirmPaymentForm').setAttribute('action', d.confirmUrl);
+            document.getElementById('payModalOverlay').classList.add('open');
+        }
+        function closePayModal() {
+            document.getElementById('payModalOverlay').classList.remove('open');
+        }
+
+        // ---------- BANK DETAILS MODAL ----------
+        function openBankModal(btn) {
+            const d = btn.dataset;
+            document.getElementById('bankHolder').textContent = d.holder;
+            document.getElementById('bankBank').textContent = d.bank;
+            document.getElementById('bankAccount').textContent = d.account;
+            document.getElementById('bankIfsc').textContent = d.ifsc;
+            document.getElementById('bankStatus').textContent = d.status;
+            if (d.upi) {
+                document.getElementById('bankUpiRow').style.display = 'flex';
+                document.getElementById('bankUpi').textContent = d.upi;
+            } else {
+                document.getElementById('bankUpiRow').style.display = 'none';
+            }
+            document.getElementById('bankModalOverlay').classList.add('open');
+        }
+        function closeBankModal() {
+            document.getElementById('bankModalOverlay').classList.remove('open');
+        }
+
+        // ---------- COPY TO CLIPBOARD ----------
+        function copyField(id, btn) {
+            const text = document.getElementById(id).textContent;
+            navigator.clipboard.writeText(text).then(function () {
+                btn.classList.add('copied');
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(function () {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 1500);
+            });
+        }
+
+        // ---------- DRIVER PROFILE MODAL ----------
+        function openProfileModal(driverId, driverName) {
+            document.getElementById('profileModalName').textContent = driverName;
+            document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading"><i class="fas fa-spinner fa-spin"></i> Loading driver profile…</div>';
+            document.getElementById('profileModalOverlay').classList.add('open');
+
+            if (!driverId) {
+                document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading">Driver record not found.</div>';
+                return;
+            }
+
+            fetch('/driver-details/' + driverId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.success) {
+                        document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading">Could not load this driver.</div>';
+                        return;
+                    }
+                    const drv = data.driver;
+                    const bookings = data.bookings || [];
+                    const delivered = bookings.filter(function (b) { return b.status === 'Delivered'; }).length;
+                    let html = '';
+                    html += '<div class="profile-row"><span class="pl">Email</span><span class="pv">' + (drv.email || '—') + '</span></div>';
+                    html += '<div class="profile-row"><span class="pl">Phone</span><span class="pv">' + (drv.phone || '—') + '</span></div>';
+                    html += '<div class="profile-row"><span class="pl">Address</span><span class="pv">' + (drv.address || '—') + '</span></div>';
+                    html += '<div class="profile-row"><span class="pl">Truck Number</span><span class="pv">' + (drv.truck_number || '—') + '</span></div>';
+                    html += '<div class="profile-row"><span class="pl">Truck Capacity</span><span class="pv">' + (drv.truck_capacity || '—') + ' L</span></div>';
+                    html += '<div class="profile-row"><span class="pl">Online Status</span><span class="pv">' + (drv.online_status || '—') + '</span></div>';
+                    html += '<div class="profile-row"><span class="pl">Total Bookings</span><span class="pv">' + bookings.length + '</span></div>';
+                    html += '<div class="profile-row"><span class="pl">Delivered</span><span class="pv">' + delivered + '</span></div>';
+                    document.getElementById('profileModalBody').innerHTML = html;
+                })
+                .catch(function () {
+                    document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading">Could not load this driver.</div>';
+                });
+        }
+        function closeProfileModal() {
+            document.getElementById('profileModalOverlay').classList.remove('open');
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { closePayModal(); closeBankModal(); closeProfileModal(); }
+        });
+    </script>
+
+</body>
+
+</html>

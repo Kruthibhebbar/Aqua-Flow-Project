@@ -5,101 +5,283 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Wallet | AquaFlow</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-        body{background:#eef3f9;min-height:100vh;padding:32px 16px;color:#1f2d3d;}
-        .container{max-width:640px;margin:auto;}
-        .back-link{display:inline-block;margin-bottom:14px;color:#2d7aff;text-decoration:none;font-size:.9rem;}
-        h1{font-size:1.5rem;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
 
-        .flash{padding:12px 16px;border-radius:12px;font-size:.85rem;font-weight:600;margin-bottom:16px;}
-        .flash-success{background:#d4f4e2;color:#1e9e5a;}
-        .flash-danger{background:#fbdada;color:#c0392b;}
+        body{
+            min-height:100vh;
+            background:
+                radial-gradient(circle at 8% 8%, rgba(79,109,245,.16), transparent 40%),
+                radial-gradient(circle at 92% 18%, rgba(140,90,255,.14), transparent 42%),
+                radial-gradient(circle at 50% 100%, rgba(45,206,137,.10), transparent 45%),
+                #f3f6fd;
+            color:#131c33;
+            padding:16px 16px 40px;
+            position:relative;
+            overflow-x:hidden;
+        }
 
-        .balance-card{background:linear-gradient(135deg,#2d7aff,#1a5fd6);color:#fff;border-radius:20px;padding:28px;margin-bottom:22px;box-shadow:0 10px 25px rgba(45,122,255,.25);}
-        .balance-label{font-size:.85rem;opacity:.85;margin-bottom:6px;}
-        .balance-value{font-size:2.4rem;font-weight:700;}
+        .blob{position:fixed;border-radius:50%;filter:blur(60px);opacity:.35;z-index:0;pointer-events:none;}
+        .blob-1{width:340px;height:340px;background:#7b9dff;top:-120px;left:-100px;animation:float1 14s ease-in-out infinite;}
+        .blob-2{width:280px;height:280px;background:#b78bff;bottom:-100px;right:-80px;animation:float2 16s ease-in-out infinite;}
+        @keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,30px)}}
+        @keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,-40px)}}
 
-        .card{background:#fff;border-radius:16px;padding:22px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:20px;}
-        .card h2{font-size:1.05rem;margin-bottom:14px;}
+        .container{max-width:640px;margin:auto;position:relative;z-index:1;}
+        .above-fold{min-height:100svh;min-height:100vh;display:flex;flex-direction:column;justify-content:flex-start;padding-top:4px;padding-bottom:26px;}
+
+        .scroll-hint{margin-top:auto;padding-top:10px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#8992ab;font-size:.74rem;font-weight:600;cursor:pointer;user-select:none;}
+        .scroll-hint i{animation:bounceDown 1.6s ease-in-out infinite;color:#6b78a8;}
+        .scroll-hint:hover{color:#2140d6;}
+        .scroll-hint:hover i{color:#2140d6;}
+        @keyframes bounceDown{0%,100%{transform:translateY(0);opacity:.6;}50%{transform:translateY(5px);opacity:1;}}
+
+        .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+        .back-link{display:inline-flex;align-items:center;gap:7px;color:#4a5578;text-decoration:none;font-size:.8rem;font-weight:600;background:#fff;padding:7px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(30,40,90,.07);cursor:pointer;border:none;transition:transform .15s ease, box-shadow .15s ease;}
+        .back-link:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(30,40,90,.12);}
+        .brand{display:flex;align-items:center;gap:7px;font-weight:800;font-size:.85rem;color:#2140d6;letter-spacing:.2px;}
+        .brand i{font-size:1rem;}
+
+        h1{font-size:1.35rem;margin-bottom:2px;display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.5px;}
+        .page-sub{color:#7a86a3;font-size:.8rem;margin-bottom:12px;}
+
+        .flash{padding:10px 16px;border-radius:12px;font-size:.8rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:9px;animation:slideIn .35s ease;}
+        @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+        .flash-success{background:#dcf7e8;color:#137a3f;}
+        .flash-danger{background:#fde3e3;color:#b3261e;}
+
+        .balance-card{
+            position:relative;overflow:hidden;
+            background:linear-gradient(135deg,#4f6df5 0%,#2140d6 60%,#1730a8 100%);
+            color:#fff;border-radius:20px;padding:20px 22px;margin-bottom:12px;
+            box-shadow:0 16px 34px rgba(33,64,214,.28);
+        }
+        .balance-card::before{content:'';position:absolute;top:-70px;right:-40px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.08);}
+        .balance-card::after{content:'';position:absolute;bottom:-90px;left:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06);}
+        .balance-top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;}
+        .balance-label{font-size:.76rem;opacity:.85;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+        .verified-badge{background:rgba(255,255,255,.16);padding:4px 10px;border-radius:999px;font-size:.65rem;font-weight:600;display:flex;align-items:center;gap:5px;}
+        .balance-value{font-size:2.1rem;font-weight:800;letter-spacing:-1px;position:relative;z-index:1;}
+        .balance-foot{margin-top:8px;font-size:.7rem;opacity:.8;position:relative;z-index:1;display:flex;align-items:center;gap:6px;}
+
+        .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px;}
+        .stat-card{background:#fff;border-radius:14px;padding:11px 8px;box-shadow:0 5px 14px rgba(30,40,90,.06);text-align:center;}
+        .stat-card i{font-size:.95rem;margin-bottom:5px;}
+        .stat-card .label{font-size:.62rem;color:#8992ab;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;}
+        .stat-card .value{font-size:1rem;font-weight:800;}
+        .stat-added i{color:#2140d6;} .stat-added .value{color:#2140d6;}
+        .stat-spent i{color:#d64545;} .stat-spent .value{color:#d64545;}
+        .stat-refund i{color:#137a3f;} .stat-refund .value{color:#137a3f;}
+
+        .card{background:#fff;border-radius:16px;padding:18px 18px;box-shadow:0 8px 22px rgba(30,40,90,.06);margin-bottom:12px;}
+        .card h2{font-size:.95rem;margin-bottom:11px;display:flex;align-items:center;gap:9px;font-weight:700;}
+        .card h2 .h-icon{width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,#4f6df5,#2140d6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;}
+
+        .gateway-note{display:flex;align-items:center;gap:9px;background:#eef1ff;color:#3452d6;padding:8px 12px;border-radius:11px;font-size:.72rem;font-weight:600;margin-bottom:11px;}
+        .gateway-note.off{background:#fde3e3;color:#b3261e;}
 
         .recharge-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
-        .recharge-form label{font-size:.82rem;font-weight:600;color:#495057;display:block;margin-bottom:6px;}
-        .recharge-form input{padding:10px 12px;border-radius:10px;border:1.5px solid #dee2e6;font-size:.95rem;width:180px;}
-        .recharge-form button{background:linear-gradient(135deg,#2d7aff,#1a5fd6);color:#fff;border:none;padding:11px 20px;border-radius:10px;font-weight:600;cursor:pointer;}
+        .recharge-form label{font-size:.74rem;font-weight:600;color:#5a6584;display:block;margin-bottom:5px;}
+        .amount-input-wrap{position:relative;}
+        .amount-input-wrap span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#8992ab;font-weight:600;}
+        .recharge-form input{padding:10px 12px 10px 26px;border-radius:11px;border:1.5px solid #e3e7f3;font-size:.92rem;width:170px;font-weight:600;transition:border-color .15s ease;}
+        .recharge-form input:focus{outline:none;border-color:#4f6df5;}
+        .recharge-form button{background:linear-gradient(135deg,#4f6df5,#2140d6);color:#fff;border:none;padding:10px 18px;border-radius:11px;font-weight:700;cursor:pointer;font-size:.9rem;box-shadow:0 8px 16px rgba(45,80,220,.25);transition:transform .15s ease;}
+        .recharge-form button:hover{transform:translateY(-1px);}
+        .recharge-form button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 
-        .quick-amounts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-        .quick-amounts button{background:#f0f4fa;border:1px solid #dee2e6;padding:6px 14px;border-radius:999px;font-size:.8rem;font-weight:600;color:#2d7aff;cursor:pointer;}
+        .quick-amounts{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+        .quick-amounts button{background:#eef1ff;border:1.5px solid transparent;padding:6px 13px;border-radius:999px;font-size:.76rem;font-weight:700;color:#2140d6;cursor:pointer;transition:all .15s ease;}
+        .quick-amounts button.active,.quick-amounts button:hover{background:#2140d6;color:#fff;}
 
-        table{width:100%;border-collapse:collapse;font-size:.88rem;}
-        th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #eef1f4;}
-        th{color:#6b7684;font-weight:600;font-size:.78rem;text-transform:uppercase;}
-        .amt-pos{color:#1e9e5a;font-weight:700;}
-        .amt-neg{color:#c0392b;font-weight:700;}
-        .empty{color:#9aa5b1;font-size:.88rem;padding:14px 0;text-align:center;}
+        .secure-note{margin-top:10px;font-size:.68rem;color:#9aa4bf;display:flex;align-items:center;gap:5px;}
+
+        table{width:100%;border-collapse:collapse;font-size:.87rem;}
+        th,td{text-align:left;padding:12px 8px;border-bottom:1px solid #f0f2f8;}
+        th{color:#8992ab;font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.3px;}
+        tr{transition:background .15s ease;}
+        tbody tr:hover{background:#f7f9ff;}
+        .row-icon{width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;font-size:.75rem;}
+        .row-icon.recharge{background:#dcf7e8;color:#137a3f;}
+        .row-icon.booking_payment{background:#fde3e3;color:#b3261e;}
+        .row-icon.refund_to_wallet{background:#eef1ff;color:#2140d6;}
+        .type-cell{display:flex;align-items:center;}
+        .amt-pos{color:#137a3f;font-weight:800;}
+        .amt-neg{color:#b3261e;font-weight:800;}
+        .empty{color:#9aa4bf;font-size:.88rem;padding:30px 0;text-align:center;}
+        .empty i{font-size:1.8rem;display:block;margin-bottom:10px;color:#d3d9ee;}
+
+        @media (max-width:480px){
+            .stats-row{grid-template-columns:1fr;}
+            .recharge-form input{width:100%;}
+            .balance-value{font-size:1.9rem;}
+        }
     </style>
 </head>
 <body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
 <div class="container">
-    <a href="{{ url_for('history') }}" class="back-link"><i class="fa-solid fa-arrow-left me-1"></i> Back</a>
+    <div class="above-fold">
+    <div class="topbar">
+        <a href="{{ url_for('dashboard') }}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <div class="brand"><i class="fa-solid fa-droplet"></i> AquaFlow</div>
+    </div>
+
     <h1><i class="fa-solid fa-wallet"></i> My Wallet</h1>
+    <div class="page-sub">Add money and track every rupee that moves in or out. <a href="{{ url_for('my_payments') }}" style="color:#2d7aff; text-decoration:none;">See all my booking payments →</a></div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="flash flash-{{ category }}">{{ message }}</div>
+                <div class="flash flash-{{ category }}"><i class="fa-solid {{ 'fa-circle-check' if category == 'success' else 'fa-circle-exclamation' }}"></i> {{ message }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
 
     <div class="balance-card">
-        <div class="balance-label">Wallet Balance</div>
-        <div class="balance-value">₹{{ "{:,.0f}".format(wallet_balance) }}</div>
+        <div class="balance-top">
+            <div class="balance-label"><i class="fa-solid fa-coins"></i> Wallet Balance</div>
+            <div class="verified-badge"><i class="fa-solid fa-shield-halved"></i> Secured</div>
+        </div>
+        <div class="balance-value" id="balanceValue" data-target="{{ wallet_balance }}">₹0</div>
+        <div class="balance-foot"><i class="fa-solid fa-bolt"></i> Backed by verified Razorpay payments only</div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card stat-added"><i class="fa-solid fa-arrow-trend-up"></i><div class="label">Added</div><div class="value">₹{{ "{:,.0f}".format(total_recharged) }}</div></div>
+        <div class="stat-card stat-spent"><i class="fa-solid fa-cart-shopping"></i><div class="label">Spent</div><div class="value">₹{{ "{:,.0f}".format(total_spent) }}</div></div>
+        <div class="stat-card stat-refund"><i class="fa-solid fa-rotate-left"></i><div class="label">Wallet Credits Returned</div><div class="value">₹{{ "{:,.0f}".format(total_refunded) }}</div></div>
     </div>
 
     <div class="card">
-        <h2><i class="fa-solid fa-plus-circle me-2"></i>Recharge Wallet</h2>
-        <form class="recharge-form" method="POST" action="{{ url_for('recharge_wallet') }}">
+        <h2><span class="h-icon"><i class="fa-solid fa-plus"></i></span>Recharge Wallet</h2>
+
+        {% if razorpay_ready %}
+        <div class="gateway-note"><i class="fa-solid fa-lock"></i> Real payments only - your balance updates the instant Razorpay confirms and verifies the transaction.</div>
+        {% else %}
+        <div class="gateway-note off"><i class="fa-solid fa-triangle-exclamation"></i> Online recharge is temporarily unavailable - the payment gateway isn't configured.</div>
+        {% endif %}
+
+        <form class="recharge-form" id="rechargeForm" method="GET" action="{{ url_for('wallet_recharge_checkout') }}">
             <div>
                 <label for="amount">Amount (₹)</label>
-                <input type="number" id="amount" name="amount" min="1" step="1" required>
+                <div class="amount-input-wrap">
+                    <span>₹</span>
+                    <input type="number" id="amount" name="amount" min="1" max="50000" step="1" required {{ 'disabled' if not razorpay_ready }}>
+                </div>
             </div>
-            <button type="submit"><i class="fa-solid fa-bolt me-1"></i> Recharge</button>
+            <button type="submit" id="rechargeBtn" {{ 'disabled' if not razorpay_ready }}><i class="fa-solid fa-bolt"></i> Recharge Securely</button>
         </form>
         <div class="quick-amounts">
-            <button type="button" onclick="document.getElementById('amount').value=200">₹200</button>
-            <button type="button" onclick="document.getElementById('amount').value=500">₹500</button>
-            <button type="button" onclick="document.getElementById('amount').value=1000">₹1000</button>
+            <button type="button" class="quick-chip" data-amt="200" {{ 'disabled' if not razorpay_ready }}>₹200</button>
+            <button type="button" class="quick-chip" data-amt="500" {{ 'disabled' if not razorpay_ready }}>₹500</button>
+            <button type="button" class="quick-chip" data-amt="1000" {{ 'disabled' if not razorpay_ready }}>₹1000</button>
         </div>
+        <div class="secure-note"><i class="fa-solid fa-shield-halved"></i> Every recharge opens a real Razorpay checkout (UPI / Card / Netbanking); nothing is credited until payment is verified.</div>
     </div>
 
-    <div class="card">
-        <h2><i class="fa-solid fa-clock-rotate-left me-2"></i>Transaction History</h2>
+    <div class="scroll-hint" id="scrollHint">
+        <span>View Transaction History</span>
+        <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    </div>
+
+    <div class="card" id="txHistoryCard">
+        <h2><span class="h-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>Transaction History</h2>
         {% if history %}
         <table>
-            <thead><tr><th>Date</th><th>Type</th><th>Amount</th></tr></thead>
+            <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th></th></tr></thead>
             <tbody>
                 {% for h in history %}
                 <tr>
                     <td>{{ h.created_at.strftime('%d %b %Y, %I:%M %p') if h.created_at else '-' }}</td>
-                    <td>
+                    <td class="type-cell">
+                        <span class="row-icon {{ h.type }}">
+                            {% if h.type == 'recharge' %}<i class="fa-solid fa-arrow-down"></i>
+                            {% elif h.type == 'booking_payment' %}<i class="fa-solid fa-truck"></i>
+                            {% elif h.type == 'refund_to_wallet' %}<i class="fa-solid fa-rotate-left"></i>
+                            {% else %}<i class="fa-solid fa-circle"></i>{% endif %}
+                        </span>
                         {% if h.type == 'recharge' %}Recharge
                         {% elif h.type == 'booking_payment' %}Used on Booking
-                        {% elif h.type == 'refund_to_wallet' %}Refunded to Wallet
+                        {% elif h.type == 'refund_to_wallet' %}Wallet Credit Returned
                         {% else %}{{ h.type }}{% endif %}
                     </td>
                     <td class="{{ 'amt-pos' if h.amount >= 0 else 'amt-neg' }}">
                         {{ '+' if h.amount >= 0 else '' }}₹{{ "{:,.0f}".format(h.amount) }}
+                    </td>
+                    <td>
+                        {% if h.type == 'recharge' and h.razorpay_payment_id %}
+                        <a href="{{ url_for('wallet_receipt', razorpay_payment_id=h.razorpay_payment_id) }}" target="_blank" style="font-size:0.8rem; color:#2d7aff; text-decoration:none;">
+                            <i class="fa-solid fa-receipt"></i> Receipt
+                        </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <p class="empty">No wallet activity yet.</p>
+        <div class="empty"><i class="fa-solid fa-inbox"></i>No wallet activity yet - your recharges and bookings will show up here.</div>
         {% endif %}
     </div>
 </div>
+
+<script>
+    // ---- Balance count-up animation ----
+    (function () {
+        const el = document.getElementById('balanceValue');
+        const target = parseFloat(el.getAttribute('data-target')) || 0;
+        const duration = 700;
+        const start = performance.now();
+        function tick(now) {
+            const p = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            const val = Math.round(target * eased);
+            el.textContent = '₹' + val.toLocaleString('en-IN');
+            if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    })();
+
+    // ---- Quick amount chips ----
+    document.querySelectorAll('.quick-chip').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.quick-chip').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('amount').value = btn.getAttribute('data-amt');
+        });
+    });
+
+    // Scroll hint - lets people jump straight to Transaction History,
+    // and signals there's more below the fold instead of the page
+    // looking like it ends after Recharge Wallet.
+    document.getElementById('scrollHint').addEventListener('click', function () {
+        document.getElementById('txHistoryCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Back is a plain link straight to the dashboard - see the
+    // .back-link <a> above. One click, every time, regardless of
+    // how many things you did on this page (recharge attempts,
+    // checkout redirects, etc. no longer affect it).
+</script>
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
+<script>
+(function () {
+    var HOME_URL = "{{ url_for('dashboard') }}";
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
 </body>
 </html>
