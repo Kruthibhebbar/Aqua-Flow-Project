@@ -20,7 +20,6 @@ this file patches pymongo first, then imports app afterwards.
 """
 
 import os
-import sys
 
 # --- fake settings so app.py doesn't crash on missing real config ---
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-real-use")

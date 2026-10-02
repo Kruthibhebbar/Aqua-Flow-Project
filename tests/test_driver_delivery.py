@@ -76,7 +76,7 @@ def test_too_many_wrong_attempts_locks_out_further_tries(client, app):
 
 
 def test_driver_cannot_verify_otp_for_someone_elses_booking(client, app):
-    driver_email = login_as_driver(client, app, email="driver-a@example.com")
+    login_as_driver(client, app, email="driver-a@example.com")
     # booking belongs to a different driver
     booking_id = _seed_booking(app, "driver-b@example.com", otp="482913")
 

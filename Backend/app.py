@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, make_response, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_mail import Mail, Message
 import pymongo
 import bcrypt
@@ -164,7 +164,7 @@ wallet_topups_collection = db["wallet_topups"]
 counters_collection = db["counters"]
 documents_collection = db["driver_documents"]
 driver_activity_collection = db["driver_activity"]
-from payment_ledger import init_payment_ledger, log_transaction, update_transaction_status
+from payment_ledger import init_payment_ledger, log_transaction
 payment_transactions_collection = init_payment_ledger(db)
 
 

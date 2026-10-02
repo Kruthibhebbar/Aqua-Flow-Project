@@ -4,7 +4,7 @@ of copy-pasting into every test file) means if the User document shape
 ever changes, there's exactly one place to update.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import bcrypt
 
 
@@ -38,7 +38,10 @@ VALID_BOOKING_FORM = {
     "phone": "9876543210",
     "address": "123 Test Street, Test City",
     "quantity": "1000",
-    "delivery_date": "2026-08-10",
+    # Computed when the module loads (never hardcode a calendar date here):
+    # the booking route rejects past dates, so a fixed date silently turns
+    # every "valid booking" test red the day after it passes.
+    "delivery_date": (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
     "delivery_time": "10:00 AM",
     "water_type": "Fresh Water",
     "payment_method": "cod",

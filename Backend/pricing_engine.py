@@ -36,7 +36,6 @@ settings_collection so an admin can tune them without a code change,
 the same pattern already used for company bank details.
 """
 
-from datetime import datetime
 
 from gps_engine import haversine_km
 

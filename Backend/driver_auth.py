@@ -11,7 +11,6 @@ import random
 import traceback
 from werkzeug.utils import secure_filename
 from datetime import datetime
-import os
 import bcrypt
 from mail_utils import send_mail_capped
 from image_utils import compress_image_file
@@ -160,11 +159,11 @@ def init_driver_auth(
             session["driver_id"] = str(driver["_id"])
             session["otp_generated_at"] = datetime.now().timestamp()
             
-            print(f"========== OTP GENERATED ==========")
+            print("========== OTP GENERATED ==========")
             print(f"Email: {email}")
             print(f"OTP: {otp_str}")
             print(f"Session data: {dict(session)}")
-            print(f"===================================")
+            print("===================================")
 
             # Send email
             try:
@@ -221,7 +220,7 @@ This OTP is valid for 10 minutes.
         if request.method == "POST":
             entered_otp = request.form.get("otp", "").strip()
             
-            print(f"\n========== VERIFICATION ATTEMPT ==========")
+            print("\n========== VERIFICATION ATTEMPT ==========")
             print(f"Full session data: {dict(session)}")
             print(f"Entered OTP: '{entered_otp}'")
             
@@ -247,7 +246,7 @@ This OTP is valid for 10 minutes.
             
             otp_match = (entered_otp == stored_otp)
             print(f"OTP Match: {otp_match}")
-            print(f"==========================================\n")
+            print("==========================================\n")
             
             if otp_match:
                 session["driver_logged_in"] = True
@@ -317,11 +316,11 @@ This OTP is valid for 10 minutes.
         session["driver_otp"] = otp_str
         session["otp_generated_at"] = datetime.now().timestamp()
         
-        print(f"========== OTP RESENT ==========")
+        print("========== OTP RESENT ==========")
         print(f"Email: {email}")
         print(f"New OTP: {otp_str}")
         print(f"Session data: {dict(session)}")
-        print(f"================================")
+        print("================================")
         
         # Send email with new OTP
         try:

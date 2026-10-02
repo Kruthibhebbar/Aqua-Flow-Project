@@ -8,7 +8,6 @@ customer cancelling their own not-yet-paid booking.
 =====================================================
 """
 
-from bson.objectid import ObjectId
 
 from tests.helpers import create_user, login, submit_booking, seed_available_driver
 

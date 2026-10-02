@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, session, jsonify, Response
+from flask import render_template, redirect, url_for, session, jsonify, Response
 from datetime import datetime
 from bson.objectid import ObjectId
 import json

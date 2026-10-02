@@ -4,8 +4,7 @@ from flask import (
     session,
     redirect,
     url_for,
-    flash,
-    request
+    flash
 )
 
 from bson.objectid import ObjectId

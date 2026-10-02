@@ -3,7 +3,6 @@ from flask import (
     session,
     redirect,
     url_for,
-    request,
     jsonify
 )
 
