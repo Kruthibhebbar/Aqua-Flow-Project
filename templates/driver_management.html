@@ -129,6 +129,28 @@
     }
     .finance-link:hover { background: rgba(38,208,201,.2); color: #fff; }
 
+    .support-link {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+        padding: 7px 14px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
+        color: #C7D6DB; font-weight: 700; font-size: 11.5px; transition: background .15s, color .15s;
+    }
+    .support-link:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .sup-badge {
+        display: none; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+        background: #E5384F; color: #fff; font: 700 10.5px/18px 'Inter', sans-serif; text-align: center;
+        box-shadow: 0 0 0 2px rgba(229,56,79,.25); letter-spacing: 0;
+    }
+    .sup-badge.show { display: inline-block; animation: supPulse 1.6s ease-in-out infinite; }
+    @keyframes supPulse { 0%,100% { box-shadow: 0 0 0 2px rgba(229,56,79,.28); } 50% { box-shadow: 0 0 0 5px rgba(229,56,79,.10); } }
+    .action-menu-btn { position: relative; }
+    .action-menu-btn .sup-dot {
+        display: none; position: absolute; top: -3px; right: -3px; width: 11px; height: 11px;
+        border-radius: 50%; background: #E5384F; border: 2px solid #fff; animation: supPulse 1.6s ease-in-out infinite;
+    }
+    .action-menu-btn .sup-dot.show { display: block; }
+    .action-menu-item .sup-badge { margin-left: auto; }
+
     .sync-chip {
         background: rgba(38,208,201,.10);
         border: 1px solid rgba(38,208,201,.22);
@@ -293,150 +315,236 @@
     .btn-mini-approve:hover { filter: brightness(0.95); }
     .btn-mini-reject { background: var(--red-100); color: var(--red-600); }
     .btn-mini-reject:hover { filter: brightness(0.95); }
+    /* ============================================================
+       REGISTERED DRIVERS - page header
+    ============================================================ */
+    .page-head {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .page-head-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .page-head-icon {
+        width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+        background: linear-gradient(155deg, var(--teal-500), var(--teal-700));
+        box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, var(--shadow-sm);
+        display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px;
+    }
+    .page-head h2 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 700; color: var(--ink);
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap; line-height: 1.2;
+    }
+    .page-head h2 .count-chip {
+        background: var(--teal-050); border: 1px solid var(--teal-100);
+        border-radius: var(--r-pill); padding: 3px 12px; font-size: 11.5px; font-weight: 700;
+        color: var(--teal-700); font-family: 'IBM Plex Mono', monospace;
+    }
+    .page-head p { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+    .head-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+    .head-chip {
+        display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px;
+        border-radius: var(--r-pill); font-size: 11.5px; font-weight: 700;
+        background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    }
+    .head-chip .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .head-chip.on .dot { background: var(--green-600); }
+    .head-chip.off .dot { background: var(--ink-faint); }
+    .head-chip b { font-family: 'IBM Plex Mono', monospace; color: var(--ink); }
 
     /* ============================================================
-       DRIVER LIST — premium card rows (Stripe/Linear/Uber Fleet style)
+       DRIVER TABLE - fixed layout so every heading sits exactly over its data
     ============================================================ */
-    .ledger-wrap { display: flex; flex-direction: column; }
-
-    /* ---- column header bar (shown once, above the card rows) ---- */
-    .driver-list-header {
-        display: flex; align-items: center;
-        padding: 0 32px; margin-bottom: 10px;
-    }
-    .driver-list-header .rail-spacer { width: 4px; margin-right: 22px; flex-shrink: 0; }
-    .dlh-col {
-        font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-        color: var(--ink-faint); display: flex; align-items: center; gap: 6px; white-space: nowrap;
-    }
-    .dlh-divider { height: 20px; width: 1px; background: var(--border-soft); flex-shrink: 0; margin: 0 26px; }
-    .dlh-actions { width: 34px; flex: 0 0 34px; }
-
-    /* ---- individual driver row-card ---- */
-    .driver-card {
-        position: relative;
-        display: flex; align-items: center;
+    .ledger-wrap {
         background: var(--surface);
-        border: 1px solid var(--border-soft);
-        border-radius: 18px;
-        box-shadow: 0 4px 18px rgba(15,23,42,.06);
-        padding: 20px 32px 20px 20px;
-        min-height: 118px;
-        margin-bottom: 14px;
-        transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-sm);
     }
-    .driver-card:last-child { margin-bottom: 0; }
-    .driver-card.menu-active { z-index: 5; }
-    .driver-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 14px 32px -8px rgba(15,23,42,.14);
-        border-color: var(--border);
+    table.driver-table { --chip-h: 21px; width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+    .driver-table thead th {
+        text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .7px; color: var(--ink-soft); background: #F7FAFA;
+        padding: 11px 12px; border-bottom: 1px solid var(--border); white-space: nowrap;
+        position: sticky; top: 0; z-index: 10;
     }
+    .driver-table thead th i { margin-right: 6px; color: var(--teal-600); font-size: 10px; opacity: .85; }
+    .driver-table thead th:first-child { padding-left: 22px; border-top-left-radius: 15px; }
+    .driver-table thead th:last-child { border-top-right-radius: 15px; }
 
-    .status-rail { width: 4px; align-self: stretch; min-height: 76px; border-radius: 3px; margin-right: 22px; flex-shrink: 0; }
-    .status-rail.rail-online { background: var(--green-600); }
-    .status-rail.rail-offline { background: var(--ink-faint); opacity: .5; }
+    .driver-table td {
+        padding: 10px 12px; vertical-align: middle; font-size: 12.5px;
+        border-bottom: 1px solid var(--border-soft); min-width: 0; background: var(--surface);
+        transition: background .12s;
+    }
+    .driver-table td:first-child { padding-left: 22px; }
+    .driver-table tbody tr:last-child td { border-bottom: none; }
+    .driver-table tbody tr:last-child td:first-child { border-bottom-left-radius: 15px; }
+    .driver-table tbody tr:last-child td:last-child { border-bottom-right-radius: 15px; }
+    .driver-table td + td:not(.col-actions) { border-left: 1px solid #F1F6F6; }
+    .driver-table tbody tr:hover td, .driver-table tbody tr:focus-within td { background: #F8FBFB; }
 
-    .col-divider { height: 70px; width: 1px; background: var(--border-soft); flex-shrink: 0; margin: 0 26px; }
+    /* status rail (green = online, grey = offline) drawn on the first cell */
+    .driver-card { --rail: #C3D3D6; }
+    .driver-card.is-online { --rail: var(--green-600); }
+    .driver-table td.col-driver { box-shadow: inset 4px 0 0 var(--rail); }
 
-    .dc-col { min-width: 0; }
-    .col-label-mobile { display: none; }
+    .col-driver  { width: 14%; }
+    .col-contact { width: 14.5%; }
+    .col-address { width: 18.5%; }
+    .col-vehicle { width: 13.5%; }
+    .col-activity { width: 9%; }
+    .col-wallet  { width: 12%; }
+    .col-status  { width: 8%; }
+    .col-docs    { width: 8%; }
+    .col-actions { width: 56px; text-align: right; }
 
-    .col-driver { flex: 1.9; }
-    .col-contact { flex: 1.25; }
-    .col-address { flex: 1.5; }
-    .col-vehicle { flex: 1.25; }
-    .col-activity { flex: 0.95; }
-    .col-wallet { flex: 1.55; }
-    .col-status { flex: 0.85; }
-    .col-docs { flex: 0.95; }
-    .col-actions { flex: 0 0 34px; display: flex; justify-content: flex-end; }
+    .driver-card.menu-active td { background: #F8FBFB; }
+    .cell-label { display: none; }
 
-    .driver-info { display: flex; align-items: center; gap: 14px; }
-    .driver-photo-btn { border: none; background: none; padding: 0; cursor: pointer; border-radius: 50%; position: relative; flex-shrink: 0; }
+    /* ---- Driver ---- */
+    .driver-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .driver-info-text { min-width: 0; flex: 1; }
+    .driver-photo-btn {
+        border: none; background: none; padding: 0; cursor: zoom-in; border-radius: 50%;
+        position: relative; flex-shrink: 0; width: 38px; height: 38px;
+    }
+    .driver-photo-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+    .avatar-initial {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: linear-gradient(155deg, var(--teal-050), var(--teal-100)); color: var(--teal-700);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px;
+    }
     .driver-photo {
-        width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
-        border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px var(--border), var(--shadow-sm); display: block; transition: .2s;
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        border-radius: 50%; object-fit: cover; display: block;
+        border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border); transition: box-shadow .2s, transform .2s;
+        background: var(--teal-050);
     }
-    .driver-photo-btn:hover .driver-photo { box-shadow: 0 0 0 1px var(--teal-500), var(--shadow-sm); transform: scale(1.04); }
+    .driver-photo-btn:hover .driver-photo { box-shadow: 0 0 0 2px var(--teal-500); transform: scale(1.05); }
     .zoom-hint {
-        position: absolute; bottom: 1px; right: 1px;
-        width: 16px; height: 16px; border-radius: 50%;
-        color: #fff; font-size: 7px;
-        display: flex; align-items: center; justify-content: center; border: 2px solid #fff;
+        position: absolute; bottom: -1px; right: -1px; z-index: 1;
+        width: 14px; height: 14px; border-radius: 50%;
+        border: 2px solid #fff; display: block;
     }
     .zoom-hint.zh-online { background: var(--green-600); }
     .zoom-hint.zh-offline { background: var(--ink-faint); }
-    .driver-name { font-weight: 700; color: var(--ink); font-size: 18px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .driver-email-sub { font-size: 13px; color: var(--ink-soft); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    .contact-phone {
-        font-weight: 600; color: var(--ink); font-size: 16px; display: flex; align-items: center; gap: 8px;
+    .driver-name {
+        font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--ink); font-size: 13.5px; line-height: 1.3;
+        letter-spacing: -.1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .contact-phone .phone-ic {
-        width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    .driver-email-sub {
+        font-size: 11.5px; color: var(--ink-soft); margin-top: 1px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ---- Contact ---- */
+    .phone-link {
+        display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+        font-weight: 600; color: var(--ink); font-size: 12.5px; text-decoration: none; letter-spacing: .1px;
+        white-space: nowrap; font-variant-numeric: tabular-nums; transition: color .15s;
+    }
+    .phone-link .phone-ic {
+        width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
         background: var(--teal-050); color: var(--teal-700);
-        display: flex; align-items: center; justify-content: center; font-size: 10.5px;
+        display: flex; align-items: center; justify-content: center; font-size: 10px; transition: .15s;
     }
-    .emergency-contact {
-        font-size: 11px; color: var(--amber-600); margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;
-        background: var(--amber-100); border-radius: var(--r-pill); padding: 3px 10px 3px 8px; width: fit-content;
-    }
-    .emergency-contact i { color: var(--amber-600); font-size: 9px; }
-    .emergency-contact .em-label { font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: .3px; }
-    .emergency-contact.not-set { color: var(--amber-600); background: var(--amber-100); }
+    .phone-link .phone-num { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    a.phone-link:hover { color: var(--teal-700); }
+    a.phone-link:hover .phone-ic { background: var(--teal-600); color: #fff; }
+    .phone-link.no-phone { color: var(--ink-faint); font-style: italic; font-weight: 500; }
 
-    .address-text {
-        color: var(--ink-soft); font-size: 12.5px; line-height: 1.5;
+    .badge {
+        display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: var(--chip-h);
+        padding: 0 10px 0 8px; border-radius: var(--r-pill);
+        font-size: 10px; font-weight: 700; white-space: nowrap;
+    }
+    .badge i { font-size: 9px; flex-shrink: 0; }
+    .badge .badge-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .badge.sos-set { background: var(--amber-100); color: var(--amber-600); }
+    .badge.sos-none { background: #F1F3F4; color: var(--ink-faint); }
+    .contact-badges { margin-top: 5px; }
+
+    /* ---- Address ---- */
+    .address-text-btn {
         display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-        margin-bottom: 10px;
+        border: none; background: none; padding: 0; text-align: left; width: 100%;
+        font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; color: var(--ink-2);
+        cursor: pointer; overflow-wrap: anywhere; transition: color .15s;
     }
-    .address-more-pill {
-        display: inline-flex; align-items: center; gap: 6px;
-        border: 1px solid var(--teal-100); background: none; color: var(--teal-700);
-        font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
-        padding: 5px 12px; border-radius: var(--r-pill); cursor: pointer; transition: .15s;
+    .address-text-btn:hover { color: var(--teal-700); }
+    .address-text-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; border-radius: 3px; }
+    .address-missing { font-size: 12px; color: var(--ink-faint); font-style: italic; }
+    .map-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 7px; }
+    .map-btn {
+        display: inline-flex; align-items: center; gap: 5px; text-decoration: none;
+        border: 1px solid var(--teal-100); background: var(--teal-050); color: var(--teal-700);
+        font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; min-height: 30px;
+        padding: 0 10px; border-radius: var(--r-pill); cursor: pointer; transition: .15s; white-space: nowrap;
     }
-    .address-more-pill:hover { background: var(--teal-050); border-color: var(--teal-500); }
+    .map-btn { max-width: 100%; }
+    .map-btn i { font-size: 11px; }
+    /* GPS timestamp = a small, quiet badge (not a second button) */
+    .map-btn.live, .map-btn.stale { min-height: 24px; padding: 0 8px; font-size: 10.5px; font-weight: 600; gap: 5px; }
+    .map-btn.stale i { display: none; }   /* older fix: text-only, so it reads as a timestamp rather than a live indicator */
+    .map-btn.live i, .map-btn.stale i { font-size: 10px; }
+    .map-btn .map-btn-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .map-btn:hover { background: var(--teal-100); border-color: var(--teal-500); }
+    .map-btn:active { transform: scale(.97); }
+    .map-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+    .map-btn.live { background: var(--green-100); border-color: #BFE3CE; color: var(--green-600); }
+    .map-btn.live:hover { background: #CFEEDD; border-color: var(--green-600); }
+    /* older fix: neutral colour so it reads as "last known", never as "here right now" */
+    .map-btn.stale { background: #F4F8F8; border-color: var(--border); color: var(--ink-soft); }
+    .map-btn.stale:hover { background: var(--teal-050); border-color: var(--teal-500); color: var(--teal-700); }
+    .map-btn.disabled { background: #F1F3F4; border-color: var(--border); color: var(--ink-faint); }
+    .map-btn:not(.live):not(.stale):not(.disabled) { background: #fff; border-color: #BFDDE0; }
+    .map-btn:not(.live):not(.stale):not(.disabled):hover { background: var(--teal-050); border-color: var(--teal-500); }
+    .map-btn.disabled:hover { background: #E9ECED; }
 
-    /* ===== VEHICLE ===== */
-    .vehicle-chip { display: flex; align-items: center; gap: 10px; }
-    .vehicle-chip-icon {
-        width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    /* ---- Vehicle ---- */
+    .vehicle-number {
+        display: flex; align-items: center; gap: 7px; min-width: 0;
+        font-weight: 700; color: var(--ink); font-size: 12px;
+        font-family: 'IBM Plex Mono', monospace; letter-spacing: .2px;
+    }
+    .vehicle-number i {
+        width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
         background: var(--blue-100); color: var(--blue-600);
-        display: flex; align-items: center; justify-content: center; font-size: 14px;
+        display: flex; align-items: center; justify-content: center; font-size: 11px;
     }
-    .vehicle-number { font-weight: 700; color: var(--ink); font-size: 13px; font-family: 'IBM Plex Mono', monospace; letter-spacing: .2px; line-height: 1.3; }
+    .vehicle-number .vn-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .vehicle-capacity {
-        display: inline-block; margin-top: 5px; font-size: 10px; font-weight: 700;
-        color: var(--blue-600); background: var(--blue-100); padding: 2px 8px; border-radius: var(--r-pill);
+        display: inline-flex; align-items: center; margin-top: 5px; font-size: 10px; font-weight: 700;
+        color: var(--blue-600); background: var(--blue-100); min-height: var(--chip-h); padding: 0 10px; border-radius: var(--r-pill);
+        white-space: nowrap;
     }
 
-    /* ===== ACTIVITY (mini stat badges) ===== */
-    .activity-stats { display: flex; flex-direction: column; gap: 8px; }
-    .activity-stat { display: flex; align-items: baseline; gap: 7px; }
+    /* ---- Activity ---- */
+    .activity-stats { display: flex; flex-direction: column; gap: 5px; }
+    .activity-stat { display: flex; align-items: center; gap: 7px; min-width: 0; }
     .activity-stat .num {
         font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: var(--blue-600);
-        background: var(--blue-100); border-radius: var(--r-sm); padding: 1px 8px;
-        font-size: 15px; line-height: 1.4; min-width: 16px; text-align: center;
+        background: var(--blue-100); border-radius: var(--r-sm); padding: 1px 7px;
+        font-size: 12px; line-height: 1.5; min-width: 24px; text-align: center; flex-shrink: 0;
     }
     .activity-stat.deliveries .num { color: var(--green-600); background: var(--green-100); }
-    .activity-stat .lbl { font-size: 11px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .3px; }
+    .activity-stat .lbl {
+        font-size: 9.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase;
+        letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
 
-    /* ===== WALLET (payout owed to driver + cash they still owe back) ===== */
-    .wallet-stack { display: flex; flex-direction: column; gap: 7px; }
+    /* ---- Wallet ---- */
+    .wallet-stack { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
     .wallet-row {
-        display: flex; align-items: center; gap: 7px;
-        padding: 5px 12px; border-radius: var(--r-pill);
-        font-weight: 700; font-size: 11px; width: fit-content; min-width: 132px;
-        transition: filter .15s;
+        display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: var(--chip-h);
+        padding: 0 11px 0 5px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 10.5px; white-space: nowrap;
     }
-    .wallet-row:hover { filter: brightness(0.97); }
     .wallet-row .wallet-ic {
-        width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center; font-size: 8px;
+        width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; font-size: 7px;
     }
-    .wallet-row .wallet-tag { font-size: 9px; text-transform: uppercase; letter-spacing: .3px; font-weight: 700; opacity: .75; margin-right: 1px; }
+    .wallet-row .wallet-tag { font-size: 8.5px; text-transform: uppercase; letter-spacing: .3px; opacity: .75; }
     .wallet-row.owed { background: var(--amber-100); color: var(--amber-600); }
     .wallet-row.owed .wallet-ic { background: rgba(165,105,12,.16); }
     .wallet-row.clear { background: var(--green-100); color: var(--green-600); }
@@ -444,69 +552,154 @@
     .wallet-row.due { background: var(--red-100); color: var(--red-600); }
     .wallet-row.due .wallet-ic { background: rgba(178,59,48,.16); }
 
+    /* ---- Status ---- */
     .status-pill {
-        display: inline-flex; align-items: center; gap: 7px;
-        padding: 5px 14px; border-radius: var(--r-pill);
-        font-weight: 700; font-size: 11px; letter-spacing: .2px;
+        display: inline-flex; align-items: center; gap: 7px; min-height: 24px;
+        padding: 0 11px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 10.5px; letter-spacing: .2px; white-space: nowrap;
     }
     .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .status-pill.online { background: var(--green-100); color: var(--green-600); }
-    .status-pill.online .dot { background: var(--green-600); position: relative; }
-    .status-pill.online .dot::after {
-        content: ''; position: absolute; inset: -4px; border-radius: 50%;
-        background: var(--green-600); opacity: .35; animation: statusPulse 1.8s ease-out infinite;
-    }
+    .status-pill.online .dot { background: var(--green-600); box-shadow: 0 0 0 3px rgba(21,122,80,.16); }
     .status-pill.offline { background: #F1F3F4; color: var(--ink-soft); }
     .status-pill.offline .dot { background: var(--ink-faint); }
-    @keyframes statusPulse {
-        0% { transform: scale(1); opacity: .45; }
-        100% { transform: scale(2.1); opacity: 0; }
-    }
 
-    .docs-cell-inline {
-        display: inline-flex; align-items: center; gap: 9px;
-        border: 1px solid var(--border); border-radius: var(--r-pill);
-        padding: 5px 6px 5px 14px;
+    /* ---- Documents ---- */
+    .docs-cell-inline { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+    .docs-count {
+        display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+        white-space: nowrap; font-family: 'IBM Plex Mono', monospace;
+        min-height: var(--chip-h); padding: 0 10px 0 8px; border-radius: var(--r-pill);
     }
-    .docs-cell-inline .docs-label { font-size: 11px; font-weight: 600; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+    .docs-count.docs-complete { color: var(--green-600); background: var(--green-100); }
+    .docs-count.docs-partial { color: var(--amber-600); background: var(--amber-100); }
+    .docs-count.docs-none { color: var(--ink-soft); background: #F1F3F4; }
     .info-btn {
-        width: 26px; height: 26px; border-radius: 50%;
-        border: none; background: var(--teal-050); color: var(--teal-700);
-        font-size: 11px; cursor: pointer;
-        display: inline-flex; align-items: center; justify-content: center; transition: .15s;
-        flex-shrink: 0;
+        display: inline-flex; align-items: center; gap: 6px;
+        border: 1px solid var(--teal-100); background: var(--teal-050); color: var(--teal-700);
+        font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+        min-height: var(--chip-h); padding: 0 9px 0 8px; border-radius: var(--r-pill); cursor: pointer; transition: .15s;
+        white-space: nowrap;
     }
-    .info-btn:hover { background: var(--teal-600); color: #fff; }
-    .docs-count { font-size: 11.5px; font-weight: 700; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; }
-    .docs-count.docs-complete { color: var(--green-600); }
-    .docs-count.docs-partial { color: var(--amber-600); }
-    .docs-count.docs-none { color: var(--ink-faint); }
+    .info-btn:hover { background: var(--teal-600); border-color: var(--teal-600); color: #fff; }
+    .info-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
 
-    /* ===== ACTIONS ===== */
-    .action-menu-wrap { position: relative; }
+    /* ---- Actions ---- */
+    .col-actions { padding-right: 18px !important; }
+    .action-menu-wrap { position: relative; display: inline-block; }
     .action-menu-btn {
-        width: 34px; height: 34px; border-radius: 50%;
+        width: 30px; height: 30px; border-radius: 50%;
         border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft);
-        font-size: 13px; cursor: pointer;
+        font-size: 12px; cursor: pointer;
         display: inline-flex; align-items: center; justify-content: center; transition: .15s;
     }
-    .action-menu-btn:hover, .action-menu-btn.open { background: var(--bg); color: var(--ink); }
+    .action-menu-btn:hover, .action-menu-btn.open { background: var(--teal-050); color: var(--teal-700); border-color: var(--teal-500); }
+    .action-menu-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
     .action-menu {
-        display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 20;
+        display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 50;
         background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
-        box-shadow: var(--shadow-md); min-width: 180px; padding: 6px; overflow: hidden;
+        box-shadow: var(--shadow-md); min-width: 200px; padding: 6px; text-align: left;
     }
+    .action-menu.up { top: auto; bottom: calc(100% + 8px); }
     .action-menu.open { display: block; animation: fadeUp .15s ease; }
     .action-menu-item {
-        display: flex; align-items: center; gap: 9px; width: 100%;
+        display: flex; align-items: center; gap: 10px; width: 100%;
         padding: 9px 10px; border: none; background: none; border-radius: var(--r-sm);
         font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600; color: var(--ink);
-        text-decoration: none; cursor: pointer; transition: background .12s;
+        text-decoration: none; cursor: pointer; transition: background .12s; text-align: left;
     }
-    .action-menu-item:hover { background: var(--bg); }
+    .action-menu-item:hover, .action-menu-item:focus-visible { background: var(--bg); outline: none; }
     .action-menu-item.danger { color: var(--red-600); }
     .action-menu-item.danger:hover { background: var(--red-100); }
-    .action-menu-item i { width: 14px; text-align: center; font-size: 12px; }
+    .action-menu-item i { width: 14px; text-align: center; font-size: 12px; color: var(--teal-600); }
+    .action-menu-item.danger i { color: var(--red-600); }
+    .action-menu-item.busy { pointer-events: none; opacity: .7; }
+    .action-menu-sep { height: 1px; background: var(--border-soft); margin: 5px 4px; }
+
+    /* ===== TOASTS ===== */
+    .toast-stack { position: fixed; bottom: 26px; right: 26px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+        display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff;
+        padding: 12px 18px; border-radius: var(--r-md); font-size: 13px; font-weight: 600;
+        box-shadow: var(--shadow-md); border-left: 3px solid var(--cyan-glow);
+        animation: fadeUp .25s ease both; transition: opacity .25s, transform .25s; max-width: 360px;
+    }
+    .toast.error { background: #5E1F19; border-left-color: #E14C3C; }
+    .toast i { flex: none; color: var(--cyan-glow); }
+    .toast.error i { color: #F2A59B; }
+
+    /* ============================================================
+       RESPONSIVE
+       >1180px : fixed-layout table (no horizontal scroll)
+       <=1180px: each driver becomes a labelled card (nothing hidden)
+    ============================================================ */
+    @media (max-width: 1400px) and (min-width: 1181px) {
+        .map-btn.live i { display: none; }      /* keep View Map + GPS badge on one line on laptops */
+    }
+    @media (max-width: 1300px) and (min-width: 1181px) {
+        .map-btn:not(.live):not(.stale) i { display: none; }
+    }
+    @media (max-width: 1280px) {
+        .driver-table td { padding-left: 10px; padding-right: 10px; }
+        .driver-table thead th { padding-left: 10px; padding-right: 10px; }
+        .col-driver { width: 14.5%; }
+        .col-contact { width: 14.5%; }
+        .col-vehicle { width: 13.5%; }
+        .col-wallet { width: 12.5%; }
+        .col-address { width: 16.5%; }
+        .col-activity { width: 9%; }
+        .col-status { width: 8%; }
+        .col-docs { width: 8.5%; }
+    }
+    @media (max-width: 1180px) {
+        .driver-table, .driver-table tbody { display: block; }
+        .driver-table colgroup, .driver-table thead { display: none; }
+        .driver-table tbody { padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; }
+        .driver-table tr.driver-card {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px;
+            position: relative; padding: 18px 18px 18px 22px;
+            border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface);
+            box-shadow: var(--shadow-xs); transition: box-shadow .15s, border-color .15s;
+        }
+        .driver-table tr.driver-card::before {
+            content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px;
+            border-radius: 0 3px 3px 0; background: var(--rail);
+        }
+        .driver-table tr.driver-card:hover { border-color: var(--teal-500); box-shadow: var(--shadow-sm); }
+        .driver-table tbody tr:hover td, .driver-card.menu-active td { background: transparent; }
+        .driver-card.menu-active { z-index: 5; }
+        .driver-table td, .driver-table td:first-child {
+            display: block; padding: 0; border: none; background: transparent; width: auto;
+            box-shadow: none !important; border-radius: 0 !important;
+        }
+        .driver-table td.col-driver, .driver-table td.col-address { grid-column: 1 / -1; }
+        .driver-table td.col-driver { padding-right: 46px; }
+        .driver-table td.col-actions { position: absolute; top: 14px; right: 14px; padding: 0 !important; width: auto; }
+        .cell-label {
+            display: flex; align-items: center; gap: 6px; margin-bottom: 7px;
+            font-size: 10px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-faint);
+        }
+        .cell-label i { color: var(--teal-600); font-size: 10px; }
+    }
+    @media (max-width: 700px) {
+        .topbar, .instrument-strip, .main-content { padding-left: 16px; padding-right: 16px; }
+        .topbar { height: auto; min-height: 72px; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+        .topbar-right { flex-wrap: wrap; }
+        .sync-chip, .admin-chip { display: none; }
+        .instrument { padding-right: 16px; margin-right: 16px; }
+        .brand-text p { display: none; }
+        .driver-table tbody { padding: 10px; grid-template-columns: minmax(0, 1fr); }
+        .page-head h2 { font-size: 18px; }
+        .toast-stack { left: 16px; right: 16px; bottom: 16px; }
+        .toast { max-width: none; }
+    }
+    @media (max-width: 460px) {
+        .driver-table tr.driver-card { grid-template-columns: minmax(0, 1fr); }
+        .instrument { flex: 1 1 45%; border-right: none; margin-right: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .flow-line, .pulse-dot { animation: none; }
+    }
 
     /* ===== EMPTY STATES ===== */
     .empty-ledger { text-align: center; padding: 70px 20px; color: var(--ink-faint); }
@@ -606,37 +799,6 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes fadeUp { from { opacity: 0; transform: scale(.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-    /* ============================================================
-       RESPONSIVE
-       Desktop: single horizontal row card.
-       Tablet:  wraps into two rows per card, dividers hidden.
-       Mobile:  every section becomes its own stacked mini-card.
-    ============================================================ */
-    @media (max-width: 1100px) {
-        .driver-list-header { display: none; }
-        .driver-card { flex-wrap: wrap; align-items: flex-start; row-gap: 16px; padding: 20px 22px 20px 18px; }
-        .status-rail { align-self: stretch; min-height: auto; }
-        .col-divider { display: none; }
-        .dc-col { flex: 1 1 42%; }
-        .col-vehicle, .col-wallet { flex-basis: 46%; }
-        .col-actions { flex: 1 1 100%; justify-content: flex-end; order: 99; margin-top: -6px; }
-        .col-label-mobile {
-            display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
-            font-size: 10.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
-            color: var(--ink-faint);
-        }
-    }
-    @media (max-width: 700px) {
-        .topbar, .instrument-strip, .main-content { padding-left: 16px; padding-right: 16px; }
-        .instrument { padding-right: 16px; margin-right: 16px; }
-        .brand-text p { display: none; }
-
-        .driver-card { flex-direction: column; align-items: stretch; padding: 18px 18px 18px 16px; }
-        .status-rail { width: 100%; height: 4px; min-height: 4px; margin-right: 0; margin-bottom: 14px; border-radius: 3px; }
-        .dc-col, .col-vehicle, .col-wallet { flex-basis: 100%; width: 100%; }
-        .dc-col:not(:last-child) { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px dashed var(--border-soft); }
-        .col-actions { justify-content: flex-start; border-bottom: none !important; padding-bottom: 0 !important; margin-bottom: 0 !important; }
-    }
 </style>
 </head>
 <body>
@@ -653,6 +815,7 @@
         </div>
         <div class="topbar-right">
             <a href="/admin-dashboard" class="dispatch-link"><i class="fas fa-arrow-left"></i>Dashboard</a>
+            <a href="{{ url_for('admin_driver_support') }}" class="support-link" aria-label="Driver support requests"><i class="fas fa-headset"></i>Driver Support<span class="sup-badge {{ 'show' if support_open_total }}" id="supTotalBadge">{{ support_open_total or '' }}</span></a>
             <a href="/finance-management" class="finance-link"><i class="fas fa-sack-dollar"></i>Finance Management</a>
             <div class="sync-chip"><div class="pulse-dot"></div><span>Live sync</span></div>
             <div class="admin-chip">
@@ -766,195 +929,292 @@
         <!-- REGISTERED DRIVERS -->
         <!-- ===================================================== -->
 
-        <div class="section-head">
-            <h2><i class="fas fa-truck-fast"></i>Registered Drivers
-                <span class="count-chip">{{ approved_drivers|length }} entries</span>
-            </h2>
+        <div class="page-head">
+            <div class="page-head-left">
+                <div class="page-head-icon"><i class="fas fa-truck-fast"></i></div>
+                <div style="min-width:0;">
+                    <h2>Registered Drivers
+                        <span class="count-chip">{{ approved_drivers|length }} driver{{ 's' if approved_drivers|length != 1 else '' }}</span>
+                    </h2>
+                    <p>Every approved driver, with live orders, deliveries, documents and pending payout.</p>
+                </div>
+            </div>
+            <div class="head-stats">
+                <span class="head-chip on"><span class="dot"></span><b>{{ online_drivers }}</b> Online</span>
+                <span class="head-chip off"><span class="dot"></span><b>{{ offline_drivers }}</b> Offline</span>
+            </div>
         </div>
-        <p class="section-sub">Every approved driver, with live orders, deliveries, documents and pending payout.</p>
 
         <div class="ledger-wrap">
             {% if approved_drivers %}
 
-            <div class="driver-list-header">
-                <div class="rail-spacer"></div>
-                <div class="dlh-col col-driver">👤 Driver</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-col col-contact">📞 Contact</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-col col-address">📍 Address</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-col col-vehicle">🚛 Vehicle</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-col col-activity">📈 Activity</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-col col-wallet">💳 Wallet</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-col col-status">🟢 Status</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-col col-docs">📄 Documents</div>
-                <div class="dlh-divider"></div>
-                <div class="dlh-actions"></div>
-            </div>
+            <table class="driver-table">
+                <colgroup>
+                    <col class="col-driver"><col class="col-contact"><col class="col-address"><col class="col-vehicle">
+                    <col class="col-activity"><col class="col-wallet"><col class="col-status"><col class="col-docs"><col class="col-actions">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-user"></i>Driver</th>
+                        <th><i class="fas fa-phone"></i>Contact</th>
+                        <th><i class="fas fa-location-dot"></i>Address</th>
+                        <th><i class="fas fa-truck"></i>Vehicle</th>
+                        <th><i class="fas fa-chart-line"></i>Activity</th>
+                        <th><i class="fas fa-wallet"></i>Wallet</th>
+                        <th><i class="fas fa-signal"></i>Status</th>
+                        <th><i class="fas fa-file-lines"></i>Documents</th>
+                        <th style="text-align:right;"><span class="sr-only" style="position:absolute;left:-9999px;">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for driver in approved_drivers %}
+                {% set dname = driver.name|default('Driver', true) %}
+                {% set photo_url = ('/' + driver.photo) if driver.photo else 'https://ui-avatars.com/api/?background=2563eb&color=fff&size=128&name=' + (dname|urlencode) %}
+                {% set fallback_url = 'https://ui-avatars.com/api/?background=2563eb&color=fff&size=128&name=' + (dname|urlencode) %}
+                {% set is_online = driver.online_status == 'Online' %}
+                {% set status_known = (driver.online_status is string) and (driver.online_status|trim != '') %}
+                {% set status_label = (driver.online_status|trim) if (status_known and not is_online) else 'Offline' %}
 
-            {% for driver in approved_drivers %}
-            {% set photo_url = ('/' + driver.photo) if driver.photo else 'https://ui-avatars.com/api/?background=2563eb&color=fff&size=128&name=' + (driver.name|default('Driver'))|urlencode %}
-            {% set fallback_url = 'https://ui-avatars.com/api/?background=2563eb&color=fff&size=128&name=' + (driver.name|default('Driver'))|urlencode %}
-            {% set ns = namespace(verified=0, total=3) %}
-            {% for dtype in ['driving_license','aadhaar','vehicle_rc'] %}
-                {% set doc = driver.documents.get(dtype) if driver.documents else None %}
-                {% if doc and doc.status == 'Verified' %}{% set ns.verified = ns.verified + 1 %}{% endif %}
-            {% endfor %}
+                {# ---------- documents summary (unchanged logic) ---------- #}
+                {% set ns = namespace(verified=0, total=3) %}
+                {% set uploaded_docs = (driver.documents|length) if driver.documents else 0 %}
+                {% for dtype in ['driving_license','aadhaar','vehicle_rc'] %}
+                    {% set doc = driver.documents.get(dtype) if driver.documents else None %}
+                    {% if doc and doc.status == 'Verified' %}{% set ns.verified = ns.verified + 1 %}{% endif %}
+                {% endfor %}
 
-            <div class="driver-card">
-                <div class="status-rail {{ 'rail-online' if driver.online_status == 'Online' else 'rail-offline' }}"></div>
+                {# ---------- click-to-call: only for a plausible phone number ---------- #}
+                {% set raw_phone = (driver.phone|string|trim) if driver.phone else '' %}
+                {% set pn = namespace(digits='', bad=false) %}
+                {% for ch in raw_phone %}{% if ch in '0123456789' %}{% set pn.digits = pn.digits ~ ch %}{% elif ch not in '+-() .' %}{% set pn.bad = true %}{% endif %}{% endfor %}
+                {% set tel_ok = (not pn.bad) and (pn.digits|length >= 7) and (pn.digits|length <= 15) %}
+                {% set tel_href = ('+' if raw_phone.startswith('+') else '') ~ pn.digits %}
 
-                <div class="dc-col col-driver">
-                    <div class="driver-info">
-                        <button type="button" class="driver-photo-btn"
-                            onclick="openPhotoModal('{{ photo_url }}', '{{ driver.name|default('Driver') }}')">
-                            <img src="{{ photo_url }}" class="driver-photo" loading="lazy"
-                                 onerror="this.onerror=null;this.src='{{ fallback_url }}';">
-                            <span class="zoom-hint {{ 'zh-online' if driver.online_status == 'Online' else 'zh-offline' }}"><i class="fas fa-magnifying-glass"></i></span>
-                        </button>
-                        <div style="min-width:0;">
-                            <div class="driver-name">{{ driver.name }}</div>
-                            <div class="driver-email-sub">{{ driver.email }}</div>
-                        </div>
-                    </div>
-                </div>
+                {# ---------- map data: registered address text + last known GPS fix ---------- #}
+                {% set addr = (driver.address|string|trim) if driver.address else '' %}
+                {% set raw_lat = driver.get('current_lat') %}
+                {% set raw_lng = driver.get('current_lng') %}
+                {% set glat = raw_lat|float(none) if raw_lat is not none else none %}
+                {% set glng = raw_lng|float(none) if raw_lng is not none else none %}
+                {% set has_gps = glat is not none and glng is not none and (-90 <= glat <= 90) and (-180 <= glng <= 180) and not (glat == 0 and glng == 0) %}
+                {% set gps_ts = driver.get('location_updated_at') %}
+                {% set gps_age = '' %}
+                {% set gps_fresh = false %}
+                {% set gps_full = '' %}
+                {% if gps_ts and gps_ts is not string %}
+                    {% set mins = ((current_time - gps_ts).total_seconds() // 60)|int %}
+                    {% set gps_fresh = mins <= 15 %}
+                    {% set gps_full = gps_ts.strftime('%d %b %Y, %I:%M %p') %}
+                    {% set gps_age = 'just now' if mins < 1 else (mins ~ ' min ago' if mins < 60 else ((mins // 60) ~ ' h ago' if mins < 1440 else gps_ts.strftime('%d %b' if gps_ts.year == current_time.year else '%d %b %Y'))) %}
+                {% endif %}
+                {% set maps_addr_url = 'https://www.google.com/maps/search/?api=1&query=' ~ (addr|urlencode) %}
+                {% set maps_gps_url = 'https://www.google.com/maps/search/?api=1&query=' ~ glat ~ ',' ~ glng %}
 
-                <div class="col-divider"></div>
+                {% set sup_n = support_open.get(driver.email, 0) if driver.email else 0 %}
+                <tr class="driver-card {{ 'is-online' if is_online else 'is-offline' }}" data-driver-email="{{ driver.email|lower }}">
 
-                <div class="dc-col col-contact">
-                    <div class="col-label-mobile">📞 Contact</div>
-                    <div class="contact-phone"><span class="phone-ic"><i class="fas fa-phone"></i></span>{{ driver.phone }}</div>
-                    {% if driver.emergency_contact %}
-                    <div class="emergency-contact"><i class="fas fa-triangle-exclamation"></i><span class="em-label">SOS</span>{{ driver.emergency_contact }}</div>
-                    {% else %}
-                    <div class="emergency-contact not-set"><i class="fas fa-triangle-exclamation"></i><span class="em-label">SOS Not Set</span></div>
-                    {% endif %}
-                </div>
-
-                <div class="col-divider"></div>
-
-                <div class="dc-col col-address">
-                    <div class="col-label-mobile">📍 Address</div>
-                    <div class="address-text">{{ driver.address }}</div>
-                    <button type="button" class="address-more-pill" onclick="openAddressModal(this)" title="View full address">
-                        <i class="fas fa-map-location-dot"></i>View Map
-                    </button>
-                    <div class="address-full-data" style="display:none;" data-driver-name="{{ driver.name }}">{{ driver.address }}</div>
-                </div>
-
-                <div class="col-divider"></div>
-
-                <div class="dc-col col-vehicle">
-                    <div class="col-label-mobile">🚛 Vehicle</div>
-                    <div class="vehicle-chip">
-                        <div class="vehicle-chip-icon"><i class="fas fa-truck"></i></div>
-                        <div>
-                            <div class="vehicle-number">{{ driver.truck_number }}</div>
-                            <div class="vehicle-capacity">{{ driver.truck_capacity }}L Tanker</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-divider"></div>
-
-                <div class="dc-col col-activity">
-                    <div class="col-label-mobile">📈 Activity</div>
-                    <div class="activity-stats">
-                        <div class="activity-stat"><span class="num">{{ driver.total_orders_accepted }}</span><span class="lbl">Orders</span></div>
-                        <div class="activity-stat deliveries"><span class="num">{{ driver.total_deliveries }}</span><span class="lbl">Delivered</span></div>
-                    </div>
-                </div>
-
-                <div class="col-divider"></div>
-
-                <div class="dc-col col-wallet">
-                    <div class="col-label-mobile">💳 Wallet</div>
-                    <div class="wallet-stack">
-                        {% if driver.pending_payout and driver.pending_payout > 0 %}
-                        <div class="wallet-row owed"><span class="wallet-ic"><i class="fas fa-arrow-down"></i></span><span class="wallet-tag">Payout</span>₹{{ "{:,.0f}".format(driver.pending_payout) }}</div>
-                        {% else %}
-                        <div class="wallet-row clear"><span class="wallet-ic"><i class="fas fa-check"></i></span><span class="wallet-tag">Payout</span>Settled</div>
-                        {% endif %}
-
-                        {% set deposit_due = driver.wallet.pending_deposit if driver.wallet else 0 %}
-                        {% if deposit_due and deposit_due > 0 %}
-                        <div class="wallet-row due"><span class="wallet-ic"><i class="fas fa-arrow-up"></i></span><span class="wallet-tag">Deposit</span>₹{{ "{:,.0f}".format(deposit_due) }}</div>
-                        {% else %}
-                        <div class="wallet-row clear"><span class="wallet-ic"><i class="fas fa-check"></i></span><span class="wallet-tag">Deposit</span>Clear</div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="col-divider"></div>
-
-                <div class="dc-col col-status">
-                    <div class="col-label-mobile">🟢 Status</div>
-                    {% if driver.online_status == "Online" %}
-                    <span class="status-pill online"><span class="dot"></span>Online</span>
-                    {% else %}
-                    <span class="status-pill offline"><span class="dot"></span>Offline</span>
-                    {% endif %}
-                </div>
-
-                <div class="col-divider"></div>
-
-                <div class="dc-col col-docs">
-                    <div class="col-label-mobile">📄 Documents</div>
-                    <div class="docs-cell-inline">
-                        <span class="docs-count {{ 'docs-complete' if ns.verified == ns.total else ('docs-none' if ns.verified == 0 else 'docs-partial') }}">
-                            <i class="fas fa-file-lines"></i> {{ ns.verified }}/{{ ns.total }}
-                        </span>
-                        <button type="button" class="info-btn" title="View uploaded documents" onclick="openDocsModal(this)">
-                            <i class="fas fa-info"></i>
-                        </button>
-                    </div>
-                    <div class="docs-data" style="display:none;" data-driver-name="{{ driver.name }}">
-                        {% for dtype, dlabel in [('driving_license','Driving License'), ('aadhaar','Aadhaar'), ('vehicle_rc','Vehicle RC')] %}
-                        {% set doc = driver.documents.get(dtype) if driver.documents else None %}
-                        <div class="doc-item">
-                            <div class="doc-item-left">
-                                <h5>{{ dlabel }}</h5>
-                                <p>{% if doc %}Uploaded {{ doc.uploaded_at if doc.uploaded_at else '' }}{% else %}Not uploaded yet{% endif %}</p>
-                            </div>
-                            <div class="doc-item-right">
-                                {% if doc %}
-                                <span class="doc-tag {{ 'verified' if doc.status == 'Verified' else 'pending' }}">{{ doc.status }}</span>
-                                {% if doc.file_path %}
-                                <a href="/{{ doc.file_path }}" target="_blank" class="doc-view-link">View</a>
-                                {% endif %}
-                                {% else %}
-                                <span class="doc-tag missing">Missing</span>
-                                {% endif %}
+                    <!-- DRIVER -->
+                    <td class="col-driver">
+                        <div class="driver-info">
+                            <button type="button" class="driver-photo-btn" title="Click to preview photo"
+                                data-photo="{{ photo_url }}" data-name="{{ dname }}"
+                                onclick="openPhotoModal(this.dataset.photo, this.dataset.name)">
+                                <span class="avatar-initial">{{ dname[:1]|upper }}</span>
+                                <img src="{{ photo_url }}" class="driver-photo" loading="lazy" alt=""
+                                     onerror="if(this.dataset.fb){this.remove();}else{this.dataset.fb=1;this.src='{{ fallback_url }}';}">
+                                {% if status_known %}<span class="zoom-hint {{ 'zh-online' if is_online else 'zh-offline' }}" title="{{ driver.online_status }}"></span>{% endif %}
+                            </button>
+                            <div class="driver-info-text">
+                                <div class="driver-name" title="{{ dname }}">{{ dname }}</div>
+                                <div class="driver-email-sub" title="{{ driver.email }}">{{ driver.email }}</div>
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
+                    </td>
 
-                <div class="col-divider"></div>
+                    <!-- CONTACT -->
+                    <td class="col-contact">
+                        <div class="cell-label"><i class="fas fa-phone"></i>Contact</div>
+                        {% if tel_ok %}
+                        <a class="phone-link" href="tel:{{ tel_href }}" title="Call {{ dname }} on {{ raw_phone }}">
+                            <span class="phone-ic"><i class="fas fa-phone"></i></span><span class="phone-num">{{ raw_phone }}</span>
+                        </a>
+                        {% elif raw_phone %}
+                        <span class="phone-link" title="{{ raw_phone }}"><span class="phone-ic"><i class="fas fa-phone"></i></span><span class="phone-num">{{ raw_phone }}</span></span>
+                        {% else %}
+                        <span class="phone-link no-phone"><span class="phone-ic"><i class="fas fa-phone-slash"></i></span><span class="phone-num">No phone</span></span>
+                        {% endif %}
+                        <div class="contact-badges">
+                            {% if driver.emergency_contact %}
+                            <span class="badge sos-set" title="SOS contact: {{ driver.emergency_contact }}"><i class="fas fa-triangle-exclamation"></i><span class="badge-text">SOS {{ driver.emergency_contact }}</span></span>
+                            {% else %}
+                            <span class="badge sos-none"><i class="fas fa-triangle-exclamation"></i><span class="badge-text">SOS not set</span></span>
+                            {% endif %}
+                        </div>
+                    </td>
 
-                <div class="dc-col col-actions">
-                    <div class="action-menu-wrap">
-                        <button type="button" class="action-menu-btn" title="Actions" onclick="toggleActionMenu(this)">
-                            <i class="fas fa-ellipsis-vertical"></i>
-                        </button>
-                        <div class="action-menu">
-                            <a class="action-menu-item danger"
-                               href="{{ url_for('delete_driver', driver_id=driver._id) }}"
-                               onclick="return confirm('Remove {{ driver.name|default('this driver') }} from AquaFlow? This cannot be undone.');">
-                                <i class="fas fa-trash"></i> Delete Driver
+                    <!-- ADDRESS -->
+                    <td class="col-address">
+                        <div class="cell-label"><i class="fas fa-location-dot"></i>Address</div>
+                        {% if addr %}
+                        <button type="button" class="address-text-btn" onclick="openAddressModal(this)" title="{{ addr }}">{{ addr }}</button>
+                        {% else %}
+                        <div class="address-missing">Driver address is unavailable</div>
+                        {% endif %}
+                        <div class="map-actions">
+                            {% if addr %}
+                            <a class="map-btn" href="{{ maps_addr_url }}" target="_blank" rel="noopener noreferrer"
+                               title="Open the registered address in Google Maps (static address search, not live tracking)">
+                                <i class="fas fa-map-location-dot"></i>View Map
                             </a>
+                            {% else %}
+                            <button type="button" class="map-btn disabled" data-name="{{ dname }}"
+                                    onclick="showMapUnavailable(this.dataset.name)" title="No registered address on file">
+                                <i class="fas fa-map-location-dot"></i>View Map
+                            </button>
+                            {% endif %}
+                            {% if has_gps %}
+                            <a class="map-btn {{ 'live' if gps_fresh else 'stale' }}" href="{{ maps_gps_url }}" target="_blank" rel="noopener noreferrer"
+                               title="{% if gps_full %}Last GPS update: {{ gps_full }}{% else %}Last GPS update: time unknown{% endif %}. Saved coordinates, not live tracking.">
+                                <i class="fas fa-crosshairs"></i><span class="map-btn-text">{{ ('GPS' if gps_fresh else 'Last GPS') ~ (' · ' ~ gps_age if gps_age else '') }}</span>
+                            </a>
+                            {% endif %}
                         </div>
-                    </div>
-                </div>
+                        <div class="address-full-data" style="display:none;" data-driver-name="{{ dname }}">{{ addr }}</div>
+                    </td>
 
-            </div>
-            {% endfor %}
+                    <!-- VEHICLE -->
+                    <td class="col-vehicle">
+                        <div class="cell-label"><i class="fas fa-truck"></i>Vehicle</div>
+                        <div class="vehicle-number" title="{{ driver.truck_number }}"><i class="fas fa-truck"></i><span class="vn-text">{{ driver.truck_number }}</span></div>
+                        <span class="vehicle-capacity">{{ driver.truck_capacity }}L Tanker</span>
+                    </td>
+
+                    <!-- ACTIVITY -->
+                    <td class="col-activity">
+                        <div class="cell-label"><i class="fas fa-chart-line"></i>Activity</div>
+                        <div class="activity-stats">
+                            <div class="activity-stat" title="Total assigned orders"><span class="num">{{ driver.total_orders_accepted }}</span><span class="lbl">Orders</span></div>
+                            <div class="activity-stat deliveries" title="Total delivered orders"><span class="num">{{ driver.total_deliveries }}</span><span class="lbl">Delivered</span></div>
+                        </div>
+                    </td>
+
+                    <!-- WALLET -->
+                    <td class="col-wallet">
+                        <div class="cell-label"><i class="fas fa-wallet"></i>Wallet</div>
+                        <div class="wallet-stack">
+                            {% if driver.pending_payout and driver.pending_payout > 0 %}
+                            <div class="wallet-row owed" title="Payable to the driver"><span class="wallet-ic"><i class="fas fa-arrow-down"></i></span><span class="wallet-tag">Payout</span>₹{{ "{:,.0f}".format(driver.pending_payout) }}</div>
+                            {% else %}
+                            <div class="wallet-row clear" title="Nothing payable to the driver"><span class="wallet-ic"><i class="fas fa-check"></i></span><span class="wallet-tag">Payout</span>Settled</div>
+                            {% endif %}
+
+                            {% set deposit_due = driver.wallet.pending_deposit if driver.wallet else 0 %}
+                            {% if deposit_due and deposit_due > 0 %}
+                            <div class="wallet-row due" title="Cash the driver still owes the company"><span class="wallet-ic"><i class="fas fa-arrow-up"></i></span><span class="wallet-tag">Deposit</span>₹{{ "{:,.0f}".format(deposit_due) }}</div>
+                            {% else %}
+                            <div class="wallet-row clear" title="No cash owed to the company"><span class="wallet-ic"><i class="fas fa-check"></i></span><span class="wallet-tag">Deposit</span>Clear</div>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                    <!-- STATUS -->
+                    <td class="col-status">
+                        <div class="cell-label"><i class="fas fa-signal"></i>Status</div>
+                        {% if is_online %}
+                        <span class="status-pill online"><span class="dot"></span>Online</span>
+                        {% else %}
+                        <span class="status-pill offline"><span class="dot"></span>{{ status_label }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- DOCUMENTS -->
+                    <td class="col-docs">
+                        <div class="cell-label"><i class="fas fa-file-lines"></i>Documents</div>
+                        <div class="docs-cell-inline">
+                            <span class="docs-count {{ 'docs-complete' if ns.verified == ns.total else ('docs-none' if ns.verified == 0 else 'docs-partial') }}" title="{{ ns.verified }} of {{ ns.total }} verified · {{ uploaded_docs }} uploaded">
+                                <i class="fas fa-file-lines"></i>{{ ns.verified }}/{{ ns.total }}
+                            </span>
+                            <button type="button" class="info-btn" title="View uploaded documents" onclick="openDocsModal(this)">
+                                <i class="fas fa-info"></i>Details
+                            </button>
+                        </div>
+                        <div class="docs-data" style="display:none;" data-driver-name="{{ dname }}">
+                            {% for dtype, dlabel in [('driving_license','Driving License'), ('aadhaar','Aadhaar'), ('vehicle_rc','Vehicle RC'), ('vehicle_insurance','Vehicle Insurance (optional)')] %}
+                            {% set doc = driver.documents.get(dtype) if driver.documents else None %}
+                            {% if dtype != 'vehicle_insurance' or doc %}
+                            <div class="doc-item">
+                                <div class="doc-item-left">
+                                    <h5>{{ dlabel }}</h5>
+                                    <p>{% if doc %}Uploaded {{ doc.uploaded_at if doc.uploaded_at else '' }}{% else %}Not uploaded yet{% endif %}</p>
+                                </div>
+                                <div class="doc-item-right">
+                                    {% if doc %}
+                                    <span class="doc-tag {{ 'verified' if doc.status == 'Verified' else 'pending' }}">{{ doc.status }}</span>
+                                    {% if doc.file_path %}
+                                    {# Served through an admin-only route; the old public /static link is blocked. #}
+                                    <a href="{{ '/admin/driver-documents/' ~ doc.id ~ '/file' if doc.id else '/' ~ doc.file_path }}" target="_blank" rel="noopener noreferrer" class="doc-view-link">View</a>
+                                    {% endif %}
+                                    {% if doc.id and doc.status in ('Pending', 'Pending Review') %}
+                                    <a href="#" class="doc-view-link" onclick="reviewDriverDoc('{{ doc.id }}','approve');return false;">Approve</a>
+                                    <a href="#" class="doc-view-link" onclick="reviewDriverDoc('{{ doc.id }}','reject');return false;">Reject</a>
+                                    {% endif %}
+                                    {% if doc.expiry_date %}<span class="doc-tag pending" title="Expiry date entered by the driver">Exp {{ doc.expiry_date }}</span>{% endif %}
+                                    {% if doc.status == 'Rejected' and doc.rejection_reason %}<span class="doc-tag missing" title="{{ doc.rejection_reason }}">Rejected</span>{% endif %}
+                                    {% else %}
+                                    <span class="doc-tag missing">Missing</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+
+                    <!-- ACTIONS -->
+                    <td class="col-actions">
+                        <div class="action-menu-wrap">
+                            <button type="button" class="action-menu-btn" title="Actions" aria-label="Actions for {{ dname }}" aria-haspopup="true" aria-expanded="false" onclick="toggleActionMenu(this)">
+                                <i class="fas fa-ellipsis"></i><span class="sup-dot {{ 'show' if sup_n }}" data-sup-dot title="Open support requests"></span>
+                            </button>
+                            <div class="action-menu">
+                                <button type="button" class="action-menu-item" onclick="openDocsFromMenu(this)">
+                                    <i class="fas fa-file-lines"></i> View Documents
+                                </button>
+                                {% if addr %}
+                                <a class="action-menu-item" href="{{ maps_addr_url }}" target="_blank" rel="noopener noreferrer">
+                                    <i class="fas fa-map-location-dot"></i> View Map (address)
+                                </a>
+                                {% endif %}
+                                {% if has_gps %}
+                                <a class="action-menu-item" href="{{ maps_gps_url }}" target="_blank" rel="noopener noreferrer">
+                                    <i class="fas fa-crosshairs"></i> Last GPS location
+                                </a>
+                                {% endif %}
+                                {% if tel_ok %}
+                                <a class="action-menu-item" href="tel:{{ tel_href }}">
+                                    <i class="fas fa-phone"></i> Call Driver
+                                </a>
+                                {% endif %}
+                                {% if driver.email %}
+                                <a class="action-menu-item" href="{{ url_for('admin_driver_support', driver=driver.email, status='all') }}">
+                                    <i class="fas fa-headset"></i> Driver Support<span class="sup-badge {{ 'show' if sup_n }}" data-sup-badge>{{ sup_n or '' }}</span>
+                                </a>
+                                {% endif %}
+                                <div class="action-menu-sep"></div>
+                                <a class="action-menu-item danger"
+                                   href="{{ url_for('delete_driver', driver_id=driver._id) }}"
+                                   data-msg="Remove {{ dname }} from AquaFlow? This cannot be undone."
+                                   onclick="return confirm(this.dataset.msg) && markBusy(this);">
+                                    <i class="fas fa-trash"></i> <span>Delete Driver</span>
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
 
             {% else %}
             <div class="empty-ledger">
@@ -1018,9 +1278,40 @@
         </div>
     </div>
 
+<div class="toast-stack" id="toastStack"></div>
+
 </div>
 
 <script>
+    // ---------- TOASTS ----------
+    function showToast(message, isError) {
+        const stack = document.getElementById('toastStack');
+        const el = document.createElement('div');
+        el.className = 'toast' + (isError ? ' error' : '');
+        const icon = document.createElement('i');
+        icon.className = 'fas ' + (isError ? 'fa-triangle-exclamation' : 'fa-circle-check');
+        const text = document.createElement('span');
+        text.textContent = message;
+        el.appendChild(icon); el.appendChild(text);
+        stack.appendChild(el);
+        setTimeout(function () {
+            el.style.opacity = '0'; el.style.transform = 'translateY(6px)';
+            setTimeout(function () { el.remove(); }, 250);
+        }, 3600);
+    }
+
+    // ---------- VIEW MAP: no address on file ----------
+    function showMapUnavailable(name) {
+        showToast('Driver address is unavailable' + (name ? ' for ' + name : ''), true);
+    }
+
+    // ---------- async-feeling feedback for destructive navigation ----------
+    function markBusy(el) {
+        el.classList.add('busy');
+        el.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Working…</span>';
+        return true;
+    }
+
     // ---------- DOCUMENTS MODAL ----------
     function openDocsModal(btn) {
         const cell = btn.closest('.col-docs').querySelector('.docs-data');
@@ -1031,6 +1322,13 @@
     }
     function closeDocsModal() {
         document.getElementById('docsModalOverlay').classList.remove('open');
+    }
+    // menu shortcut -> same documents modal, fed from the same row
+    function openDocsFromMenu(item) {
+        closeAllActionMenus();
+        const row = item.closest('.driver-card');
+        const btn = row && row.querySelector('.col-docs .info-btn');
+        if (btn) openDocsModal(btn);
     }
 
     // ---------- FULL ADDRESS MODAL ----------
@@ -1059,7 +1357,11 @@
     }
 
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') { closeDocsModal(); closePhotoModal(); closeAddressModal(); closeAllActionMenus(); }
+        if (e.key === 'Escape') {
+            const openBtn = document.querySelector('.action-menu-btn.open');
+            closeDocsModal(); closePhotoModal(); closeAddressModal(); closeAllActionMenus();
+            if (openBtn) openBtn.focus();   // keyboard users land back on the trigger
+        }
     });
 
     // ---------- PER-ROW ACTIONS MENU ----------
@@ -1068,7 +1370,7 @@
             if (m !== except) { m.classList.remove('open'); }
         });
         document.querySelectorAll('.action-menu-btn.open').forEach(function (b) {
-            if (!except || b.nextElementSibling !== except) { b.classList.remove('open'); }
+            if (!except || b.nextElementSibling !== except) { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); }
         });
         document.querySelectorAll('.driver-card.menu-active').forEach(function (c) {
             c.classList.remove('menu-active');
@@ -1079,8 +1381,16 @@
         const isOpen = menu.classList.contains('open');
         closeAllActionMenus();
         if (!isOpen) {
+            // open upward when there isn't room below (e.g. last rows near the viewport bottom)
+            menu.classList.remove('up');
+            menu.style.visibility = 'hidden';
             menu.classList.add('open');
+            const r = menu.getBoundingClientRect();
+            const room = window.innerHeight - btn.getBoundingClientRect().bottom;
+            if (r.height + 16 > room && btn.getBoundingClientRect().top > r.height + 16) { menu.classList.add('up'); }
+            menu.style.visibility = '';
             btn.classList.add('open');
+            btn.setAttribute('aria-expanded', 'true');
             const card = btn.closest('.driver-card');
             if (card) card.classList.add('menu-active');
         }
@@ -1090,5 +1400,48 @@
     });
 </script>
 
+<script>
+/* Admin review of a driver document. The server only accepts a decision for a
+   document that is still waiting for review, and tells the driver the outcome. */
+async function reviewDriverDoc(id, action) {
+    var reason = '';
+    if (action === 'reject') {
+        reason = prompt('Why is this document being rejected? The driver will see this reason.');
+        if (reason === null) return;
+        reason = reason.trim();
+        if (reason.length < 3) { alert('Please give the driver a short reason.'); return; }
+    }
+    var body = new URLSearchParams(); body.set('reason', reason);
+    try {
+        var res = await fetch('/admin/driver-documents/' + id + '/' + action, { method: 'POST', headers: { 'X-Requested-With': 'fetch' }, body: body });
+        var data = await res.json();
+        alert(data.message || (data.ok ? 'Done.' : 'Could not update the document.'));
+        if (data.ok) location.reload();
+    } catch (e) { alert('Could not reach the server. Please try again.'); }
+}
+</script>
+<script>
+// Live red badges for new driver support requests (header, 3-dot button and menu item)
+(function () {
+    function paint(data) {
+        var by = (data && data.by_driver) || {};
+        var total = (data && data.open) || 0;
+        var t = document.getElementById('supTotalBadge');
+        if (t) { t.textContent = total || ''; t.classList.toggle('show', total > 0); }
+        document.querySelectorAll('tr.driver-card[data-driver-email]').forEach(function (row) {
+            var n = by[row.getAttribute('data-driver-email')] || 0;
+            var dot = row.querySelector('[data-sup-dot]'), b = row.querySelector('[data-sup-badge]');
+            if (dot) dot.classList.toggle('show', n > 0);
+            if (b) { b.textContent = n || ''; b.classList.toggle('show', n > 0); }
+        });
+    }
+    function poll() {
+        fetch('/admin/driver-support/summary', { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
+            .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { if (d && d.ok) paint(d); }).catch(function () {});
+    }
+    setInterval(poll, 8000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) poll(); });
+})();
+</script>
 </body>
 </html>

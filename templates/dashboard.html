@@ -2,813 +2,994 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>AquaFlow | Professional Water Intelligence Suite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | AquaFlow</title>
 
-    <!-- Bootstrap & Font Awesome & Chart.js -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --brand: #5b4bdb;
+            --brand-600: #4a3bc7;
+            --brand-400: #7c6ff0;
+            --brand-50: #f0eefe;
+            --brand-100: #e4e1fc;
+            --bg: #f4f4f7;
+            --panel: #ffffff;
+            --line: #ececf1;
+            --text: #16161d;
+            --muted: #6b6b7b;
+            --faint: #9a9aa8;
+            --ok: #12805c;   --ok-bg: #e6f6ef;
+            --warn: #a66300; --warn-bg: #fff4de;
+            --info: #1d5fd1; --info-bg: #e7f0ff;
+            --bad: #c0362c;  --bad-bg: #fdeceb;
+            --radius: 14px;
+            --sidebar-w: 248px;
         }
-
-        /* PROFESSIONAL CLEAN WHITE BACKGROUND + SUBTLE BRIGHT ACCENTS */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-text-size-adjust: 100%; }
         body {
-            background: #F8FAFE;
-            font-family: 'Inter', 'Segoe UI', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: #1A2C3E;
-            overflow-x: hidden;
-            position: relative;
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45;
+            min-height: 100vh; overflow-x: hidden;
         }
+        [hidden] { display: none !important; }
+        a { color: inherit; text-decoration: none; }
+        button { font-family: inherit; cursor: pointer; }
+        :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
-        /* subtle depth */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 10% 20%, rgba(255, 245, 235, 0.5) 0%, rgba(255, 255, 245, 0.2) 80%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            top: -30%;
-            right: -10%;
-            width: 60%;
-            height: 80%;
-            background: radial-gradient(circle, rgba(255, 200, 150, 0.12), transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* SIDEBAR - FIXED HEIGHT WITH INDEPENDENT SCROLLING */
+        /* ------------------------------------------------ sidebar */
         .sidebar {
-            width: 270px;
-            height: 100vh;
-            overflow-y: auto;
-            overflow-x: hidden;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(2px);
-            border-right: 1px solid #E9ECF0;
-            padding: 35px 20px;
-            z-index: 100;
-            transition: all 0.3s ease;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02);
-            scrollbar-width: thin;
+            position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); background: var(--panel);
+            border-right: 1px solid var(--line); display: flex; flex-direction: column;
+            padding: 20px 14px 14px; z-index: 60; transition: transform .25s ease; overflow-y: auto;
         }
+        .brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 18px; font-weight: 700; font-size: 19px; letter-spacing: -.2px; }
+        .brand .mark { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, var(--brand), var(--brand-400)); color: #fff; display: grid; place-items: center; font-size: 15px; }
+        .nav-group { margin-top: 14px; }
+        .nav-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); padding: 0 10px 6px; }
+        .nav a {
+            display: flex; align-items: center; gap: 11px; padding: 9px 10px; margin-bottom: 2px;
+            border-radius: 9px; color: #3d3d4a; font-weight: 500; transition: background .15s, color .15s;
+        }
+        .nav a i { width: 18px; text-align: center; font-size: 14px; color: #8a8a99; }
+        .nav a:hover { background: #f6f6f9; }
+        .nav a.active { background: var(--brand-50); color: var(--brand-600); font-weight: 600; }
+        .nav a.active i { color: var(--brand); }
+        .nav .count { margin-left: auto; min-width: 20px; padding: 1px 7px; border-radius: 99px; background: var(--brand); color: #fff; font-size: 11px; font-weight: 600; text-align: center; }
+        .nav a.logout:hover { background: var(--bad-bg); color: var(--bad); }
+        .nav a.logout:hover i { color: var(--bad); }
+        .side-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
+        .who { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; }
+        .who:hover { background: #f6f6f9; }
+        .who-text { min-width: 0; }
+        .who-text strong { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .who-text span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .avatar { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--brand-100); color: var(--brand-600); display: grid; place-items: center; font-weight: 600; font-size: 14px; object-fit: cover; }
+        .scrim { display: none; position: fixed; inset: 0; background: rgba(22,22,29,.42); z-index: 55; }
 
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
+        /* ------------------------------------------------ main */
+        .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+        .topbar {
+            position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 12px;
+            padding: 12px 28px; background: rgba(244,244,247,.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
         }
+        .icon-btn { position: relative; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: #4a4a58; display: grid; place-items: center; font-size: 14px; }
+        .icon-btn:hover { border-color: #d9d9e2; color: var(--brand); }
+        .menu-btn { display: none; }
+        .crumbs { display: flex; align-items: center; gap: 8px; color: var(--faint); font-size: 13px; min-width: 0; }
+        .crumbs b { color: var(--text); font-weight: 600; }
+        .crumbs i { font-size: 9px; }
+        .search { margin-left: auto; position: relative; width: 300px; max-width: 100%; }
+        .search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); font-size: 12px; }
+        .search input { width: 100%; height: 36px; padding: 0 12px 0 34px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font: inherit; color: var(--text); }
+        .search input:focus { outline: none; border-color: var(--brand-400); box-shadow: 0 0 0 3px var(--brand-100); }
+        .badge-dot { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--bad); color: #fff; font-size: 10px; font-weight: 600; display: grid; place-items: center; border: 2px solid var(--bg); }
+        .profile-wrap { position: relative; }
+        .profile-btn { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel); border-radius: 99px; padding: 3px 10px 3px 3px; color: var(--text); }
+        .profile-btn .avatar { width: 28px; height: 28px; font-size: 12px; }
+        .profile-btn i { font-size: 10px; color: var(--faint); }
+        .menu-pop { position: absolute; right: 0; top: calc(100% + 8px); width: 200px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(22,22,29,.12); padding: 6px; display: none; z-index: 70; }
+        .menu-pop.open { display: block; }
+        .menu-pop a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-weight: 500; }
+        .menu-pop a i { width: 16px; color: var(--faint); }
+        .menu-pop a:hover { background: #f6f6f9; }
+        .menu-pop hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
 
-        .sidebar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
+        .content { padding: 22px 28px 40px; max-width: 1360px; }
 
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 10px;
+        /* ------------------------------------------------ banner */
+        .banner {
+            position: relative; overflow: hidden; border-radius: var(--radius); padding: 22px 26px; color: #fff;
+            background: linear-gradient(120deg, #4f3fd0 0%, #6a5cf0 100%);
+            display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
         }
+        .banner::after { content: ''; position: absolute; right: -40px; top: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.08); }
+        .banner > * { position: relative; z-index: 1; }
+        .banner .eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,.16); margin-bottom: 8px; }
+        .banner h1 { font-size: 20px; font-weight: 600; letter-spacing: -.2px; }
+        .banner p { opacity: .85; margin-top: 3px; max-width: 560px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 10px; font-weight: 600; font-size: 13px; border: 1px solid transparent; white-space: nowrap; }
+        .btn-light { background: #fff; color: var(--brand-600); }
+        .btn-light:hover { background: var(--brand-50); }
+        .btn-primary { background: var(--brand); color: #fff; }
+        .btn-primary:hover { background: var(--brand-600); }
 
-        .sidebar::-webkit-scrollbar-thumb:hover {
-            background: #F08C2E;
-        }
+        /* ------------------------------------------------ headings */
+        .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 24px 0 12px; }
+        .sec-head h2 { font-size: 17px; font-weight: 600; letter-spacing: -.2px; }
+        .tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .chip { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border: 1px solid var(--line); background: var(--panel); border-radius: 9px; font-size: 12px; font-weight: 500; color: #4a4a58; }
+        .chip i { color: var(--faint); font-size: 11px; }
+        button.chip:hover { border-color: #d9d9e2; color: var(--brand); }
+        .chip.spin i { animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .select { height: 32px; padding: 0 28px 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font: inherit; font-size: 12px; font-weight: 500; color: #4a4a58; }
 
-        .logo {
-            font-size: 30px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 48px;
-            color: #1E3A5F;
-            letter-spacing: -0.3px;
-        }
+        .live-error { display: none; margin-bottom: 12px; padding: 10px 14px; border-radius: 10px; background: var(--bad-bg); color: var(--bad); font-weight: 500; }
+        .live-error.show { display: block; }
+        .live-error a { text-decoration: underline; }
+        .alerts { display: grid; gap: 8px; }
+        .alerts:not(:empty) { margin-top: 14px; }
+        .alert-row { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 10px; background: var(--info-bg); color: var(--info); font-weight: 500; }
+        .alert-row.warn { background: var(--warn-bg); color: var(--warn); }
 
-        .logo i {
-            color: #F08C2E;
-            margin-right: 10px;
-            font-size: 32px;
-        }
+        /* ------------------------------------------------ panels & metrics */
+        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; box-shadow: 0 1px 2px rgba(22,22,29,.03); }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .metric { padding: 16px 18px; transition: opacity .2s; }
+        .metric.is-loading { opacity: .55; }
+        .metric-top { display: flex; align-items: center; gap: 9px; color: var(--muted); font-weight: 500; font-size: 13px; }
+        .m-ico { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; }
+        .m-ico.indigo { background: var(--brand-50); color: var(--brand); }
+        .m-ico.amber { background: var(--warn-bg); color: var(--warn); }
+        .m-ico.blue { background: var(--info-bg); color: var(--info); }
+        .m-ico.green { background: var(--ok-bg); color: var(--ok); }
+        .m-ico.red { background: var(--bad-bg); color: var(--bad); }
+        .metric-val { font-size: 26px; font-weight: 600; letter-spacing: -.5px; margin: 10px 0 2px; font-variant-numeric: tabular-nums; }
+        .metric-val small { font-size: 14px; color: var(--muted); font-weight: 500; margin-left: 3px; letter-spacing: 0; }
+        .metric-sub { font-size: 12px; color: var(--muted); }
 
-        .menu ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        /* ------------------------------------------------ charts */
+        .dash-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; align-items: stretch; }  /* same columns + gap as .metrics, so every divider lines up */
+        .dash-grid > .panel { min-width: 0; display: flex; flex-direction: column; }
+        .dash-grid > .span-2 { grid-column: span 2; }
+        .chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+        .chart-head .lbl { color: var(--muted); font-size: 13px; font-weight: 500; }
+        .chart-head .big { font-size: 24px; font-weight: 600; letter-spacing: -.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+        .chart-head .note { font-size: 12px; color: var(--muted); }
+        .chart-box { position: relative; flex: 1 1 auto; min-height: 240px; margin-top: 28px; }  /* margin-top is set by the first-screen fold logic in the script below */
+        .chart-box canvas { max-width: 100%; }
+        .chart-box > canvas { display: block; }
+        .chart-empty { display: none; position: absolute; inset: 0; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; padding: 0 24px; color: var(--muted); }
+        .chart-empty i { font-size: 22px; color: var(--brand-400); }
+        .chart-box.empty canvas { visibility: hidden; }
+        .chart-box.empty .chart-empty { display: flex; }
 
-        .menu li {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            color: #3A546D;
-            text-decoration: none;
-            padding: 12px 18px;
-            margin-bottom: 10px;
-            border-radius: 14px;
-            transition: all 0.2s ease;
-            font-size: 15px;
-            font-weight: 500;
-            background: transparent;
-            cursor: pointer;
-        }
+        /* ------------------------------------------------ upcoming + water */
+        .dash-grid > #upcomingPanel, .dash-grid > #wqSection { gap: 14px; }   /* children spaced by gap, no per-element margins */
+        #wqSection { justify-content: space-between; }                                        /* spare height is shared between the sections, not dumped at the bottom */
+        .card-title { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; flex-wrap: wrap; }
+        .card-title h3 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .card-title h3 i { color: var(--brand); font-size: 14px; }
+        .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+        .fact small { display: block; color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+        .fact strong { font-weight: 600; overflow-wrap: anywhere; }
+        .fact.wide { grid-column: 1 / -1; }
+        .up-body { display: flex; flex-direction: column; gap: 14px; }
+        .steps { list-style: none; display: flex; gap: 6px; margin: 4px 0 0; }
+        .steps li { flex: 1; min-width: 0; padding-top: 12px; position: relative; font-size: 11.5px; color: var(--faint); font-weight: 500; }
+        .steps li::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 4px; background: var(--line); }
+        .steps li.done { color: var(--text); }
+        .steps li.done::before { background: var(--brand); }
+        .steps small { display: block; font-weight: 400; color: var(--muted); margin-top: 1px; }
+        .prep { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+        .prep h4 { font-size: 13px; font-weight: 600; }
+        .prep-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .prep-item { display: flex; gap: 10px; min-width: 0; padding: 0 14px; border-left: 1px solid var(--line); }
+        .prep-item:first-child { padding-left: 0; border-left: 0; }
+        .prep-item:last-child { padding-right: 0; }
+        .prep-item .m-ico { flex: none; }
+        .prep-item > div { min-width: 0; }
+        .prep-item small { display: block; color: var(--muted); font-size: 12px; margin-bottom: 1px; }
+        .prep-item strong { display: block; font-weight: 600; font-size: 13.5px; overflow-wrap: anywhere; }
+        .prep-item .ref-val { font-variant-numeric: tabular-nums; letter-spacing: .2px; }
+        .prep-item p { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+        .next-msg { display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px; border-radius: 10px; background: var(--brand-50); color: var(--brand-600); font-size: 13px; font-weight: 500; }
+        .next-msg i { margin-top: 3px; }
+        .next-msg.ok { background: var(--ok-bg); color: var(--ok); }
+        .next-msg.bad { background: var(--bad-bg); color: var(--bad); }
+        .empty-state { text-align: center; padding: 26px 10px; color: var(--muted); }
+        .empty-state i { font-size: 24px; color: var(--brand-400); margin-bottom: 10px; }
+        .empty-state h4 { color: var(--text); font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .empty-state .btn { margin-top: 14px; }
 
-        .menu li i {
-            width: 24px;
-            font-size: 18px;
-            color: #7D8E9F;
-            transition: color 0.2s;
-        }
+        .wq-badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--warn-bg); color: var(--warn); }
+        .wq-badge.live { background: var(--ok-bg); color: var(--ok); }
+        .wq-top { display: flex; flex-direction: column; gap: 10px; }   /* heading, badge and notice stay together at the top */
+        .wq-msg { color: var(--muted); font-size: 12.5px; }
+        .wq-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }   /* one compact row per measurement - fits the narrow right-hand column */
+        .wq-cell { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; text-align: left; }
+        .wq-cell i { grid-row: 1 / span 2; color: var(--brand); font-size: 15px; width: 18px; text-align: center; }
+        .wq-cell .v { font-weight: 600; font-size: 14px; }
+        .wq-cell.ref { background: #fafafc; border-style: dashed; }
+        .wq-cell.ref .v { color: var(--muted); font-size: 13px; }
+        .wq-cell p { font-size: 11px; color: var(--muted); margin-top: 3px; }
+        .wq-foot { font-size: 11.5px; color: var(--faint); }
 
-        .menu li:hover {
-            background: #FEF5ED;
-            color: #F08C2E;
-            transform: translateX(5px);
-        }
+        /* ------------------------------------------------ table */
+        .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 4px; overflow-x: auto; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { flex: none; background: none; border: 0; padding: 10px 14px; font-size: 13px; font-weight: 500; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px; }
+        .tab:hover { color: var(--text); }
+        .tab.on { color: var(--brand-600); border-bottom-color: var(--brand); font-weight: 600; }
+        .tab .n { font-size: 11px; padding: 1px 7px; border-radius: 99px; background: #f0f0f4; color: var(--muted); font-weight: 600; }
+        .tab.on .n { background: var(--brand-50); color: var(--brand-600); }
+        .tbl-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 0; }
+        .tbl-tools .search { margin-left: 0; width: 280px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); background: #f8f8fb; padding: 10px 14px; white-space: nowrap; }
+        thead th:first-child { border-radius: 8px 0 0 8px; } thead th:last-child { border-radius: 0 8px 8px 0; }
+        tbody td { padding: 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: 0; }
+        tbody tr:hover td { background: #fbfbfd; }
+        .ref-cell { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .muted { color: var(--muted); }
+        td.empty-cell { text-align: center; padding: 34px 10px; }
+        .status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+        .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .status.delivered { background: var(--ok-bg); color: var(--ok); }
+        .status.pending { background: var(--warn-bg); color: var(--warn); }
+        .status.active { background: var(--info-bg); color: var(--info); }
+        .status.cancelled { background: var(--bad-bg); color: var(--bad); }
+        .status.approved { background: var(--brand-50); color: var(--brand-600); }
+        .status.other { background: #f0f0f4; color: var(--muted); }
+        .act { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--brand-600); padding: 6px 10px; border-radius: 8px; }
+        .act:hover { background: var(--brand-50); }
+        .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+        .pager-btns { display: flex; gap: 6px; }
+        .pager-btns button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: #4a4a58; font-size: 11px; }
+        .pager-btns button:hover:not(:disabled) { border-color: var(--brand-400); color: var(--brand); }
+        .pager-btns button:disabled { opacity: .4; cursor: default; }
+        .link-btn { color: var(--brand-600); font-weight: 600; }
+        .link-btn:hover { text-decoration: underline; }
 
-        .menu li:hover i {
-            color: #F08C2E;
+        /* ------------------------------------------------ responsive */
+        @media (max-width: 1180px) {
+            .metrics { grid-template-columns: repeat(3, 1fr); }
         }
-
-        .menu a {
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            width: 100%;
+        @media (max-width: 1100px) {
+            .dash-grid { grid-template-columns: minmax(0, 1fr); }
+            .dash-grid > .span-2 { grid-column: auto; }
         }
-
-        .main-content {
-            margin-left: 270px;
-            padding: 40px 48px;
-            position: relative;
-            z-index: 2;
+        @media (max-width: 960px) {
+            .sidebar { transform: translateX(-100%); box-shadow: 12px 0 40px rgba(22,22,29,.16); }
+            body.nav-open .sidebar { transform: none; }
+            body.nav-open .scrim { display: block; }
+            body.nav-open { overflow: hidden; }
+            .main { margin-left: 0; }
+            .menu-btn { display: grid; }
+            .topbar { padding: 10px 16px; }
+            .content { padding: 16px; }
+            .metrics { grid-template-columns: repeat(2, 1fr); }
         }
-
-        .top-card {
-            background: #FFFFFF;
-            border-radius: 32px;
-            padding: 42px 48px;
-            margin-bottom: 40px;
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-            border: 1px solid #EFF2F8;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
+        @media (max-width: 640px) {
+            .topbar .search { display: none; }
+            .crumbs { flex: 1; }
+            .profile-btn .pname { display: none; }
+            .profile-btn { padding-right: 8px; }
+            .banner { padding: 18px; }
+            .banner .btn { width: 100%; }
+            .metrics { gap: 10px; }
+            .metric { padding: 14px; }
+            .metric-val { font-size: 22px; }
+            .chart-box { min-height: 220px; }
+            .facts { grid-template-columns: 1fr; }
+            .prep-grid { grid-template-columns: 1fr; }
+            .prep-item, .prep-item:first-child, .prep-item:last-child { padding: 10px 0; border-left: 0; border-top: 1px solid var(--line); }
+            .prep-item:first-child { border-top: 0; padding-top: 0; }
+            .tbl-tools .search { width: 100%; }
+            /* booking rows become stacked cards on phones */
+            table, tbody, tr, td { display: block; width: 100%; }
+            thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+            tbody tr { border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px; margin-bottom: 10px; }
+            tbody td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); text-align: right; }
+            tbody td:last-child { border-bottom: 0; }
+            tbody td.empty-cell { display: block; text-align: center; }
+            tbody td::before { content: attr(data-label); color: var(--muted); font-size: 12px; font-weight: 500; text-align: left; }
+            tbody tr:hover td { background: transparent; }
+            .steps { flex-wrap: wrap; } .steps li { flex: 1 1 28%; }
         }
-
-        .top-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 6px;
-            height: 100%;
-            background: linear-gradient(135deg, #F08C2E, #FFB347);
-            border-radius: 32px 0 0 32px;
-        }
-
-        .top-card h1 {
-            font-size: 44px;
-            font-weight: 700;
-            color: #1E2F3E;
-            margin-bottom: 12px;
-            letter-spacing: -0.5px;
-        }
-
-        .top-card h1 span {
-            background: linear-gradient(120deg, #F08C2E, #E07C2A);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .top-card p {
-            font-size: 17px;
-            color: #5C6F87;
-            margin-top: 8px;
-        }
-
-        .book-btn {
-            background: #F08C2E;
-            border: none;
-            padding: 14px 36px;
-            color: white;
-            border-radius: 40px;
-            font-size: 16px;
-            font-weight: 600;
-            margin-top: 24px;
-            transition: all 0.25s;
-            box-shadow: 0 4px 10px rgba(240, 140, 46, 0.2);
-        }
-
-        .book-btn:hover {
-            background: #E07A1C;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 22px rgba(240, 140, 46, 0.25);
-        }
-
-        .dashboard-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 28px;
-            margin-bottom: 48px;
-        }
-
-        .card-box {
-            background: #FFFFFF;
-            border-radius: 28px;
-            padding: 28px 24px;
-            transition: all 0.3s;
-            box-shadow: 0 5px 18px rgba(0, 0, 0, 0.03), 0 0 0 1px #F0F2F5;
-            text-align: center;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-
-        .card-box:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 32px rgba(0, 0, 0, 0.05), 0 0 0 1px #FFE1C6;
-            border-bottom-color: #F08C2E;
-        }
-
-        .card-box i {
-            font-size: 48px;
-            color: #F08C2E;
-            margin-bottom: 18px;
-            background: #FEF6EE;
-            padding: 14px;
-            border-radius: 60px;
-            transition: all 0.2s;
-        }
-
-        .card-box:hover i {
-            background: #F08C2E;
-            color: white;
-        }
-
-        .card-box h3, .card-box h1 {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1E2F3E;
-            margin: 14px 0 6px;
-        }
-
-        .card-box p {
-            color: #6F7E95;
-            font-size: 14px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-        }
-
-        .analytics-section {
-            background: #FFFFFF;
-            border-radius: 32px;
-            padding: 32px 32px;
-            margin-bottom: 35px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
-            border: 1px solid #EDF1F7;
-        }
-
-        .analytics-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #1E3A5F;
-            margin-bottom: 28px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .analytics-title i {
-            color: #F08C2E;
-            font-size: 26px;
-        }
-
-        .chart-container {
-            max-width: 100%;
-            height: 280px;
-            margin-bottom: 30px;
-            position: relative;
-        }
-
-        .water-quality-panel {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 22px;
-            margin-top: 20px;
-            justify-content: space-between;
-        }
-
-        .quality-card {
-            background: #FBFDFF;
-            border-radius: 28px;
-            padding: 20px 18px;
-            flex: 1;
-            min-width: 160px;
-            text-align: center;
-            transition: all 0.25s;
-            border: 1px solid #EFF2F8;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-        }
-
-        .quality-card:hover {
-            border-color: #FFDEC2;
-            transform: translateY(-3px);
-            background: #FFFFFF;
-        }
-
-        .quality-value {
-            font-size: 40px;
-            font-weight: 800;
-            color: #F08C2E;
-            line-height: 1.2;
-        }
-
-        .quality-card p {
-            margin-top: 8px;
-            color: #4F6F8F;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .quality-card small {
-            color: #8DA0B5;
-            font-size: 12px;
-        }
-
-        .recent-activity {
-            background: #FFFFFF;
-            border-radius: 32px;
-            padding: 28px 30px;
-            margin-bottom: 40px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.02);
-            border: 1px solid #EDF1F7;
-        }
-
-        .activity-item {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            padding: 16px 0;
-            border-bottom: 1px solid #F0F2F8;
-            transition: 0.2s;
-        }
-
-        .activity-item:hover {
-            background: #FEFAF5;
-            border-radius: 24px;
-            padding-left: 12px;
-            transform: translateX(4px);
-        }
-
-        .activity-icon {
-            width: 46px;
-            height: 46px;
-            background: #FEF2E7;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #F08C2E;
-            font-size: 20px;
-        }
-
-        .activity-detail h4 {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1E2F3E;
-            margin-bottom: 5px;
-        }
-
-        .activity-detail p {
-            font-size: 13px;
-            color: #6F7E95;
-        }
-
-        .activity-time {
-            margin-left: auto;
-            font-size: 13px;
-            color: #98A9C3;
-            font-weight: 500;
-        }
-
-        .recent-bookings {
-            margin-top: 20px;
-            background: #FFFFFF;
-            border-radius: 32px;
-            padding: 28px 30px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.02);
-            border: 1px solid #EDF1F7;
-        }
-
-        .recent-bookings h2 {
-            font-size: 22px;
-            font-weight: 700;
-            color: #1E3A5F;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .recent-bookings h2 i {
-            color: #F08C2E;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        table th {
-            background: #F08C2E;
-            color: white;
-            padding: 14px 12px;
-            font-weight: 600;
-            font-size: 14px;
-            text-align: left;
-        }
-
-        table td {
-            padding: 14px 12px;
-            border-bottom: 1px solid #EDF2F7;
-            color: #2C3E50;
-            font-size: 14px;
-        }
-
-        table tr:hover td {
-            background-color: #FEFAF5;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 40px;
-            font-size: 12px;
-            font-weight: 600;
-            background: #EFF6FF;
-            color: #2E86C1;
-        }
-
-        .status-badge.delivered {
-            background: #E8F7EF;
-            color: #2E7D64;
-        }
-
-        .status-badge.pending {
-            background: #FFF1E0;
-            color: #F08C2E;
-        }
-
-        @media (max-width: 992px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                padding: 20px;
-                overflow-y: visible;
-            }
-            .main-content {
-                margin-left: 0;
-                padding: 30px 24px;
-            }
-            .menu ul {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                justify-content: center;
-            }
-            .menu li {
-                flex: 1;
-                justify-content: center;
-            }
-            .top-card h1 {
-                font-size: 34px;
-            }
-            table th, table td {
-                padding: 10px 8px;
-                font-size: 12px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-cards {
-                grid-template-columns: 1fr;
-            }
-            .water-quality-panel {
-                flex-direction: column;
-            }
-            .recent-bookings {
-                overflow-x: auto;
-            }
-            table {
-                min-width: 500px;
-            }
-        }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
     </style>
 </head>
 <body>
 
-<!-- SIDEBAR: All standard links. Live ETA Tracking link removed as requested -->
-<div class="sidebar">
-    <div class="logo">
-        <i class="fa-solid fa-water"></i> AquaFlow
-    </div>
-    <div class="menu">
-        <ul>
-            <a href="/dashboard"><li><i class="fa-solid fa-house-chimney"></i> Dashboard</li></a>
-            <a href="/booking"><li><i class="fa-solid fa-truck-droplet"></i> Book Tanker</li></a>
-            <a href="/history"><li><i class="fa-solid fa-clock-rotate-left"></i> Booking History</li></a>
-            <a href="/profile"><li><i class="fa-solid fa-user-astronaut"></i> Profile</li></a>
-            <a href="/wallet"><li><i class="fa-solid fa-wallet"></i> My Wallet</li></a>
-            <!-- Live Status Tracking link removed fully -->
-            <!-- Driver Assignment link removed -->
-            <!-- Analytics Charts link removed -->
-            <!-- Payment System link removed - that's the admin-only platform-wide monitoring
-                 page (NexusPay Command Center), not a customer page. My Payments below is the
-                 real, user-scoped equivalent. -->
-            <a href="/my-payments"><li><i class="fas fa-credit-card"></i> My Payments</li></a>
-            <a href="/notification"><li><i class="fas fa-bell"></i> Notifications</li></a>
-            <a href="/quick_rebook"><li><i class="fas fa-redo"></i> Quick Rebook</li></a>
-            <!-- Live ETA Tracking link REMOVED as per instruction -->
-            <a href="/logout"><li><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</li></a>
-        </ul>
-    </div>
-</div>
+<div class="scrim" id="scrim"></div>
 
-<div class="main-content" id="mainDashboard">
-    <div class="top-card">
-        <h1>Welcome, <span>{{ user.name }}</span>! 👋</h1>
-        <p>Manage your live water tanker bookings and deliveries. Real-time analytics, driver coordination, and instant insights.</p>
-        <a href="/booking"><button class="book-btn"><i class="fa-regular fa-calendar-plus"></i> + Book Water Tanker</button></a>
+<!-- ============================== SIDEBAR ============================== -->
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <a class="brand" href="/dashboard"><span class="mark"><i class="fa-solid fa-water"></i></span> AquaFlow</a>
+
+    <nav class="nav">
+        <div class="nav-group">
+            <div class="nav-label">General</div>
+            <a href="/dashboard" class="active" aria-current="page"><i class="fa-solid fa-house-chimney"></i> Dashboard</a>
+            <a href="/booking"><i class="fa-solid fa-truck-droplet"></i> Book Tanker</a>
+            <a href="/history"><i class="fa-solid fa-clock-rotate-left"></i> Booking History</a>
+            <a href="/history" id="sideTrack"><i class="fa-solid fa-location-dot"></i> Track Booking</a>
+            <a href="/quick_rebook"><i class="fa-solid fa-rotate-right"></i> Quick Rebook</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">Billing</div>
+            <a href="/wallet"><i class="fa-solid fa-wallet"></i> My Wallet</a>
+            <a href="/my-payments"><i class="fa-solid fa-credit-card"></i> My Payments</a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-label">Account</div>
+            <a href="/notification"><i class="fa-regular fa-bell"></i> Notifications{% if unread_notifications %}<span class="count">{{ unread_notifications if unread_notifications < 100 else '99+' }}</span>{% endif %}</a>
+            <a href="/profile"><i class="fa-regular fa-user"></i> My Profile</a>
+            <a href="/logout" class="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+        </div>
+    </nav>
+
+    <div class="side-foot">
+        <a class="who" href="/profile">
+            {% if user and user.profile_image %}<img class="avatar" src="{{ user.profile_image }}" alt="">
+            {% else %}<span class="avatar">{{ ((user.name if user and user.name else 'C')[0])|upper }}</span>{% endif %}
+            <span class="who-text"><strong>{{ user.name if user and user.name else 'Customer' }}</strong><span>{{ user.email if user and user.email else '' }}</span></span>
+        </a>
     </div>
+</aside>
 
-    <!-- Dashboard Overview Cards -->
-    <div class="dashboard-cards">
-        <div class="card-box">
-            <i class="fa-solid fa-droplet"></i>
-            <h1 id="totalLitersDisplay">{{ total_water|default(0) }}</h1>
-            <p>Total Liters</p>
-        </div>
-        <div class="card-box">
-            <i class="fa-solid fa-hourglass-half"></i>
-            <h3 id="pendingBookingsNum">{{ pending_orders|default(0) }}</h3>
-            <p>Pending Orders</p>
-        </div>
-        <div class="card-box">
-            <i class="fa-solid fa-circle-check"></i>
-            <h3 id="deliveredBookingsNum">{{ delivered_orders|default(0) }}</h3>
-            <p>Delivered Orders</p>
-        </div>
-        <div class="card-box">
-            <i class="fa-solid fa-calendar-day"></i>
-            <h1 id="todayDeliveriesDisplay">{{ today_bookings|default(0) }}</h1>
-            <p>Today's Deliveries</p>
-        </div>
-    </div>
+<!-- ============================== MAIN ============================== -->
+<div class="main">
+    <header class="topbar">
+        <button type="button" class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button>
+        <div class="crumbs" aria-label="Breadcrumb"><span>Pages</span><i class="fa-solid fa-chevron-right"></i><b>Dashboard</b></div>
 
-    <!-- Analytics & Water Quality Panel -->
-    <div class="analytics-section">
-        <div class="analytics-title"><i class="fa-solid fa-chart-line"></i> Delivery Performance & Water Quality Index</div>
-        <div class="chart-container">
-            <canvas id="performanceChart"></canvas>
-        </div>
+        <label class="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="topSearch" placeholder="Search your bookings…" aria-label="Search your bookings" autocomplete="off">
+        </label>
 
-        <div class="water-quality-panel">
-            <div class="quality-card"><i class="fa-solid fa-flask" style="font-size: 26px; color:#F08C2E;"></i><div class="quality-value" id="phValue">7.2</div><p>pH Level (ideal)</p><small>⚡ premium grade</small></div>
-            <div class="quality-card"><i class="fa-solid fa-tint" style="font-size: 26px; color:#F08C2E;"></i><div class="quality-value" id="tdsValue">128</div><p>TDS (mg/L)</p><small>💧 ultra pure</small></div>
-            <div class="quality-card"><i class="fa-regular fa-eye" style="font-size: 26px; color:#F08C2E;"></i><div class="quality-value" id="turbidity">0.9</div><p>Turbidity (NTU)</p><small>✨ crystal clarity</small></div>
-            <div class="quality-card"><i class="fa-solid fa-truck-fast" style="font-size: 26px; color:#F08C2E;"></i><div class="quality-value" id="liveDeliveries">{{ today_bookings|default(0) }}</div><p>Today's Deliveries</p><small>📈 live updates</small></div>
-        </div>
-    </div>
+        <a class="icon-btn" href="/notification" aria-label="Notifications{% if unread_notifications %} ({{ unread_notifications }} unread){% endif %}">
+            <i class="fa-regular fa-bell"></i>
+            {% if unread_notifications %}<span class="badge-dot">{{ unread_notifications if unread_notifications < 100 else '99+' }}</span>{% endif %}
+        </a>
 
-    <!-- LIVE ACTIVITY FEED – dynamic from MongoDB -->
-    <div class="recent-activity">
-        <div class="analytics-title"><i class="fa-regular fa-bell"></i> Live Activity Feed</div>
-        {% if recent_bookings %}
-            {% for booking in recent_bookings %}
-            <div class="activity-item">
-                <div class="activity-icon">
-                    {% if booking.status == "Delivered" %}
-                        <i class="fa-solid fa-circle-check"></i>
-                    {% elif booking.status == "Pending" %}
-                        <i class="fa-solid fa-hourglass-half"></i>
-                    {% else %}
-                        <i class="fa-solid fa-truck-droplet"></i>
-                    {% endif %}
+        <div class="profile-wrap">
+            <button type="button" class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+                {% if user and user.profile_image %}<img class="avatar" src="{{ user.profile_image }}" alt="">
+                {% else %}<span class="avatar">{{ ((user.name if user and user.name else 'C')[0])|upper }}</span>{% endif %}
+                <span class="pname">{{ (user.name if user and user.name else 'Customer').split(' ')[0] }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div class="menu-pop" id="profileMenu" role="menu">
+                <a href="/profile" role="menuitem"><i class="fa-regular fa-user"></i> My Profile</a>
+                <a href="/wallet" role="menuitem"><i class="fa-solid fa-wallet"></i> My Wallet</a>
+                <a href="/my-payments" role="menuitem"><i class="fa-solid fa-credit-card"></i> My Payments</a>
+                <hr>
+                <a href="/logout" role="menuitem"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="content" id="mainDashboard">
+
+        <section class="banner">
+            <div>
+                <span class="eyebrow"><i class="fa-solid fa-droplet"></i> <span id="bannerChip">Water tanker bookings</span></span>
+                <h1>Welcome back, {{ user.name if user and user.name else 'there' }}</h1>
+                <p>Book a tanker, follow your delivery live and keep your payments in one place.</p>
+            </div>
+            <a class="btn btn-light" href="/booking"><i class="fa-regular fa-calendar-plus"></i> Book Water Tanker</a>
+        </section>
+
+        <div class="alerts" id="alerts"></div>
+
+        <div class="sec-head">
+            <h2>Overview</h2>
+            <div class="tools" role="status" aria-live="polite">
+                <span class="chip"><i class="fa-regular fa-clock"></i> Updated <strong id="lastUpdated" style="font-weight:600">just now</strong></span>
+                <span class="chip" id="totalBookingsNote" hidden></span>
+                <button type="button" class="chip" id="refreshBtn" aria-label="Refresh dashboard now"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            </div>
+        </div>
+        <div class="live-error" id="liveError" role="alert"></div>
+
+        <!-- metric cards: every value comes from this customer's own bookings -->
+        <section class="metrics" aria-label="Booking summary">
+            <div class="panel metric">
+                <div class="metric-top"><span class="m-ico indigo"><i class="fa-solid fa-droplet"></i></span> Total Liters Delivered</div>
+                <div class="metric-val"><span id="totalLitersDisplay">0</span><small>L</small></div>
+                <div class="metric-sub" id="litersSub">Across completed deliveries</div>
+            </div>
+            <div class="panel metric">
+                <div class="metric-top"><span class="m-ico blue"><i class="fa-solid fa-clipboard-list"></i></span> Total Bookings</div>
+                <div class="metric-val" id="totalBookingsNum">0</div>
+                <div class="metric-sub">All bookings you have placed</div>
+            </div>
+            <div class="panel metric">
+                <div class="metric-top"><span class="m-ico amber"><i class="fa-solid fa-hourglass-half"></i></span> Pending Orders</div>
+                <div class="metric-val" id="pendingBookingsNum">0</div>
+                <div class="metric-sub">Waiting for approval</div>
+            </div>
+            <div class="panel metric">
+                <div class="metric-top"><span class="m-ico blue"><i class="fa-solid fa-truck-fast"></i></span> Active Orders</div>
+                <div class="metric-val" id="activeBookingsNum">0</div>
+                <div class="metric-sub" id="todaySub">Assigned or on the way</div>
+            </div>
+            <div class="panel metric">
+                <div class="metric-top"><span class="m-ico green"><i class="fa-solid fa-circle-check"></i></span> Delivered Orders</div>
+                <div class="metric-val" id="deliveredBookingsNum">0</div>
+                <div class="metric-sub">Completed deliveries</div>
+            </div>
+            <div class="panel metric">
+                <div class="metric-top"><span class="m-ico red"><i class="fa-solid fa-ban"></i></span> Cancelled Orders</div>
+                <div class="metric-val" id="cancelledBookingsNum">0</div>
+                <div class="metric-sub">Cancelled bookings</div>
+            </div>
+        </section>
+
+        <!-- analytics -->
+        <section class="dash-grid" aria-label="Analytics and delivery">
+            <div class="panel span-2">
+                <div class="chart-head">
+                    <div>
+                        <div class="lbl">Booking activity</div>
+                        <div class="big" id="barTotal">0</div>
+                        <div class="note" id="barNote">bookings placed per week</div>
+                    </div>
+                    <select class="select" id="barRange" aria-label="Date range for booking activity">
+                        <option value="4">Last 4 weeks</option>
+                        <option value="8" selected>Last 8 weeks</option>
+                        <option value="12">Last 12 weeks</option>
+                    </select>
                 </div>
-                <div class="activity-detail">
-                    <h4>{{ booking.fullname }}</h4>
-                    <p>{{ booking.quantity }} liters | Status: {{ booking.status }} | Type: {{ booking.water_type }}</p>
-                </div>
-                <div class="activity-time">
-                    {% if booking.delivery_date %}
-                        {{ booking.delivery_date }}
-                    {% else %}
-                        {{ booking.created_at.strftime('%Y-%m-%d') if booking.created_at else 'Just now' }}
-                    {% endif %}
+                <div class="chart-box" id="barBox">
+                    <canvas id="activityChart" role="img" aria-label="Bookings placed per week"></canvas>
+                    <div class="chart-empty"><i class="fa-regular fa-chart-bar"></i><span>No bookings in this period yet. Your weekly booking activity will appear here.</span></div>
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="activity-item">
-                <div class="activity-icon"><i class="fa-solid fa-info-circle"></i></div>
-                <div class="activity-detail"><h4>No recent bookings</h4><p>Your activity feed will appear here</p></div>
-                <div class="activity-time">now</div>
+            <div class="panel">
+                <div class="chart-head">
+                    <div>
+                        <div class="lbl">Liters delivered</div>
+                        <div class="big" id="lineTotal">0 L</div>
+                        <div class="note">by delivery date</div>
+                    </div>
+                </div>
+                <div class="chart-box" id="chartBox">
+                    <canvas id="performanceChart" role="img" aria-label="Liters delivered by date"></canvas>
+                    <div class="chart-empty"><i class="fa-solid fa-chart-line"></i><span id="lineEmptyMsg">No completed deliveries yet. Your delivered liters will appear here.</span></div>
+                </div>
             </div>
-        {% endif %}
-    </div>
 
-    <!-- RECENT BOOKINGS TABLE – dynamic from MongoDB -->
-    <div class="recent-bookings">
-        <h2><i class="fa-regular fa-rectangle-list"></i> Recent Bookings</h2>
-        <table>
-            <thead>
-                <tr><th>Water Type</th><th>Quantity (Liters)</th><th>Delivery Date</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-                {% if recent_bookings %}
-                    {% for booking in recent_bookings %}
-                    <tr>
-                        <td>{{ booking.water_type }}</td>
-                        <td>{{ booking.quantity }}</td>
-                        <td>
-                            {% if booking.delivery_date %}
-                                {{ booking.delivery_date }}
-                            {% else %}
-                                {{ booking.created_at.strftime('%Y-%m-%d') if booking.created_at else 'N/A' }}
-                            {% endif %}
-                         </td>
-                        <td>
-                            {% if booking.status == "Delivered" %}
-                                <span class="status-badge delivered">{{ booking.status }}</span>
-                            {% elif booking.status == "Pending" %}
-                                <span class="status-badge pending">{{ booking.status }}</span>
-                            {% else %}
-                                <span class="status-badge">{{ booking.status }}</span>
-                            {% endif %}
-                         </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="4" style="text-align: center;">No bookings found. Start by booking a tanker!</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
+            <!-- upcoming delivery (left, under Booking Activity) + water quality (right, under Liters Delivered) -->
+            <div class="panel span-2" id="upcomingPanel">
+                <div class="card-title">
+                    <h3><i class="fa-solid fa-truck-fast"></i> Upcoming Delivery</h3>
+                    <span class="status" id="upStatus" hidden></span>
+                </div>
+                <div id="upEmpty" class="empty-state">
+                    <i class="fa-regular fa-calendar"></i>
+                    <h4>No upcoming deliveries</h4>
+                    <p>Scheduled and in-progress bookings will show up here.</p>
+                    <a class="btn btn-primary" href="/booking">Book Water Tanker</a>
+                </div>
+                <div id="upBody" class="up-body" hidden>
+                    <div class="facts">
+                        <div class="fact"><small>Quantity</small><strong id="upQty"></strong></div>
+                        <div class="fact"><small>Water type</small><strong id="upType"></strong></div>
+                        <div class="fact wide"><small>Delivery address</small><strong id="upAddr"></strong></div>
+                    </div>
+                    <ol class="steps" id="upSteps" aria-label="Booking progress"></ol>
+
+                    <div class="prep" aria-labelledby="prepTitle">
+                        <h4 id="prepTitle">Delivery Preparation</h4>
+                        <div class="prep-grid">
+                            <div class="prep-item">
+                                <span class="m-ico indigo"><i class="fa-regular fa-calendar"></i></span>
+                                <div><small>Delivery schedule</small><strong id="upWhen"></strong><p>Your selected delivery window</p></div>
+                            </div>
+                            <div class="prep-item">
+                                <span class="m-ico blue"><i class="fa-solid fa-truck"></i></span>
+                                <div><small>Driver &amp; vehicle</small><strong id="upDriverState"></strong><p id="upDriverNote"></p></div>
+                            </div>
+                            <div class="prep-item">
+                                <span class="m-ico indigo"><i class="fa-solid fa-hashtag"></i></span>
+                                <div><small>Booking reference</small><strong id="upRef" class="ref-val"></strong><p>Keep this reference for booking enquiries</p></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="next-msg" id="upNext" role="status"><i class="fa-solid fa-circle-info"></i><span id="upNextText"></span></div>
+                    <div><a class="btn btn-primary" id="upTrack" href="/history"><i class="fa-solid fa-location-dot"></i> Track Booking</a></div>
+                </div>
+            </div>
+
+            <div class="panel" id="wqSection">
+                <div class="wq-top">
+                    <div class="card-title">
+                        <h3><i class="fa-solid fa-flask"></i> Water Quality Insights</h3>
+                        <span class="wq-badge" id="wqBadge"></span>
+                    </div>
+                    <p class="wq-msg" id="wqMsg"></p>
+                </div>
+                <div class="wq-grid" id="wqGrid"></div>
+                <p class="wq-foot" id="wqFoot"></p>
+            </div>
+        </section>
+
+        <!-- recent bookings -->
+        <div class="sec-head">
+            <h2>Recent Bookings</h2>
+            <div class="tools"><a class="chip" href="/history"><i class="fa-regular fa-eye"></i> View all</a></div>
+        </div>
+        <section class="panel" style="padding-top:6px">
+            <div class="tabs" id="tabs" role="tablist" aria-label="Filter bookings by status"></div>
+            <div class="tbl-tools">
+                <label class="search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="search" id="tableSearch" placeholder="Search bookings…" aria-label="Search bookings" autocomplete="off">
+                </label>
+                <span class="muted" id="feedFoot" hidden><a class="link-btn" href="/history">View all activity <i class="fa-solid fa-arrow-right"></i></a></span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Reference</th><th>Water type</th><th>Quantity</th><th>Scheduled delivery</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="recentBody"></tbody>
+                </table>
+            </div>
+            <div class="pager">
+                <span id="pagerInfo"></span>
+                <div class="pager-btns">
+                    <button type="button" id="pgFirst" aria-label="First page"><i class="fa-solid fa-angles-left"></i></button>
+                    <button type="button" id="pgPrev" aria-label="Previous page"><i class="fa-solid fa-angle-left"></i></button>
+                    <button type="button" id="pgNext" aria-label="Next page"><i class="fa-solid fa-angle-right"></i></button>
+                    <button type="button" id="pgLast" aria-label="Last page"><i class="fa-solid fa-angles-right"></i></button>
+                </div>
+            </div>
+        </section>
+    </main>
 </div>
 
 <script>
-    // ============================================
-    // LIVE CHART DATA FROM FLASK BACKEND (MongoDB)
-    // chart_labels and chart_values are passed from app.py
-    // ============================================
-    const chartLabels = {{ chart_labels | tojson }};
-    const chartValues = {{ chart_values | tojson }};
+// ============================================================
+// Everything below renders data that comes from the server:
+//   first paint  -> INITIAL (embedded by Flask from MongoDB)
+//   refreshes    -> GET /api/dashboard/summary (same data, same rules)
+// Nothing here invents or randomises a number.
+// ============================================================
+(function () {
+    var INITIAL = {{ dash | tojson }};
+    var POLL_MS = 45000, TIMEOUT_MS = 15000, MIN_GAP_MS = 10000, PAGE_SIZE = 8;
+    var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var BRAND = '#5b4bdb';
 
-    const ctx = document.getElementById('performanceChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartLabels,
-            datasets: [{
-                label: 'Water Delivered (Liters)',
-                data: chartValues,
-                borderColor: '#ff7a00',
-                backgroundColor: 'rgba(255,122,0,0.2)',
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#F08C2E',
-                pointBorderColor: '#FFFFFF',
-                pointRadius: 5,
-                pointHoverRadius: 7
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: '#2D495E',
-                        font: { weight: 'bold' }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: '#FFFFFF',
-                    titleColor: '#F08C2E',
-                    bodyColor: '#1E2F3E',
-                    borderColor: '#F08C2E',
-                    borderWidth: 1
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#EDF2F7' },
-                    title: {
-                        display: true,
-                        text: 'Liters Delivered',
-                        color: '#5C6F87'
-                    }
-                },
-                x: {
-                    grid: { color: '#F0F3F8' },
-                    title: {
-                        display: true,
-                        text: 'Booking Period',
-                        color: '#5C6F87'
-                    }
-                }
-            }
-        }
-    });
+    var $ = function (id) { return document.getElementById(id); };
+    var inflight = false, pollTimer = null, lastFetch = Date.now();
+    var barChart = null, lineChart = null, current = INITIAL;
+    var table = { tab: 'all', q: '', page: 1 };
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Helper for number animation
-        function animateNumber(element, start, end, duration) {
-            if (!element) return;
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                let val = Math.floor(progress * (end - start) + start);
-                element.innerText = val.toLocaleString();
-                if (progress < 1) requestAnimationFrame(step);
-                else element.innerText = end.toLocaleString();
-            };
-            requestAnimationFrame(step);
-        }
+    function el(tag, cls, text) {
+        var n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text !== undefined && text !== null) n.textContent = text;
+        return n;
+    }
+    function fmt(n) { return Number(n).toLocaleString(); }
+    function statusClass(s) {
+        if (s === 'Delivered') return 'delivered';
+        if (s === 'Pending') return 'pending';
+        if (s === 'Cancelled') return 'cancelled';
+        if (s === 'Approved' || s === 'Waiting Driver Approval') return 'approved';
+        if (['Assigned', 'Accepted', 'Arrived', 'On The Way'].indexOf(s) > -1) return 'active';
+        return 'other';
+    }
+    function when(iso) {
+        if (!iso) return '';
+        var t = new Date(iso); if (isNaN(t)) return '';
+        var s = Math.max(0, Math.round((Date.now() - t.getTime()) / 1000));
+        if (s < 60) return 'just now';
+        if (s < 3600) return Math.floor(s / 60) + ' min ago';
+        if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+        if (s < 7 * 86400) return Math.floor(s / 86400) + ' d ago';
+        return t.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function niceDate(d, short) {
+        if (!d) return 'Date not set';
+        var p = new Date(d + 'T00:00:00'); if (isNaN(p)) return d;
+        return p.toLocaleDateString(undefined, short ? { day: 'numeric', month: 'short' }
+            : { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
 
-        const totalLitersElem = document.getElementById('totalLitersDisplay');
-        const pendingElem = document.getElementById('pendingBookingsNum');
-        const deliveredElem = document.getElementById('deliveredBookingsNum');
-        const todayElem = document.getElementById('todayDeliveriesDisplay');
-        const liveTodayElem = document.getElementById('liveDeliveries');
-        
-        const totalLitersEnd = {{ total_water|default(0) }};
-        const pendingEnd = {{ pending_orders|default(0) }};
-        const deliveredEnd = {{ delivered_orders|default(0) }};
-        const todayEnd = {{ today_bookings|default(0) }};
+    // ---------------------------------------------------- metrics
+    function renderStats(d) {
+        var s = d.stats;
+        $('totalLitersDisplay').textContent = fmt(s.liters_delivered);
+        $('litersSub').textContent = fmt(s.total_liters) + ' L booked in total (excl. cancelled)';
+        $('totalBookingsNum').textContent = fmt(s.total_bookings);
+        $('pendingBookingsNum').textContent = fmt(s.pending);
+        $('activeBookingsNum').textContent = fmt(s.active);
+        $('deliveredBookingsNum').textContent = fmt(s.delivered);
+        $('cancelledBookingsNum').textContent = fmt(s.cancelled);
+        $('todaySub').textContent = s.today_deliveries
+            ? s.today_deliveries + ' scheduled for today'
+            : 'Assigned or on the way';
+        $('bannerChip').textContent = s.today_deliveries
+            ? s.today_deliveries + ' delivery' + (s.today_deliveries === 1 ? '' : 's') + ' scheduled today'
+            : 'Water tanker bookings';
+        var note = $('totalBookingsNote');
+        note.hidden = !s.total_bookings;
+        note.textContent = s.total_bookings + ' booking' + (s.total_bookings === 1 ? '' : 's') + ' in total';
+        document.querySelectorAll('.metric').forEach(function (c) { c.classList.remove('is-loading'); });
+    }
 
-        if (totalLitersElem) animateNumber(totalLitersElem, 0, totalLitersEnd, 1500);
-        if (pendingElem) animateNumber(pendingElem, 0, pendingEnd, 1400);
-        if (deliveredElem) animateNumber(deliveredElem, 0, deliveredEnd, 1600);
-        if (todayElem) animateNumber(todayElem, 0, todayEnd, 1200);
-        if (liveTodayElem) animateNumber(liveTodayElem, 0, todayEnd, 1200);
-
-        // Water quality metrics simulation (purely aesthetic)
-        const phSpan = document.getElementById('phValue');
-        const tdsSpan = document.getElementById('tdsValue');
-        const turbiditySpan = document.getElementById('turbidity');
-        let currentTodayVal = todayEnd;
-        
-        function updateWaterMetrics() {
-            if (phSpan) phSpan.innerText = (6.9 + Math.random() * 0.5).toFixed(1);
-            if (tdsSpan) tdsSpan.innerText = Math.floor(90 + Math.random() * 55);
-            if (turbiditySpan) turbiditySpan.innerText = (0.5 + Math.random() * 0.7).toFixed(1);
-            // Simulate slight daily delivery variation for immersive feel
-            let newDeliveries = Math.floor(currentTodayVal + (Math.random() * 10 - 3));
-            if (newDeliveries < 0) newDeliveries = 0;
-            if (liveTodayElem) liveTodayElem.innerText = newDeliveries;
-            if (todayElem) todayElem.innerText = newDeliveries;
-            currentTodayVal = newDeliveries;
-        }
-        updateWaterMetrics();
-        setInterval(updateWaterMetrics, 8500);
-
-        // Card click toasts (lightweight interactive feedback)
-        document.querySelectorAll('.card-box').forEach(card => {
-            card.addEventListener('click', () => {
-                const msg = document.createElement('div');
-                const cardLabel = card.querySelector('p')?.innerText || 'metric';
-                msg.innerText = `🔍 ${cardLabel} insight refreshed`;
-                msg.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1E2F3E; color:white; padding:12px 28px; border-radius:48px; font-weight:500; z-index:9999; box-shadow:0 12px 24px rgba(0,0,0,0.1); font-size:14px; backdrop-filter:blur(4px);';
-                document.body.appendChild(msg);
-                setTimeout(() => msg.remove(), 1800);
-            });
+    function renderAlerts(d) {
+        var box = $('alerts'); box.textContent = '';
+        d.alerts.forEach(function (a) {
+            var row = el('div', 'alert-row' + (a.level === 'warn' ? ' warn' : ''));
+            row.appendChild(el('i', 'fa-solid ' + (a.level === 'warn' ? 'fa-triangle-exclamation' : 'fa-circle-info')));
+            row.appendChild(el('span', '', a.text));
+            box.appendChild(row);
         });
+    }
+
+    // ---------------------------------------------------- upcoming
+    // Next-step wording per REAL booking status (no new statuses are introduced).
+    function nextStep(u) {
+        var hasVeh = !!u.truck_number;
+        switch (u.status) {
+            case 'Pending': return ['Your booking has been received and is awaiting approval.', ''];
+            case 'Approved': return ['Your booking has been approved. Driver assignment details will appear when available.', ''];
+            case 'Waiting Driver Approval': return ['Your booking is being matched with a driver. Details will appear when available.', ''];
+            case 'Assigned': return [hasVeh ? 'A driver and vehicle have been assigned to your booking.' : 'A driver has been assigned to your booking. Vehicle details will appear when available.', ''];
+            case 'Accepted': return ['Your driver has accepted your booking.', ''];
+            case 'Arrived': return ['Your driver has arrived. Open tracking to view the available delivery updates.', ''];
+            case 'On The Way': return ['Your delivery is in progress. Open tracking to view the available delivery updates.', ''];
+            case 'Delivered': return ['Your delivery is complete. View your booking history for the final details.', 'ok'];
+            case 'Cancelled': return ['This booking was cancelled. View your booking history for details.', 'bad'];
+            default: return ['Open tracking to view the latest status of your booking.', ''];
+        }
+    }
+
+    function renderUpcoming(d) {
+        var u = d.upcoming, track = '/history';
+        $('upEmpty').hidden = !!u; $('upBody').hidden = !u; $('upStatus').hidden = !u;
+        if (u) {
+            var badge = $('upStatus'); badge.textContent = u.status; badge.className = 'status ' + statusClass(u.status);
+            $('upQty').textContent = fmt(u.quantity) + ' L';
+            $('upType').textContent = u.water_type || '—';
+            $('upAddr').textContent = u.address || 'Address not available';
+
+            // Delivery Preparation: schedule / driver & vehicle / reference - all straight from the booking
+            $('upWhen').textContent = niceDate(u.delivery_date) + (u.delivery_time ? ' · ' + u.delivery_time : '');
+            $('upRef').textContent = u.ref || '—';
+            var st = $('upDriverState'), note = $('upDriverNote');
+            if (u.driver_name) {
+                st.textContent = 'Driver assigned';
+                note.textContent = u.driver_name + (u.truck_number ? ' · ' + u.truck_number : ' · vehicle details not available yet');
+            } else if (u.truck_number) {
+                st.textContent = 'Vehicle details available';
+                note.textContent = u.truck_number;
+            } else {
+                st.textContent = 'Driver not assigned yet';
+                note.textContent = 'Driver and vehicle details will appear once available.';
+            }
+
+            var ns = nextStep(u);
+            $('upNextText').textContent = ns[0];
+            $('upNext').className = 'next-msg' + (ns[1] ? ' ' + ns[1] : '');
+
+            track = '/live-status/' + encodeURIComponent(u.id);
+            var ol = $('upSteps'); ol.textContent = '';
+            u.timeline.forEach(function (stp) {
+                var li = el('li', stp.done ? 'done' : '', stp.label);
+                if (stp.done && stp.at) li.appendChild(el('small', '', when(stp.at)));
+                ol.appendChild(li);
+            });
+        }
+        $('upTrack').setAttribute('href', track);
+        $('sideTrack').setAttribute('href', track);
+    }
+
+    // ---------------------------------------------------- charts
+    // light grey "track" behind each bar, like the reference design
+    var trackPlugin = {
+        id: 'barTrack',
+        beforeDatasetsDraw: function (chart) {
+            var meta = chart.getDatasetMeta(0), area = chart.chartArea, ctx = chart.ctx;
+            ctx.save(); ctx.fillStyle = '#f2f2f6';
+            meta.data.forEach(function (bar) {
+                var w = bar.width, x = bar.x - w / 2, r = Math.min(8, w / 2);
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(x, area.top, w, area.bottom - area.top, r); else ctx.rect(x, area.top, w, area.bottom - area.top);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+    };
+    var tipStyle = { backgroundColor: '#16161d', titleColor: '#fff', bodyColor: '#e8e8ef', padding: 10, cornerRadius: 8, displayColors: false };
+    var tickStyle = { color: '#9a9aa8', font: { size: 11 } };
+
+    function renderBar(d) {
+        if (typeof Chart === 'undefined') return;
+        var n = parseInt($('barRange').value, 10) || 8;
+        var c = d.bookings_chart || { labels: [], values: [] };
+        var labels = c.labels.slice(-n), values = c.values.slice(-n);
+        var total = values.reduce(function (a, b) { return a + b; }, 0);
+        $('barTotal').textContent = fmt(total);
+        $('barBox').classList.toggle('empty', total === 0);
+        var nice = labels.map(function (l) { return niceDate(l, true); });
+        if (!barChart) {
+            barChart = new Chart($('activityChart').getContext('2d'), {
+                type: 'bar', plugins: [trackPlugin],
+                data: { labels: [], datasets: [{ label: 'Bookings', data: [], backgroundColor: BRAND, borderRadius: 8, borderSkipped: false, maxBarThickness: 30 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false },
+                        tooltip: Object.assign({}, tipStyle, { callbacks: {
+                            title: function (i) { return 'Week of ' + i[0].label; },
+                            label: function (i) { return i.parsed.y + ' booking' + (i.parsed.y === 1 ? '' : 's'); } } }) },
+                    scales: {
+                        x: { grid: { display: false }, border: { display: false }, ticks: tickStyle, title: { display: true, text: 'Week starting', color: '#9a9aa8', font: { size: 11 } } },
+                        y: { beginAtZero: true, border: { display: false }, grid: { color: '#f0f0f4' }, ticks: Object.assign({ precision: 0 }, tickStyle), title: { display: true, text: 'Bookings', color: '#9a9aa8', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+        barChart.data.labels = nice; barChart.data.datasets[0].data = values;
+        barChart.update(reduceMotion ? 'none' : undefined);
+    }
+
+    function renderLine(d) {
+        var c = d.chart, has = c.values.length >= 1;
+        $('lineTotal').textContent = fmt(d.stats.liters_delivered) + ' L';
+        $('chartBox').classList.toggle('empty', !has);
+        $('lineEmptyMsg').textContent = 'No completed deliveries yet. Your delivered liters will appear here.';
+        if (typeof Chart === 'undefined') return;
+        if (!lineChart) {
+            lineChart = new Chart($('performanceChart').getContext('2d'), {
+                type: 'bar', plugins: [trackPlugin],
+                data: { labels: [], datasets: [{ label: 'Liters delivered', data: [], backgroundColor: BRAND, borderRadius: 8, borderSkipped: false, maxBarThickness: 30 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false },
+                        tooltip: Object.assign({}, tipStyle, { callbacks: {
+                            title: function (i) { return 'Delivered ' + i[0].label; },
+                            label: function (i) { return fmt(i.parsed.y) + ' L'; } } }) },
+                    scales: {
+                        x: { grid: { display: false }, border: { display: false }, ticks: Object.assign({ maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, tickStyle), title: { display: true, text: 'Delivery date', color: '#9a9aa8', font: { size: 11 } } },
+                        y: { beginAtZero: true, border: { display: false }, grid: { color: '#f0f0f4' }, ticks: tickStyle, title: { display: true, text: 'Liters', color: '#9a9aa8', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+        lineChart.data.labels = c.labels.map(function (l) { return niceDate(l, true); });
+        lineChart.data.datasets[0].data = c.values;
+        lineChart.update(reduceMotion ? 'none' : undefined);
+    }
+
+    // ---------------------------------------------------- water quality
+    function renderWater(d) {
+        var w = d.water_quality, grid = $('wqGrid'), badge = $('wqBadge');
+        grid.textContent = '';
+        var items = [['ph', 'fa-flask', 'pH level', ''], ['tds', 'fa-droplet', 'TDS', ' mg/L'], ['turbidity', 'fa-eye', 'Turbidity', ' NTU']];
+        if (w.state === 'live') {
+            badge.textContent = 'Live sensor reading'; badge.className = 'wq-badge live';
+            $('wqMsg').textContent = 'Source: ' + w.source + ' · measured ' + when(w.measured_at) + ' (' + new Date(w.measured_at).toLocaleString() + ')';
+            items.forEach(function (it) {
+                var v = w.values[it[0]], cell = el('div', 'wq-cell');
+                cell.appendChild(el('i', 'fa-solid ' + it[1]));
+                cell.appendChild(el('div', 'v', (it[0] === 'tds' ? Math.round(v) : v.toFixed(1)) + it[3]));
+                cell.appendChild(el('p', '', it[2]));
+                grid.appendChild(cell);
+            });
+        } else {
+            badge.textContent = 'Reference ranges — not a live measurement'; badge.className = 'wq-badge';
+            var msg = w.message;
+            if (w.state === 'stale') msg += ' Last sensor reading: ' + new Date(w.measured_at).toLocaleString() + (w.source ? ' (' + w.source + ')' : '') + '.';
+            $('wqMsg').textContent = msg;
+            items.forEach(function (it) {
+                var cell = el('div', 'wq-cell ref');
+                cell.appendChild(el('i', 'fa-solid ' + it[1]));
+                cell.appendChild(el('div', 'v', w.reference[it[0]]));
+                cell.appendChild(el('p', '', it[2] + ' (typical acceptable range)'));
+                grid.appendChild(cell);
+            });
+        }
+        $('wqFoot').textContent = (w.state === 'live' ? '' : w.reference.note + ' ') + w.disclaimer +
+            ' Real values depend on actual testing and the applicable drinking-water standards.';
+    }
+
+    // ---------------------------------------------------- bookings table
+    var TABS = [['all', 'All'], ['Pending', 'Pending'], ['active', 'Active'], ['Delivered', 'Delivered'], ['Cancelled', 'Cancelled']];
+    function matchesTab(b, tab) {
+        if (tab === 'all') return true;
+        if (tab === 'active') return statusClass(b.status) === 'active';
+        return b.status === tab;
+    }
+    function matchesQuery(b, q) {
+        if (!q) return true;
+        var hay = [b.ref, b.water_type, b.status, b.delivery_date, niceDate(b.delivery_date, true), String(b.quantity)].join(' ').toLowerCase();
+        return q.toLowerCase().split(/\s+/).every(function (part) { return hay.indexOf(part) > -1; });
+    }
+
+    function renderTable(d) {
+        var rows = d.bookings || [];
+        var inSearch = rows.filter(function (b) { return matchesQuery(b, table.q); });
+
+        var tabs = $('tabs'); tabs.textContent = '';
+        TABS.forEach(function (t) {
+            var n = inSearch.filter(function (b) { return matchesTab(b, t[0]); }).length;
+            var btn = el('button', 'tab' + (table.tab === t[0] ? ' on' : ''));
+            btn.type = 'button'; btn.setAttribute('role', 'tab'); btn.setAttribute('aria-selected', table.tab === t[0] ? 'true' : 'false');
+            btn.appendChild(document.createTextNode(t[1])); btn.appendChild(el('span', 'n', String(n)));
+            btn.addEventListener('click', function () { table.tab = t[0]; table.page = 1; renderTable(current); });
+            tabs.appendChild(btn);
+        });
+
+        var list = inSearch.filter(function (b) { return matchesTab(b, table.tab); });
+        var pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+        if (table.page > pages) table.page = pages;
+        var start = (table.page - 1) * PAGE_SIZE, slice = list.slice(start, start + PAGE_SIZE);
+
+        $('feedFoot').hidden = d.activity_total <= rows.length;
+        var body = $('recentBody'); body.textContent = '';
+        if (!slice.length) {
+            var tr = el('tr'), td = el('td', 'empty-cell'); td.colSpan = 6;
+            if (!rows.length) {
+                td.appendChild(el('div', 'muted', 'No bookings found. Start by booking a tanker!'));
+                var a = el('a', 'btn btn-primary', 'Book Water Tanker'); a.href = '/booking'; a.style.marginTop = '12px';
+                td.appendChild(a);
+            } else {
+                td.appendChild(el('div', 'muted', 'No bookings match your search or filter.'));
+            }
+            tr.appendChild(td); body.appendChild(tr);
+        }
+        slice.forEach(function (b) {
+            var tr = el('tr');
+            function cell(label, child, cls) {
+                var c = el('td', cls || ''); c.setAttribute('data-label', label);
+                if (typeof child === 'string') c.textContent = child; else c.appendChild(child);
+                tr.appendChild(c);
+            }
+            cell('Reference', b.ref, 'ref-cell');
+            cell('Water type', b.water_type || '—');
+            cell('Quantity', fmt(b.quantity) + ' L');
+            cell('Scheduled', b.delivery_date ? niceDate(b.delivery_date, true) + (b.delivery_time ? ' · ' + b.delivery_time : '') : '—');
+            cell('Status', el('span', 'status ' + statusClass(b.status), b.status || '—'));
+            var final = b.status === 'Delivered' || b.status === 'Cancelled';
+            var act = el('a', 'act'); act.href = '/live-status/' + encodeURIComponent(b.id);
+            act.appendChild(document.createTextNode(final ? 'View ' : 'Track '));
+            act.appendChild(el('i', 'fa-solid fa-arrow-right')); act.style.fontSize = '12.5px';
+            act.setAttribute('aria-label', (final ? 'View booking ' : 'Track booking ') + b.ref);
+            cell('Action', act);
+            body.appendChild(tr);
+        });
+
+        $('pagerInfo').textContent = list.length
+            ? 'Showing ' + (start + 1) + '–' + (start + slice.length) + ' of ' + list.length
+            : 'Showing 0 of 0';
+        $('pgFirst').disabled = $('pgPrev').disabled = table.page <= 1;
+        $('pgNext').disabled = $('pgLast').disabled = table.page >= pages;
+        table._pages = pages;
+    }
+
+    function setQuery(q, source) {
+        table.q = q.trim(); table.page = 1;
+        if (source !== 'top') $('topSearch').value = q;
+        if (source !== 'table') $('tableSearch').value = q;
+        renderTable(current);
+    }
+
+    $('topSearch').addEventListener('input', function (e) { setQuery(e.target.value, 'top'); });
+    $('topSearch').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); $('tabs').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' }); }
     });
+    $('tableSearch').addEventListener('input', function (e) { setQuery(e.target.value, 'table'); });
+    $('pgFirst').addEventListener('click', function () { table.page = 1; renderTable(current); });
+    $('pgPrev').addEventListener('click', function () { table.page = Math.max(1, table.page - 1); renderTable(current); });
+    $('pgNext').addEventListener('click', function () { table.page = Math.min(table._pages || 1, table.page + 1); renderTable(current); });
+    $('pgLast').addEventListener('click', function () { table.page = table._pages || 1; renderTable(current); });
+    $('barRange').addEventListener('change', function () { renderBar(current); });
+
+    // ---------------------------------------------------- render + refresh
+    function renderAll(d) {
+        current = d;
+        renderStats(d); renderAlerts(d); renderUpcoming(d); renderBar(d); renderLine(d); renderWater(d); renderTable(d);
+        $('lastUpdated').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    function showError(msg, loginLink) {
+        var box = $('liveError'); box.textContent = msg + ' ';
+        if (loginLink) { var a = el('a', '', 'Log in'); a.href = '/login'; box.appendChild(a); }
+        box.classList.add('show');
+    }
+    function refresh(manual) {
+        if (inflight) return;
+        inflight = true; lastFetch = Date.now();
+        var btn = $('refreshBtn'); btn.disabled = true; btn.classList.add('spin');
+        if (manual) document.querySelectorAll('.metric').forEach(function (c) { c.classList.add('is-loading'); });
+        var ctl = window.AbortController ? new AbortController() : null;
+        var timer = setTimeout(function () { if (ctl) ctl.abort(); }, TIMEOUT_MS);
+        fetch('/api/dashboard/summary', { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined })
+            .then(function (r) {
+                if (r.status === 401) { var e = new Error('auth'); e.auth = true; throw e; }
+                if (!r.ok) throw new Error('http ' + r.status);
+                return r.json();
+            })
+            .then(function (d) { $('liveError').classList.remove('show'); renderAll(d); })
+            .catch(function (e) {
+                document.querySelectorAll('.metric').forEach(function (c) { c.classList.remove('is-loading'); });
+                if (e && e.auth) showError('Your session has expired.', true);
+                else showError("Couldn't refresh just now. Showing the last data we loaded (" + $('lastUpdated').textContent + ").");
+            })
+            .then(function () { clearTimeout(timer); inflight = false; btn.disabled = false; btn.classList.remove('spin'); });
+    }
+    function schedule() {
+        clearTimeout(pollTimer);
+        if (document.hidden) return;                // paused while the tab is hidden
+        pollTimer = setTimeout(function () { refresh(false); schedule(); }, POLL_MS);
+    }
+    $('refreshBtn').addEventListener('click', function () { refresh(true); schedule(); });
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { clearTimeout(pollTimer); return; }
+        if (Date.now() - lastFetch > MIN_GAP_MS) refresh(false);
+        schedule();
+    });
+    window.addEventListener('pageshow', function (e) { if (e.persisted) refresh(false); });
+
+    // ---------------------------------------------------- chrome: mobile nav + profile menu
+    function setNav(open) {
+        document.body.classList.toggle('nav-open', open);
+        $('menuBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    $('menuBtn').addEventListener('click', function () { setNav(!document.body.classList.contains('nav-open')); });
+    $('scrim').addEventListener('click', function () { setNav(false); });
+    var pbtn = $('profileBtn'), pmenu = $('profileMenu');
+    function setMenu(open) { pmenu.classList.toggle('open', open); pbtn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    pbtn.addEventListener('click', function (e) { e.stopPropagation(); setMenu(!pmenu.classList.contains('open')); });
+    document.addEventListener('click', function (e) { if (!pmenu.contains(e.target)) setMenu(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { setMenu(false); setNav(false); } });
+
+    // ---------------------------------------------------- first screen ends after the chart-card text
+    // The "Booking activity" / "Liters delivered" cards show only their heading text on the first screen;
+    // the chart areas start exactly at the bottom edge of the viewport and appear after scrolling.
+    (function () {
+        var boxes = [$('barBox'), $('chartBox')], MIN_GAP = 28, MAX_GAP = 520, queued = false;
+        function place() {
+            queued = false;
+            var vh = window.innerHeight, sy = window.pageYOffset || 0;
+            var gaps = boxes.map(function (b) {
+                var cur = parseFloat(getComputedStyle(b).marginTop) || 0;
+                var natural = b.getBoundingClientRect().top + sy - cur;      // top of the chart area with no extra gap
+                return Math.min(MAX_GAP, Math.max(MIN_GAP, Math.ceil(vh - natural)));
+            });
+            if (Math.abs(gaps[0] - gaps[1]) < 8) gaps[0] = gaps[1] = Math.max(gaps[0], gaps[1]);   // side by side: keep both aligned
+            boxes.forEach(function (b, i) { if (parseFloat(b.style.marginTop) !== gaps[i]) b.style.marginTop = gaps[i] + 'px'; });
+        }
+        function queue() { if (!queued) { queued = true; requestAnimationFrame(place); } }
+        window.addEventListener('resize', queue);
+        window.addEventListener('orientationchange', queue);
+        window.addEventListener('load', queue);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(queue);
+        if (window.ResizeObserver) new ResizeObserver(queue).observe($('mainDashboard'));   // alerts / data loading above the charts
+        place();
+    })();
+
+    renderAll(INITIAL);
+    schedule();
+})();
 </script>
 
 <!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
@@ -820,9 +1001,6 @@
             history.pushState({ backTrap: true }, "", location.href);
         }
     }
-    // Re-arm on every visit to this page, including when the browser
-    // restores it from cache after a Back/Forward press (pageshow fires
-    // in both cases; a plain inline script only runs on the first load).
     window.addEventListener("pageshow", armTrap);
     window.addEventListener("popstate", function () {
         armTrap();

@@ -1,0 +1,75 @@
+{% extends "fleet_base.html" %}
+{% block title %}Delivery #{{ d.booking_ref }}{% endblock %}
+{% block crumbs %}
+<nav class="crumbs" aria-label="Breadcrumb">
+    <a href="{{ url_for('admin_live_tracking') }}">Fleet Map</a><span class="sep">›</span>
+    <span>Delivery #{{ d.booking_ref }}</span>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-head"><h2><i class="fas fa-box"></i> Delivery details <span class="ref">#{{ d.booking_ref }}</span></h2></div>
+<div class="grid grid-even">
+    <div class="card">
+        <h3>Delivery</h3>
+        <dl class="kv">
+            <dt>Customer</dt><dd>{{ d.customer or '—' }}</dd>
+            <dt>Status</dt><dd><span class="badge b-blue">{{ d.status or '—' }}</span></dd>
+            <dt>Delivery address</dt><dd>{{ d.address or 'No address on file' }}</dd>
+            <dt>Quantity</dt><dd>{{ d.quantity or '—' }}</dd>
+            <dt>Assigned</dt><dd>{{ d.driver_assigned_at[:19].replace('T', ' ') if d.driver_assigned_at else '—' }}</dd>
+            <dt>Route deviation</dt><dd>{{ 'Driver deviated from the planned route' if d.route_deviated else 'None recorded' }}</dd>
+        </dl>
+        <h3 style="margin-top:18px;">Driver</h3>
+        <dl class="kv">
+            <dt>Driver</dt><dd>{{ d.driver_name or 'Not assigned' }}</dd>
+            <dt>Vehicle</dt><dd>{{ d.truck_number or '—' }}</dd>
+            <dt>Location signal</dt>
+            <dd id="fresh"></dd>
+        </dl>
+        <div class="card-links" style="margin-top:14px;">
+            {% if d.driver_id %}
+            <a href="{{ url_for('fleet_driver_page', driver_id=d.driver_id) }}"><i class="fa-solid fa-id-badge"></i> Driver details</a>
+            {% endif %}
+            <a href="{{ url_for('booking_management') }}"><i class="fa-solid fa-table-list"></i> Booking management</a>
+        </div>
+    </div>
+    <div class="stack">
+        <div class="map-box"><div id="map" class="map map-sm"></div><div class="map-banner" id="mapBanner"></div></div>
+        <div class="map-note" id="routeNote">Loading route…</div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    const D = {{ d | tojson }};
+    const API = {{ url_for('fleet_delivery_api', booking_id=d.booking_id) | tojson }};
+    const num = v => typeof v === 'number' && isFinite(v);
+    document.getElementById('fresh').innerHTML = AquaFleet.freshBadge(D.location_freshness) + ' ' + AquaFleet.esc(AquaFleet.freshText(D.location_freshness, D.last_gps_age_s, D.last_gps_label));
+    const map = AquaFleet.createMap('map', { bannerId: 'mapBanner' });
+    const pts = [];
+    if (num(D.customer_lat) && num(D.customer_lng)) {
+        L.circleMarker([D.customer_lat, D.customer_lng], { radius: 7, color: '#fff', fillColor: '#B23B30', fillOpacity: 1, weight: 2 }).addTo(map)
+            .bindPopup('<div class="pp-title">📍 ' + AquaFleet.esc(D.customer || 'Customer') + '</div><div class="pp-row">' + AquaFleet.esc(D.address || '') + '</div>');
+        pts.push([D.customer_lat, D.customer_lng]);
+    }
+    if (num(D.driver_lat) && num(D.driver_lng)) {
+        const color = D.location_freshness === 'live' ? '#157A50' : '#A5690C';
+        L.marker([D.driver_lat, D.driver_lng], { icon: AquaFleet.truckIcon(color, D.location_freshness !== 'live') }).addTo(map)
+            .bindPopup('<div class="pp-title">🚛 ' + AquaFleet.esc(D.driver_name || 'Driver') + '</div><div class="pp-row">Vehicle: <b>' + AquaFleet.esc(D.truck_number || '—') + '</b></div><div class="pp-row">' + AquaFleet.esc(AquaFleet.freshText(D.location_freshness, D.last_gps_age_s, D.last_gps_label)) + '</div>');
+        pts.push([D.driver_lat, D.driver_lng]);
+    }
+    if (pts.length) map.fitBounds(pts, { padding: [50, 50], maxZoom: 16 });
+    const note = document.getElementById('routeNote');
+    if (!pts.length) note.textContent = 'No coordinates are available for this delivery or its driver, so nothing can be shown on the map.';
+    fetch(API, { credentials: 'same-origin', cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(j => {
+        const r = j.delivery.route;
+        if (r.available) {
+            const line = L.polyline(r.geometry, { color: '#0E7C86', weight: 5, opacity: .85 }).addTo(map);
+            map.fitBounds(line.getBounds(), { padding: [50, 50] });
+            note.textContent = 'Road route (OpenStreetMap data via OSRM): ' + r.distance_km + ' km, about ' + r.eta_min + ' min.';
+        } else { note.textContent = 'Route unavailable: ' + (r.reason || 'unknown reason'); }
+    }).catch(e => { note.textContent = 'Route could not be loaded (' + e.message + ').'; });
+})();
+</script>
+{% endblock %}

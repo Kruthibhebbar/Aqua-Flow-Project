@@ -50,7 +50,7 @@
         background: var(--ink);
         background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
         padding: 0 32px; display: flex; align-items: center; justify-content: space-between;
-        height: 72px; flex-shrink: 0; position: relative; z-index: 30;
+        height: 72px; flex-shrink: 0; position: sticky; top: 0; z-index: 30;
         border-top: 4px solid var(--cyan-glow);
     }
     .brand { display: flex; align-items: center; gap: 13px; }
@@ -79,6 +79,9 @@
         color: #C7D6DB; font-weight: 600; font-size: 11.5px; transition: background .15s, color .15s;
     }
     .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .dispatch-link.fin-nav-dashboard { background: var(--cyan-glow); border-color: var(--cyan-glow); color: var(--ink); font-weight: 700; box-shadow: 0 0 0 3px rgba(38,208,201,.18); }
+    .dispatch-link.fin-nav-dashboard:hover { background: #4fe0da; color: var(--ink); }
+    @media (max-width: 760px) { .topbar-right { gap: 6px; } .dispatch-link:not(.fin-nav-dashboard) .fin-nav-label { display: none; } }
     .admin-chip {
         display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 5px; border-radius: var(--r-pill);
         background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
@@ -189,7 +192,7 @@
             </div>
         </div>
         <div class="topbar-right">
-            <a href="/admin-dashboard" class="dispatch-link"><i class="fas fa-arrow-left"></i>Back to Dashboard</a>
+            {% set finance_nav_current = 'transactions' %}{% include '_finance_nav_links.html' %}
             <div class="admin-chip">
                 <div class="admin-avatar">A</div>
                 <span>Admin</span>

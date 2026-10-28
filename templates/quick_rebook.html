@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quick Rebook | AquaFlow</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/booking-suite.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/booking-suite.css') }}?v=rebook-fit-2">
 </head>
 <body class="rebook-page">
 
@@ -173,6 +173,72 @@
     setTimeout(() => { el.style.opacity = '0'; el.style.transform='translateY(6px)'; setTimeout(()=>el.remove(), 250); }, 3600);
   }
 
+  // ---- Make the first row of cards end exactly at the bottom of the first screen ----
+  // The whole card (address, fields, Rebook button and "Remove from quick list") stays
+  // inside the first screen; cards from the next row only appear after scrolling.
+  // Measured against the real window height, so it adapts to any screen size.
+  const FOLD_GAP = 10;      // px (as seen on screen) kept free under the first row
+  const MAX_STRETCH = 260;  // never stretch a card more than this on very tall screens
+  let fitQueued = false;
+
+  function zoomScale(){
+    // The page uses CSS zoom; measure how many on-screen px one CSS px really is.
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:100px;visibility:hidden;pointer-events:none;';
+    document.body.appendChild(probe);
+    const scale = probe.getBoundingClientRect().height / 100;
+    probe.remove();
+    return scale > 0 ? scale : 1;
+  }
+
+  function fitFirstRow(){
+    const cards = Array.from(document.querySelectorAll('.entity-card'));
+    cards.forEach(c => { c.style.minHeight = ''; });
+    document.body.classList.remove('fit-tight', 'fit-tighter');
+    const visible = cards.filter(c => c.style.display !== 'none');
+    if (!visible.length) return;
+
+    const firstTop = visible[0].offsetTop;
+    const row = visible.filter(c => Math.abs(c.offsetTop - firstTop) < 2);
+    const scale = zoomScale();
+    const heightOfRow = () => Math.max.apply(null, row.map(c => c.getBoundingClientRect().height));
+    const roomLeft = () => {
+      const gridTop = grid.getBoundingClientRect().top + window.scrollY;
+      return window.innerHeight - FOLD_GAP - gridTop - heightOfRow();
+    };
+
+    // Card too tall for this screen? Tighten the spacing above/inside it step by step.
+    if (roomLeft() < 0){
+      document.body.classList.add('fit-tight');
+      if (roomLeft() < 0) document.body.classList.add('fit-tighter');
+    }
+
+    let room = roomLeft();
+    if (room <= 1) return;                        // fills (or, on tiny screens, overflows) the first screen
+    room = Math.min(room, MAX_STRETCH);
+
+    const natural = heightOfRow();
+    const setHeight = h => row.forEach(c => { c.style.minHeight = (h / scale) + 'px'; });
+    setHeight(natural + room);
+
+    // one correction pass in case the browser rounded differently
+    const err = (natural + room) - heightOfRow();
+    if (Math.abs(err) > 1.5) setHeight(natural + room + err);
+  }
+
+  function scheduleFit(){
+    if (fitQueued) return;
+    fitQueued = true;
+    requestAnimationFrame(() => { fitQueued = false; fitFirstRow(); });
+  }
+  window.addEventListener('resize', scheduleFit);
+  window.addEventListener('load', scheduleFit);
+  if (document.fonts){
+    if (document.fonts.ready) document.fonts.ready.then(scheduleFit);
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', scheduleFit);
+  }
+  scheduleFit();
+
   function applyFilters(){
     const cards = Array.from(document.querySelectorAll('.entity-card'));
     let visibleCount = 0;
@@ -187,6 +253,7 @@
       card.style.display = show ? 'flex' : 'none';
       if (show) visibleCount++;
     });
+    scheduleFit();
     let notice = document.getElementById('noResultsNotice');
     if (visibleCount === 0 && cards.length > 0){
       if (!notice){
@@ -255,7 +322,7 @@
         if (data.ok){
           card.style.opacity = '0';
           card.style.transform = 'scale(.96)';
-          setTimeout(() => card.remove(), 180);
+          setTimeout(() => { card.remove(); scheduleFit(); }, 180);
           showToast('Removed from your quick-rebook list');
         } else {
           showToast(data.error || 'Could not remove this item', 'error');

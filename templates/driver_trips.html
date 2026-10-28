@@ -1,0 +1,103 @@
+{% extends "driver_base.html" %}
+{% from "_driver_macros.html" import tag, empty, trip_buttons %}
+
+{% block content %}
+{% set tab_icons = {'all': 'fa-table-cells-large', 'active': 'fa-truck', 'assigned': 'fa-clock', 'completed': 'fa-circle-check', 'cancelled': 'fa-ban', 'declined': 'fa-circle-xmark'} %}
+{% set tab_labels = {'all': 'All', 'active': 'Active', 'assigned': 'Awaiting response', 'completed': 'Completed', 'cancelled': 'Cancelled', 'declined': 'Declined'} %}
+
+<div class="trips-page">
+{% if notice %}<div class="alert tone-info" style="margin-bottom:16px"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span class="grow">{{ notice }}</span></div>{% endif %}
+
+<div class="row between" style="margin-bottom:16px;align-items:flex-end">
+    <nav class="tabs tabs-status" aria-label="Trip status">
+        {% for t in tabs %}
+        <a href="{{ tab_links[t] }}" data-status="{{ t }}" {% if result.tab == t %}aria-current="page"{% endif %}><i class="fa-solid {{ tab_icons[t] }} tab-ico" aria-hidden="true"></i><span class="tab-label">{{ tab_labels[t] }}</span> <span class="count">{{ result.counts[t] }}</span></a>
+        {% endfor %}
+    </nav>
+</div>
+
+<section class="panel" aria-label="Trips">
+    <form class="panel-head filters" method="get" action="{{ url_for('driver_trips') }}">
+        {% if result.tab != 'all' %}<input type="hidden" name="tab" value="{{ result.tab }}">{% endif %}
+        <div class="field" style="min-width:220px;flex:1">
+            <label for="f-q">Booking reference</label>
+            <input class="input" id="f-q" type="search" name="q" value="{{ query }}" placeholder="e.g. 6718a3f2" autocomplete="off">
+        </div>
+        <div class="field"><label for="f-from">From</label><input class="input" id="f-from" type="date" name="from" value="{{ date_from.isoformat() if date_from else '' }}"></div>
+        <div class="field"><label for="f-to">To</label><input class="input" id="f-to" type="date" name="to" value="{{ date_to.isoformat() if date_to else '' }}"></div>
+        <div class="field">
+            <label for="f-sort">Sort by</label>
+            <select class="select" id="f-sort" name="sort">
+                {% for value, label in [('newest', 'Newest first'), ('oldest', 'Oldest first'), ('status', 'Delivery stage'), ('litres', 'Water quantity')] %}
+                <option value="{{ value }}" {{ 'selected' if result.sort == value }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="row" style="padding-bottom:0">
+            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>Apply</button>
+            {% if filtered or result.sort != 'newest' %}<a class="btn" href="{{ clear_url }}">Clear</a>{% endif %}
+        </div>
+    </form>
+
+    {% if result.rows %}
+    <div class="table-wrap">
+        <table class="table table-cards">
+            <thead><tr><th>Reference</th><th>Status</th><th>Scheduled</th><th>Delivery address</th><th class="num">Water</th><th class="num">You earn</th><th><span class="af-sr">Actions</span></th></tr></thead>
+            <tbody>
+            {% for t in result.rows %}
+                <tr>
+                    <td class="ref">{{ t.ref }}</td>
+                    <td data-label="Status">{{ tag(t.status_label, t.tone) }}</td>
+                    <td class="nw" data-label="Scheduled">{{ t.date|af_date }}{% if t.time %}<div class="muted small">{{ t.time }}</div>{% endif %}</td>
+                    <td class="addr" data-label="Address">{{ t.address or '-' }}</td>
+                    <td class="num nw" data-label="Water">{{ t.litres|af_inr }} L</td>
+                    <td class="num nw" data-label="You earn">{% if t.share is not none %}&#8377;{{ t.share|af_inr }}{% else %}<span class="muted">{{ '-' if t.status != 'Cancelled' and t.status != 'Declined' else '' }}</span>{% endif %}</td>
+                    <td class="act-cell">
+                        <div class="row act">
+                            {{ trip_buttons(t) }}
+                            {% if t.status != 'Declined' %}<button type="button" class="btn btn-sm" data-trip-details="{{ t.id }}" aria-label="Details for {{ t.ref }}">Details</button>{% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="pager">
+        <span>Showing {{ (result.page - 1) * result.per_page + 1 }}-{{ (result.page - 1) * result.per_page + result.rows|length }} of {{ result.total }}</span>
+        {% if result.pages > 1 %}
+        <span class="btns">
+            {% if prev_url %}<a class="btn btn-sm" href="{{ prev_url }}"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i>Previous</a>{% endif %}
+            <span style="align-self:center">Page {{ result.page }} of {{ result.pages }}</span>
+            {% if next_url %}<a class="btn btn-sm" href="{{ next_url }}">Next<i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>{% endif %}
+        </span>
+        {% endif %}
+    </div>
+    {% else %}
+        {% if filtered %}
+            {{ empty('fa-filter-circle-xmark', 'No trips match these filters', 'Try a different reference or widen the date range.', clear_url, 'Clear filters') }}
+        {% elif result.counts['all'] == 0 and result.counts['declined'] == 0 %}
+            {{ empty('fa-route', 'No trips yet', 'When an admin assigns you a delivery it appears here. Keep yourself Online so you can be assigned.', url_for('driver_dashboard'), 'Back to dashboard') }}
+        {% else %}
+            {{ empty('fa-box-open', 'Nothing in ' ~ tab_labels[result.tab]|lower, 'Other tabs have trips. Pick a different status above.', url_for('driver_trips'), 'Show all trips') }}
+        {% endif %}
+    {% endif %}
+</section>
+</div>
+{% endblock %}
+
+{% block dialogs %}
+{% include "_driver_otp_dialog.html" %}
+<dialog class="af-dialog af-drawer" id="af-trip-drawer" aria-labelledby="af-trip-title">
+    <div class="af-dialog-head row between" style="align-items:flex-start">
+        <div><h2 id="af-trip-title">Trip details</h2><p id="af-trip-sub"></p></div>
+        <button type="button" class="af-icon-btn" data-dialog-close aria-label="Close details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="af-dialog-body" id="af-trip-body" style="overflow-y:auto"></div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ driver_asset('js/driver-actions.js') }}"></script>
+<script src="{{ driver_asset('js/driver-trips.js') }}"></script>
+{% endblock %}

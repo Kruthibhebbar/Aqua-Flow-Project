@@ -22,7 +22,8 @@ def init_driver_management(
     bookings_collection,
     settings_collection=None,
     transactions_collection=None,
-    documents_collection=None
+    documents_collection=None,
+    support_collection=None
 ):
 
     # =====================================================
@@ -153,7 +154,10 @@ def init_driver_management(
             if documents_collection is not None:
                 for doc in documents_collection.find({"driver_email": driver_email}):
                     driver_documents[doc.get("document_type")] = {
+                        "id": str(doc["_id"]),
                         "status": doc.get("status", "Pending"),
+                        "expiry_date": doc.get("expiry_date"),
+                        "rejection_reason": doc.get("rejection_reason"),
                         "file_path": doc.get("file_path"),
                         "uploaded_at": (
                             doc["uploaded_at"].strftime("%d %b %Y")
@@ -224,6 +228,22 @@ def init_driver_management(
         )
 
         # =========================================
+        # OPEN DRIVER SUPPORT REQUESTS (red badges)
+        # =========================================
+
+        support_open = {}
+        if support_collection is not None:
+            try:
+                for row in support_collection.aggregate([
+                    {"$match": {"status": "Open"}},
+                    {"$group": {"_id": "$driver_email", "n": {"$sum": 1}}},
+                ]):
+                    if row["_id"]:
+                        support_open[row["_id"]] = row["n"]
+            except Exception:
+                support_open = {}
+
+        # =========================================
         # RENDER PAGE
         # =========================================
 
@@ -244,6 +264,10 @@ def init_driver_management(
             pending_requests=pending_requests,
 
             total_pending_payouts=total_pending_payouts,
+
+            support_open=support_open,
+
+            support_open_total=sum(support_open.values()),
 
             current_time=datetime.now()
         )
@@ -368,13 +392,30 @@ def init_driver_management(
     def driver_details(driver_id):
 
         # =========================================
+        # ADMIN ONLY
+        # This used to be open to anyone who could guess a driver id and
+        # returned the whole driver document (password hash, bank details).
+        # =========================================
+
+        if "admin_email" not in session and "admin" not in session:
+
+            return jsonify({
+
+                "success": False,
+                "message": "Unauthorized"
+            }), 401
+
+        # =========================================
         # GET DRIVER
         # =========================================
 
-        driver = drivers_collection.find_one({
+        try:
+            driver = drivers_collection.find_one({
 
-            "_id": ObjectId(driver_id)
-        })
+                "_id": ObjectId(driver_id)
+            })
+        except Exception:
+            driver = None
 
         if not driver:
 
@@ -382,6 +423,11 @@ def init_driver_management(
 
                 "success": False
             })
+
+        # Never send credentials or banking details to the browser from
+        # here - the finance page only needs the profile fields below.
+        for secret_field in ("password", "bank_details"):
+            driver.pop(secret_field, None)
 
         # =========================================
         # GET DRIVER BOOKINGS

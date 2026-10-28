@@ -10,6 +10,12 @@
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
         body{background:#eef3f9;min-height:100vh;padding:32px 16px;display:flex;flex-direction:column;align-items:center;}
 
+        .fin-bar{width:100%;max-width:640px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#0A1A22;border-top:4px solid #26D0C9;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-family:'Inter',system-ui,sans-serif}
+        .fin-bar .fb-brand{color:#fff;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:8px}
+        .fin-bar .fb-links{display:flex;gap:8px;flex-wrap:wrap}
+        .fin-bar .dispatch-link{text-decoration:none;display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:#C7D6DB;font-weight:600;font-size:.78rem}
+        .fin-bar .dispatch-link:hover{background:rgba(255,255,255,.14);color:#fff}
+        .fin-bar .dispatch-link.fin-nav-dashboard{background:#26D0C9;border-color:#26D0C9;color:#0A1A22;font-weight:700}
         .toolbar{max-width:640px;width:100%;display:flex;justify-content:flex-end;margin-bottom:14px;}
         .download-btn{background:#0d9488;color:#fff;border:none;padding:11px 22px;border-radius:999px;font-weight:600;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
         .download-btn:hover{background:#0f766e;}
@@ -38,12 +44,18 @@
 
         @media print {
             body{background:#fff;padding:0;}
-            .toolbar{display:none;}
+            .toolbar,.fin-bar{display:none;}
             .invoice{box-shadow:none;border-radius:0;max-width:100%;}
         }
     </style>
 </head>
 <body>
+    <header class="fin-bar" role="banner">
+        <div class="fb-brand"><i class="fa-solid fa-droplet"></i> AquaFlow Finance</div>
+        <nav class="fb-links" aria-label="Finance navigation">
+            {% set finance_nav_current = 'receipt' %}{% set finance_nav_extra = false %}{% include '_finance_nav_links.html' %}
+        </nav>
+    </header>
     <div class="toolbar">
         <button class="download-btn" onclick="window.print()"><i class="fa-solid fa-download"></i> Download PDF</button>
     </div>
@@ -74,7 +86,7 @@
                 <div class="block-value">
                     {% set bank = (driver.bank_details if driver else {}) or {} %}
                     <strong>{{ bank.account_holder_name or '—' }}</strong>
-                    A/C: {{ bank.account_number or '—' }}<br>
+                    A/C: {{ account_masked or '—' }}<br>
                     IFSC: {{ bank.ifsc or '—' }}
                 </div>
             </div>
@@ -90,9 +102,17 @@
                 <div class="block-value">{{ req.resolved_by or (ledger_txn.admin_remarks if ledger_txn else '—') }}</div>
             </div>
         </div>
+        {% if req.bank_reference %}
+        <div class="grid-two">
+            <div>
+                <div class="block-label">Bank / UPI Reference</div>
+                <div class="block-value txn-id">{{ req.bank_reference }}</div>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="totals">
-            <div class="t-row grand"><span>Amount Paid</span><span>₹{{ "{:,.0f}".format(req.amount) }}</span></div>
+            <div class="t-row grand"><span>Amount Paid</span><span>{{ req.amount|inr }}</span></div>
         </div>
 
         <div class="footer-note">

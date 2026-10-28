@@ -1,0 +1,86 @@
+{% extends "driver_base.html" %}
+{% from "_driver_macros.html" import tag %}
+
+{% block content %}
+{% set tones = {'Verified': 'success', 'Pending Review': 'warning', 'Rejected': 'danger', 'Expired': 'danger'} %}
+{% set c = overview.counts %}
+{% set need_action = c.rejected + c.expired + c.missing %}
+
+<div class="doc-page">
+
+<section class="ledger doc-ledger" aria-label="Document summary">
+    <div class="ledger-item"><div class="ledger-label"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>Verified</div><div class="ledger-value">{{ c.verified }}<small>of {{ overview.required_total }} required</small></div><div class="ledger-note">Checked by an admin</div></div>
+    <div class="ledger-item"><div class="ledger-label"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>Waiting for review</div><div class="ledger-value">{{ c.pending }}</div><div class="ledger-note">Submitted, not yet reviewed</div></div>
+    <div class="ledger-item{{ ' is-attn' if need_action }}"><div class="ledger-label"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>Need action</div><div class="ledger-value">{{ need_action }}</div><div class="ledger-note">Rejected, expired or missing</div></div>
+    <div class="ledger-item{{ ' is-attn' if c.expiring }}"><div class="ledger-label"><i class="fa-regular fa-clock" aria-hidden="true"></i>Expiring in 30 days</div><div class="ledger-value">{{ c.expiring }}</div><div class="ledger-note">Renew before they lapse</div></div>
+</section>
+
+<p class="doc-note muted small">Accepted files: {{ allowed_label }}, up to {{ max_mb }} MB. Your documents are private: only you and the AquaFlow admin team can open them.</p>
+
+<div class="doc-grid">
+{% for card in overview.cards %}
+    {% set d = card.doc %}
+    <article class="panel doc-card" aria-labelledby="doc-{{ card.type }}">
+        <div class="doc-head">
+            <div class="doc-head-top">
+                <span class="ico{{ (' tone-' ~ tones.get(d.status, '')) if d and tones.get(d.status) else '' }}"><i class="fa-solid {{ card.icon }}" aria-hidden="true"></i></span>
+                {% if d %}{{ tag(d.status, tones.get(d.status, 'muted')) }}{% else %}{{ tag('Not uploaded', 'muted') }}{% endif %}
+            </div>
+            <h3 id="doc-{{ card.type }}">{{ card.label }}</h3>
+            <p class="doc-req">{{ 'Required' if card.required else 'Optional' }}</p>
+        </div>
+        <p class="doc-help">{{ card.help }}</p>
+
+        {% if d %}
+        <div class="doc-details">
+            <dl class="kv doc-kv">
+                <dt>Uploaded</dt><dd>{{ d.uploaded_at|af_datetime }}</dd>
+                {% if d.expiry_date %}<dt>Expires</dt><dd>{{ d.expiry_date|af_date }}
+                    {% if d.expired %}<span class="tag tone-danger">Expired</span>
+                    {% elif d.expiring_soon %}<span class="tag tone-warning">{{ d.days_left }} day{{ 's' if d.days_left != 1 }} left</span>{% endif %}</dd>{% endif %}
+                {% if d.filename %}<dt>File</dt><dd>{{ d.filename }}{{ ' (' ~ d.size_label ~ ')' if d.size_label }}</dd>{% endif %}
+                {% if d.status == 'Verified' and d.reviewed_at %}<dt>Verified</dt><dd>{{ d.reviewed_at|af_date }}</dd>{% endif %}
+            </dl>
+            {% if d.status == 'Rejected' %}
+            <div class="alert tone-danger"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i><span class="grow"><b>Rejected.</b> {{ (d.rejection_reason.rstrip('. ') ~ '.') if d.rejection_reason else 'No reason was given.' }} Upload a corrected copy below.</span></div>
+            {% elif d.status == 'Expired' %}
+            <div class="alert tone-danger"><i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i><span class="grow">This document has expired. Upload the renewed copy.</span></div>
+            {% elif d.status == 'Pending Review' %}
+            <div class="alert tone-info"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i><span class="grow">Waiting for an admin to review it. You will be notified.</span></div>
+            {% endif %}
+            {% if d.has_file %}
+            <div class="row doc-actions"><a class="btn btn-sm" href="{{ d.view_url }}" target="_blank" rel="noopener"><i class="fa-regular fa-eye" aria-hidden="true"></i>View</a>
+                <a class="btn btn-sm" href="{{ d.download_url }}"><i class="fa-solid fa-download" aria-hidden="true"></i>Download</a></div>
+            {% else %}
+            <p class="muted small"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> The stored file couldn't be found. Please upload it again.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <form class="doc-form" data-doc-form data-type="{{ card.type }}" novalidate>
+            <label class="drop" tabindex="0" for="file-{{ card.type }}">
+                <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                <span data-drop-text>{{ 'Choose a file to replace this document' if d else 'Choose or drop a file here' }}</span>
+                <input type="file" id="file-{{ card.type }}" name="document" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp">
+            </label>
+            <div class="field-error" data-err="document" role="alert"></div>
+            {% if card.expiry %}
+            <div class="field doc-expiry"><label for="exp-{{ card.type }}">Expiry date{{ ' (optional)' if card.expiry == 'optional' }}</label>
+                <input class="input" type="date" id="exp-{{ card.type }}" name="expiry_date" min="{{ today_iso }}"><div class="field-error" data-err="expiry_date" role="alert"></div></div>
+            {% else %}
+            <p class="doc-noexp">No expiry date needed for this document.</p>
+            {% endif %}
+            {% if d %}<p class="doc-replace-note">A new file goes back to review, even if the old one was verified.</p>{% endif %}
+            <div class="progress-line" hidden><span></span></div>
+            <button class="btn btn-primary doc-submit" type="submit">{{ 'Replace document' if d else 'Upload document' }}</button>
+        </form>
+    </article>
+{% endfor %}
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ driver_asset('js/driver-documents.js') }}"></script>
+{% endblock %}

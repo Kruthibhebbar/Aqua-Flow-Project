@@ -2,410 +2,802 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#EEF3F4">
 <title>Users | AquaFlow Admin</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/booking-suite.css') }}">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
 <style>
+    /* =====================================================================
+       Admin Users page - AquaFlow Ops Console theme.
+       Design tokens and components deliberately mirror booking_management.html
+       so both pages read as one console. Fully self-contained: this page no
+       longer depends on booking-suite.css, and nothing here leaks to other pages.
+       ===================================================================== */
+    :root {
+        --ink: #0A1A22;
+        --ink-2: #123039;
+        --ink-soft: #55707A;
+        --ink-faint: #93A8AF;
+        --teal-900: #073239;
+        --teal-700: #0E6672;
+        --teal-600: #0E7C86;
+        --teal-500: #17A6B4;
+        --cyan-glow: #26D0C9;
+        --teal-050: #EAF4F5;
+        --teal-100: #DCEEEF;
 
-  /* =====================================================================
-     Page-specific additions on top of booking-suite.css. Same design
-     tokens (colors, radii, shadows, fonts) as Booking History - nothing
-     redefined here that the shared stylesheet already provides.
-     ===================================================================== */
+        --amber-600: #A5690C;
+        --amber-100: #FBF0DC;
+        --green-600: #157A50;
+        --green-100: #E1F5EA;
+        --red-600: #B23B30;
+        --red-100: #FBEAE8;
+        --blue-600: #2C5F9E;
+        --blue-100: #E8EFFA;
+        --violet-600: #5B4AA8;
+        --violet-100: #ECE9F9;
 
-  /* ---- directory panel (wraps the customer table) ---- */
-  .directory-panel{
-    background:var(--surface); border:1px solid var(--line);
-    border-radius:var(--r-lg); box-shadow:var(--shadow-xs);
-    overflow:hidden; margin-bottom:8px;
-  }
-  .directory-head{
-    padding:18px 22px; border-bottom:1px solid var(--line-soft);
-    display:flex; align-items:center; gap:10px;
-  }
-  .directory-head .dir-icon{
-    width:34px; height:34px; border-radius:9px; flex:none;
-    background:var(--blue-bg); color:var(--cobalt);
-    display:flex; align-items:center; justify-content:center;
-  }
-  .directory-head .dir-icon svg{ width:16px; height:16px; }
-  .directory-head h2{
-    font-family:'Space Grotesk',sans-serif; font-size:15.5px; font-weight:700; color:var(--navy);
-  }
-  .directory-head .count-chip{
-    background:var(--paper); color:var(--ink-500); font-size:11px; font-weight:700;
-    padding:3px 10px; border-radius:100px; border:1px solid var(--line);
-  }
+        --bg: #EEF3F4;
+        --surface: #FFFFFF;
+        --border: #DCE6E8;
+        --border-soft: #E7EEEF;
 
-  .table-scroll{ overflow-x:auto; }
-  table{ width:100%; border-collapse:collapse; min-width:1160px; }
-  thead{ background:var(--paper); }
-  th{
-    padding:12px 22px; text-align:left; font-size:10.5px; font-weight:700;
-    color:var(--ink-500); text-transform:uppercase; letter-spacing:.55px;
-    white-space:nowrap; border-bottom:1px solid var(--line);
-  }
-  td{
-    padding:15px 22px; border-bottom:1px solid var(--line-soft);
-    font-size:13px; color:var(--ink-900); vertical-align:middle;
-  }
-  tbody tr{ transition:background .12s; }
-  tbody tr:hover{ background:var(--paper); }
-  tbody tr:last-child td{ border-bottom:none; }
-  tbody tr.row-hidden{ display:none; }
+        --r-lg: 16px;
+        --r-md: 10px;
+        --r-sm: 7px;
+        --r-pill: 999px;
 
-  .user-cell{ display:flex; align-items:center; gap:12px; }
-  .user-name{ font-weight:700; color:var(--navy); font-size:13.5px; line-height:1.3; }
-  .user-joined{ font-size:11px; color:var(--ink-400); margin-top:2px; font-weight:600; }
+        --shadow-xs: 0 1px 2px rgba(10,26,34,.05);
+        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
+        --shadow-md: 0 16px 40px -18px rgba(10,26,34,.28);
+        --shadow-lg: 0 30px 70px -20px rgba(10,26,34,.35);
+    }
 
-  .contact-line{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-700); font-weight:500; }
-  .contact-line svg{ width:13px; height:13px; color:var(--ink-400); flex:none; }
-  .contact-line + .contact-line{ margin-top:5px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
 
-  .orders-pills{ display:flex; flex-wrap:wrap; gap:5px; max-width:230px; }
-  .pill{
-    display:inline-flex; align-items:center; padding:4px 10px; border-radius:100px;
-    font-size:10.5px; font-weight:700; white-space:nowrap;
-  }
-  .pill-total{ background:var(--blue-bg); color:var(--cobalt); }
-  .pill-delivered{ background:var(--green-bg); color:var(--green); }
-  .pill-cancelled{ background:var(--red-bg); color:var(--red); }
-  .pill-active{ background:var(--amber-bg); color:var(--amber); }
+    body {
+        background: var(--bg);
+        font-family: 'Inter', system-ui, sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+    }
 
-  .last-order-date{ font-weight:700; color:var(--navy); font-size:12px; }
-  .last-order-driver{ font-size:11.5px; color:var(--ink-500); margin-top:2px; font-weight:500; }
-  .last-order-driver b{ color:var(--cobalt); font-weight:700; }
-  .no-orders{ font-size:12.5px; color:var(--ink-400); font-style:italic; font-weight:500; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    a { color: inherit; }
+    button { font-family: 'Inter', sans-serif; }
 
-  button.status-pill{
-    font-family:'Inter',sans-serif; border:none; cursor:pointer; transition:filter .12s, transform .12s;
-  }
-  button.status-pill:hover{ filter:brightness(.94); }
-  button.status-pill:active{ transform:scale(.97); }
-  button.status-pill:disabled{ opacity:.6; cursor:not-allowed; }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #C3D3D6; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--teal-600); }
 
-  .row-actions{ display:flex; gap:8px; }
-  .row-icon-btn{
-    width:33px; height:33px; border-radius:9px; border:1px solid var(--line);
-    background:var(--surface); color:var(--cobalt); cursor:pointer;
-    display:flex; align-items:center; justify-content:center; transition:.15s; flex:none;
-  }
-  .row-icon-btn svg{ width:14px; height:14px; }
-  .row-icon-btn:hover{ background:#F3F7FF; border-color:var(--cobalt); }
-  .row-icon-btn.msg-btn{ color:#7C3AED; }
-  .row-icon-btn.msg-btn:hover{ background:#F5F3FF; border-color:#7C3AED; }
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
-  .no-results-cell{ text-align:center; color:var(--ink-400); padding:40px 10px; font-size:13.5px; font-weight:500; }
+    /* ===== TOP BAR ===== */
+    .topbar {
+        background: var(--ink);
+        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
+        padding: 0 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        height: 72px;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 30;
+        border-top: 4px solid var(--cyan-glow);
+    }
 
-  /* ---- modals (history / message / confirm) ---- */
-  .modal-overlay{
-    display:none; position:fixed; inset:0; background:rgba(11,21,38,.55);
-    backdrop-filter:blur(4px); z-index:3000; align-items:center; justify-content:center; padding:20px;
-  }
-  .modal-overlay.open{ display:flex; }
-  .modal-box{
-    background:var(--surface); border-radius:var(--r-lg); width:560px; max-width:100%;
-    max-height:85vh; display:flex; flex-direction:column; box-shadow:var(--shadow-lg);
-    animation:modalIn .18s ease;
-  }
-  @keyframes modalIn{ from{ opacity:0; transform:translateY(10px) scale(.98); } to{ opacity:1; transform:none; } }
-  .modal-header{
-    display:flex; justify-content:space-between; align-items:flex-start;
-    padding:22px 24px; border-bottom:1px solid var(--line-soft);
-  }
-  .modal-title{ font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:700; color:var(--navy); }
-  .modal-subtitle{ font-size:12.5px; color:var(--ink-500); margin-top:4px; font-weight:500; }
-  .modal-close{
-    width:32px; height:32px; border-radius:50%; border:none; background:var(--paper);
-    color:var(--ink-500); cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;
-  }
-  .modal-close svg{ width:14px; height:14px; }
-  .modal-close:hover{ background:var(--line-soft); color:var(--navy); }
-  .modal-body{ padding:20px 24px; overflow-y:auto; }
-  .modal-footer{
-    padding:16px 24px 20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--line-soft);
-  }
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .brand-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(155deg, var(--teal-500), var(--teal-700));
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
+    }
+    .brand-mark i { font-size: 17px; color: #fff; }
+    .brand-text h1 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px; font-weight: 700; color: #fff;
+        letter-spacing: -.1px; display: flex; align-items: center; gap: 9px; line-height: 1.1;
+    }
+    .brand-text .tag {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 9.5px; font-weight: 600; color: var(--cyan-glow);
+        background: rgba(38,208,201,.12);
+        border: 1px solid rgba(38,208,201,.25);
+        padding: 2.5px 8px; border-radius: var(--r-pill);
+        letter-spacing: .6px; text-transform: uppercase; white-space: nowrap;
+    }
+    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; font-weight: 400; }
 
-  .booking-card{
-    background:var(--paper); border:1px solid var(--line); border-radius:var(--r-md);
-    padding:15px 17px; margin-bottom:11px;
-  }
-  .booking-card:last-child{ margin-bottom:0; }
-  .booking-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:10px; }
-  .booking-date{ font-weight:700; color:var(--navy); font-size:12.5px; display:flex; align-items:center; gap:6px; }
-  .booking-date svg{ width:13px; height:13px; color:var(--ink-400); }
-  .booking-meta{ font-size:12.5px; color:var(--ink-700); display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; }
-  .booking-meta span b{ color:var(--navy); }
-  .booking-meta .full-row{ grid-column:1/-1; }
-  .history-loading, .history-empty{ text-align:center; color:var(--ink-400); padding:38px 10px; font-size:13.5px; font-weight:500; }
-  .history-loading .spin-ico{ display:inline-block; animation:spin .8s linear infinite; margin-right:6px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
 
-  .msg-target{
-    background:var(--blue-bg); border-radius:var(--r-md); padding:13px 15px;
-    margin-bottom:15px; font-size:13px; color:var(--blue); font-weight:500;
-  }
-  .msg-target b{ color:var(--navy); }
-  #messageText{
-    width:100%; min-height:120px; border:1px solid var(--line); border-radius:var(--r-md);
-    padding:13px 15px; font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical; outline:none; color:var(--ink-900);
-  }
-  #messageText:focus{ border-color:var(--cobalt); }
-  .quick-templates{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-  .chip{
-    padding:6px 13px; border-radius:100px; background:var(--paper); color:var(--ink-700);
-    font-size:11.5px; font-weight:600; cursor:pointer; border:1px solid var(--line); transition:.15s;
-  }
-  .chip:hover{ background:var(--blue-bg); color:var(--cobalt); border-color:#CBD8F7; }
+    .dispatch-link {
+        text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+        padding: 7px 14px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+        color: #C7D6DB; font-weight: 600; font-size: 11.5px; transition: background .15s, color .15s;
+        white-space: nowrap;
+    }
+    .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
 
-  /* ---- confirm modal (replaces native confirm()) ---- */
-  .confirm-box{ width:420px; text-align:center; }
-  .confirm-icon-wrap{
-    width:52px; height:52px; border-radius:14px; margin:6px auto 4px;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .confirm-icon-wrap svg{ width:24px; height:24px; }
-  .confirm-icon-wrap.danger{ background:var(--red-bg); color:var(--red); }
-  .confirm-icon-wrap.safe{ background:var(--green-bg); color:var(--green); }
-  .confirm-body{ padding:6px 8px 4px; }
-  .confirm-body h3{ font-family:'Space Grotesk',sans-serif; font-size:16.5px; color:var(--navy); margin-bottom:8px; }
-  .confirm-body p{ font-size:13px; color:var(--ink-500); line-height:1.55; }
-  .confirm-footer{ justify-content:center; }
+    .sync-chip {
+        background: rgba(38,208,201,.10);
+        border: 1px solid rgba(38,208,201,.22);
+        padding: 7px 14px 7px 11px;
+        border-radius: var(--r-pill);
+        display: flex; align-items: center; gap: 8px;
+        color: #7FE8DF; font-weight: 600; font-size: 11.5px; white-space: nowrap;
+    }
+    .pulse-dot {
+        width: 6px; height: 6px; background: var(--cyan-glow); border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(38,208,201,.6);
+        animation: pulseDot 1.8s infinite;
+    }
+    @keyframes pulseDot {
+        0% { box-shadow: 0 0 0 0 rgba(38,208,201,.55); }
+        70% { box-shadow: 0 0 0 7px rgba(38,208,201,0); }
+        100% { box-shadow: 0 0 0 0 rgba(38,208,201,0); }
+    }
 
-  .btn-danger{ background:var(--red); color:#fff; box-shadow:0 6px 16px rgba(185,28,28,.25); }
-  .btn-danger:hover{ background:#9F1717; }
+    .admin-chip {
+        display: flex; align-items: center; gap: 9px;
+        padding: 5px 12px 5px 5px; border-radius: var(--r-pill);
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    }
+    .admin-avatar {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(155deg,#3A5A63,#1B343C);
+        display: flex; align-items: center; justify-content: center;
+        color: #DCEBEE; font-size: 10.5px; font-weight: 700; font-family:'Space Grotesk',sans-serif;
+    }
+    .admin-chip span { font-size: 11.5px; font-weight: 600; color: #D6E4E7; }
 
-  @keyframes spin{ to{ transform:rotate(360deg); } }
+    /* ===== FLOW LINE ===== */
+    .flow-line {
+        height: 3px; width: 100%; flex-shrink: 0; position: relative; overflow: hidden;
+        background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900));
+        background-size: 200% 100%;
+        animation: flowMove 5s linear infinite;
+    }
+    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
 
-  @media (max-width:760px){
-    .directory-head{ padding:15px 16px; }
-    th, td{ padding:12px 14px; }
-  }
+    /* ===== INSTRUMENT STRIP (KPI row) ===== */
+    .instrument-strip {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+        display: flex;
+        align-items: stretch;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+    .instrument {
+        display: flex; align-items: center; gap: 11px;
+        padding: 13px 26px 13px 0;
+        margin-right: 26px;
+        border-right: 1px solid var(--border-soft);
+        flex-shrink: 0;
+    }
+    .instrument:last-of-type { border-right: none; margin-right: 0; }
+    .instrument-icon {
+        width: 30px; height: 30px; border-radius: var(--r-sm);
+        display: flex; align-items: center; justify-content: center; font-size: 12.5px; flex-shrink: 0;
+    }
+    .instrument-icon.total { background: var(--blue-100); color: var(--blue-600); }
+    .instrument-icon.fresh { background: var(--teal-050); color: var(--teal-600); }
+    .instrument-icon.orders { background: var(--green-100); color: var(--green-600); }
+    .instrument-icon.blocked { background: var(--red-100); color: var(--red-600); }
+    .instrument-copy h4 {
+        font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .55px;
+        color: var(--ink-faint); margin-bottom: 3px;
+    }
+    .instrument-copy .val {
+        font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 600; color: var(--ink); line-height: 1;
+    }
+    .instrument-spacer { flex: 1; }
+    .instrument-time {
+        display: flex; align-items: center; gap: 7px;
+        font-size: 11px; color: var(--ink-faint); padding: 13px 0;
+    }
+    .instrument-time i { color: var(--teal-600); }
 
+    /* ===== CONTROL BAR ===== */
+    .control-bar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 13px 32px;
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px;
+        position: sticky; top: 0; z-index: 20;
+    }
+    .filter-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; flex: 1; min-width: 0; }
+
+    .search-box {
+        display: flex; align-items: center; gap: 8px;
+        background: var(--bg); border: 1px solid var(--border);
+        border-radius: var(--r-pill); padding: 8px 15px 8px 14px;
+        flex: 1 1 260px; max-width: 420px; transition: border-color .15s, box-shadow .15s;
+    }
+    .search-box:focus-within { border-color: var(--teal-500); box-shadow: 0 0 0 3px rgba(23,166,180,.14); }
+    .search-box i { color: var(--ink-faint); font-size: 12px; }
+    .search-box input {
+        border: none; background: transparent; outline: none;
+        font-family: 'Inter', sans-serif; font-size: 12.5px; width: 100%; color: var(--ink);
+    }
+    .search-box input::placeholder { color: var(--ink-faint); }
+
+    .select-wrap { position: relative; display: inline-flex; align-items: center; }
+    .select-wrap select.control-select {
+        appearance: none; -webkit-appearance: none;
+        background: var(--teal-050);
+        border: 1px solid var(--teal-100); color: var(--teal-900);
+        padding: 8px 32px 8px 15px; border-radius: var(--r-pill);
+        font-weight: 600; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;
+        outline: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .select-wrap select.control-select:hover { border-color: var(--teal-500); }
+    .select-wrap select.control-select:focus-visible { border-color: var(--teal-500); box-shadow: 0 0 0 3px rgba(23,166,180,.14); }
+    .select-wrap::after {
+        content: '\f0d7'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+        position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+        font-size: 10px; color: var(--teal-700); pointer-events: none;
+    }
+    .toolbar-divider { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+
+    .btn-reset {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 8px 15px; border-radius: var(--r-pill);
+        border: 1px solid var(--border); background: var(--bg);
+        font-size: 12px; font-weight: 600; color: var(--ink-soft);
+        cursor: pointer; transition: all .15s;
+    }
+    .btn-reset i { font-size: 11px; }
+    .btn-reset:hover { color: var(--teal-700); border-color: var(--teal-500); background: var(--teal-050); }
+    .btn-reset:active { transform: scale(.97); }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content { flex: 1; padding: 22px 32px 48px; }
+
+    .crumb {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+        font-size: 12px; font-weight: 600; color: var(--ink-faint);
+    }
+    .crumb a { text-decoration: none; color: var(--ink-soft); transition: color .15s; }
+    .crumb a:hover { color: var(--teal-700); }
+    .crumb .sep { opacity: .6; }
+    .crumb .current { color: var(--ink); }
+
+    .section-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+    }
+    .section-head h2 {
+        font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 700; color: var(--ink);
+        display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    }
+    .section-head h2 i { color: var(--teal-600); font-size: 15px; }
+    .section-head .count-chip {
+        background: var(--teal-050); border: 1px solid var(--teal-100);
+        border-radius: var(--r-pill); padding: 3px 12px; font-size: 11.5px; font-weight: 700;
+        color: var(--teal-700); font-family: 'IBM Plex Mono', monospace;
+    }
+    .legend { display: flex; align-items: center; gap: 14px; font-size: 11px; color: var(--ink-faint); }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { font-size: 7px; }
+
+    /* ===== CUSTOMER LEDGER TABLE ===== */
+    .ledger-wrap {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    .table-scroll { overflow-x: auto; }
+    table.ledger { width: 100%; border-collapse: collapse; table-layout: auto; }
+    .ledger thead th {
+        text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .6px; color: var(--ink-faint);
+        background: #FBFDFD; padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    .ledger thead th:first-child { padding-left: 0; }
+    .ledger tbody tr {
+        border-bottom: 1px solid var(--border-soft);
+        transition: background .12s;
+    }
+    .ledger tbody tr:last-child { border-bottom: none; }
+    .ledger tbody tr:hover { background: #FAFCFC; }
+    .ledger tbody tr.row-hidden { display: none !important; }
+    .ledger tbody td { padding: 14px 16px; vertical-align: middle; font-size: 13px; }
+
+    .status-rail-cell { width: 4px; padding: 0 !important; }
+    .status-rail { width: 4px; height: 100%; min-height: 56px; border-radius: 3px; background: var(--green-600); }
+    .ledger tbody tr[data-status="blocked"] .status-rail { background: var(--red-600); }
+
+    .user-cell { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+        width: 38px; height: 38px; border-radius: var(--r-md); flex: none;
+        background: var(--blue-100); color: var(--blue-600);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700;
+    }
+    .cell-primary { font-weight: 600; color: var(--ink); font-size: 13.3px; line-height: 1.3; }
+    .cell-secondary { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+
+    .contact-line { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+    .contact-line i { width: 13px; font-size: 11px; color: var(--ink-faint); text-align: center; flex: none; }
+    .contact-line + .contact-line { margin-top: 5px; }
+
+    .orders-pills { display: flex; flex-wrap: wrap; gap: 5px; max-width: 250px; }
+    .pill {
+        display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--r-pill);
+        font-size: 10.5px; font-weight: 700; white-space: nowrap;
+    }
+    .pill-total { background: var(--blue-100); color: var(--blue-600); }
+    .pill-delivered { background: var(--green-100); color: var(--green-600); }
+    .pill-cancelled { background: var(--red-100); color: var(--red-600); }
+    .pill-active { background: var(--amber-100); color: var(--amber-600); }
+
+    .last-order-date { font-weight: 600; color: var(--ink); font-size: 12.5px; }
+    .last-order-driver { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+    .last-order-driver b { color: var(--blue-600); font-weight: 700; }
+    .no-orders { font-size: 12.5px; color: var(--ink-faint); font-style: italic; }
+
+    /* status pill - shared by the Active/Blocked toggle and the history modal.
+       .st-* names are used by the page's JavaScript - do not rename. */
+    .status-pill {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        padding: 4px 12px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 11px; letter-spacing: .2px;
+        min-width: 94px; box-sizing: border-box; border: none; white-space: nowrap;
+    }
+    .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+    .st-pending { background: var(--amber-100); color: var(--amber-600); }
+    .st-assigned { background: var(--blue-100); color: var(--blue-600); }
+    .st-onway { background: var(--violet-100); color: var(--violet-600); }
+    .st-delivered { background: var(--green-100); color: var(--green-600); }
+    .st-cancelled { background: var(--red-100); color: var(--red-600); }
+    button.status-pill { cursor: pointer; transition: filter .15s, transform .1s; }
+    button.status-pill:hover { filter: brightness(.95); }
+    button.status-pill:active { transform: scale(.96); }
+    button.status-pill:disabled { opacity: .55; cursor: not-allowed; }
+    button.status-pill:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+
+    .actions-cell { text-align: right; white-space: nowrap; padding-right: 20px !important; }
+    .row-actions { display: inline-flex; gap: 6px; justify-content: flex-end; }
+    .row-icon-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        border: none; padding: 7px 14px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 11px; cursor: pointer;
+        transition: filter .15s, transform .1s, background .15s;
+        background: var(--violet-100); color: var(--violet-600); white-space: nowrap;
+    }
+    .row-icon-btn i { font-size: 11px; }
+    .row-icon-btn:hover { background: #DFD9F3; }
+    .row-icon-btn:active { transform: scale(.96); }
+    .row-icon-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+    .row-icon-btn.msg-btn { background: var(--teal-050); color: var(--teal-700); }
+    .row-icon-btn.msg-btn:hover { background: var(--teal-100); }
+
+    .no-results-cell { text-align: center; color: var(--ink-faint); padding: 44px 10px; font-size: 13px; }
+
+    .empty-state { text-align: center; padding: 70px 20px; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+    .empty-state .icon-wrap { font-size: 40px; color: var(--teal-600); opacity: .45; }
+    .empty-state .icon-wrap svg { width: 40px; height: 40px; }
+    .empty-state h3 { margin-top: 16px; font-family: 'Space Grotesk', sans-serif; color: var(--ink-soft); font-size: 15px; }
+    .empty-state p { margin-top: 4px; font-size: 12.5px; }
+
+    .page-footer {
+        margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 9px;
+        font-size: 11.5px; color: var(--ink-faint); font-weight: 600;
+    }
+    .page-footer .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); }
+
+    /* ===== FLASH MESSAGES ===== */
+    .flash-toast {
+        display: flex; align-items: flex-start; gap: 10px;
+        border-radius: var(--r-md); padding: 11px 16px; font-size: 13px; margin-bottom: 10px;
+        border: 1px solid; box-shadow: var(--shadow-xs);
+    }
+
+    /* ============================================================
+       MODALS (history / message / confirm)
+    ============================================================ */
+    .modal-overlay {
+        display: none; position: fixed; inset: 0; background: rgba(10,26,34,.6);
+        backdrop-filter: blur(6px); z-index: 3000; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+        background: var(--surface); border-radius: var(--r-lg); width: 560px; max-width: 100%;
+        max-height: 85vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg);
+        animation: fadeUp .2s ease;
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: scale(.97) translateY(6px); } to { opacity: 1; transform: none; } }
+    .modal-header {
+        display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+        padding: 22px 24px; border-bottom: 1px solid var(--border-soft);
+    }
+    .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); }
+    .modal-subtitle { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+    .modal-close {
+        width: 30px; height: 30px; border-radius: 50%; border: none; background: transparent;
+        color: var(--ink-faint); cursor: pointer; flex: none;
+        display: flex; align-items: center; justify-content: center; transition: background .15s;
+    }
+    .modal-close svg { width: 14px; height: 14px; }
+    .modal-close:hover { background: var(--bg); color: var(--ink); }
+    .modal-body { padding: 20px 24px; overflow-y: auto; }
+    .modal-footer {
+        padding: 16px 24px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-soft);
+    }
+
+    .booking-card {
+        background: #FBFDFD; border: 1px solid var(--border); border-radius: var(--r-md);
+        padding: 15px 17px; margin-bottom: 11px;
+    }
+    .booking-card:last-child { margin-bottom: 0; }
+    .booking-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; gap: 10px; flex-wrap: wrap; }
+    .booking-date { font-weight: 600; color: var(--ink); font-size: 12.5px; display: flex; align-items: center; gap: 7px; }
+    .booking-date svg { width: 13px; height: 13px; color: var(--teal-600); }
+    .booking-meta { font-size: 12.5px; color: var(--ink-soft); display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+    .booking-meta span b { color: var(--ink); font-weight: 600; }
+    .booking-meta .full-row { grid-column: 1/-1; }
+    .history-loading, .history-empty { text-align: center; color: var(--ink-faint); padding: 38px 10px; font-size: 13px; }
+    .history-loading .spin-ico { display: inline-block; animation: spin .8s linear infinite; margin-right: 6px; color: var(--teal-600); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .msg-target {
+        background: var(--teal-050); border: 1px solid var(--teal-100); border-radius: var(--r-md);
+        padding: 12px 15px; margin-bottom: 15px; font-size: 13px; color: var(--ink-soft);
+    }
+    .msg-target b { color: var(--ink); }
+    #messageText {
+        width: 100%; min-height: 120px; border: 1px solid var(--border); border-radius: var(--r-md);
+        padding: 13px 15px; font-family: 'Inter', sans-serif; font-size: 13.5px; resize: vertical;
+        outline: none; color: var(--ink); transition: border-color .15s, box-shadow .15s;
+    }
+    #messageText:focus { border-color: var(--teal-500); box-shadow: 0 0 0 3px rgba(23,166,180,.14); }
+    .quick-templates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip {
+        padding: 6px 13px; border-radius: var(--r-pill); background: var(--bg); color: var(--ink-soft);
+        font-size: 11.5px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); transition: all .15s;
+    }
+    .chip:hover { background: var(--teal-050); color: var(--teal-700); border-color: var(--teal-100); }
+
+    /* modal buttons */
+    .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+        border: 1px solid transparent; padding: 9px 20px; border-radius: var(--r-pill);
+        font-weight: 700; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif;
+        transition: filter .15s, background .15s, transform .1s; text-decoration: none; white-space: nowrap;
+    }
+    .btn svg { width: 14px; height: 14px; flex: none; }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .btn-primary { background: var(--teal-700); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--teal-900); }
+    .btn-danger { background: var(--red-600); color: #fff; }
+    .btn-danger:hover:not(:disabled) { filter: brightness(.92); }
+    .btn-outline { background: var(--bg); color: var(--ink-soft); border-color: var(--border); }
+    .btn-outline:hover { color: var(--ink); border-color: var(--teal-500); }
+
+    .confirm-box { width: 420px; text-align: center; padding-top: 8px; }
+    .confirm-icon-wrap {
+        width: 62px; height: 62px; border-radius: 50%; margin: 14px auto 6px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .confirm-icon-wrap svg { width: 26px; height: 26px; }
+    .confirm-icon-wrap.danger { background: var(--red-100); color: var(--red-600); }
+    .confirm-icon-wrap.safe { background: var(--green-100); color: var(--green-600); }
+    .confirm-body { padding: 6px 28px 4px; }
+    .confirm-body h3 { font-family: 'Space Grotesk', sans-serif; font-size: 17px; color: var(--ink); margin-bottom: 8px; }
+    .confirm-body p { font-size: 13px; color: var(--ink-soft); line-height: 1.55; }
+    .confirm-footer { justify-content: center; border-top: none; padding-top: 18px; }
+
+    /* ===== TOASTS ===== */
+    .toast-stack { position: fixed; bottom: 26px; right: 26px; z-index: 4000; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+        display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff;
+        padding: 12px 18px; border-radius: var(--r-md); font-size: 13px; font-weight: 600;
+        box-shadow: var(--shadow-md); border-left: 3px solid var(--cyan-glow);
+        animation: toastIn .25s ease both; transition: opacity .25s, transform .25s; max-width: 360px;
+    }
+    .toast.error { background: #5E1F19; border-left-color: #E14C3C; }
+    .toast .t-icon { flex: none; width: 18px; height: 18px; color: var(--cyan-glow); }
+    .toast.error .t-icon { color: #F2A59B; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 1100px) {
+        .sync-chip { display: none; }
+    }
+    @media (max-width: 980px) {
+        .ledger thead { display: none; }
+        table.ledger, .ledger tbody, .ledger tbody tr, .ledger tbody td { display: block; width: 100%; }
+        .ledger tbody tr { padding: 14px 16px; position: relative; }
+        .status-rail-cell { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; height: auto; }
+        .status-rail { min-height: 100%; border-radius: 0; }
+        .ledger tbody td { padding: 5px 0 5px 8px; }
+        .actions-cell { text-align: left; margin-top: 6px; padding-right: 0 !important; }
+        .row-actions { justify-content: flex-start; }
+        .orders-pills { max-width: none; }
+    }
+    @media (max-width: 700px) {
+        .topbar, .instrument-strip, .control-bar, .main-content { padding-left: 16px; padding-right: 16px; }
+        .topbar { height: auto; min-height: 72px; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; }
+        .brand-text p { display: none; }
+        .admin-chip { display: none; }
+        .instrument { padding-right: 16px; margin-right: 16px; }
+        .instrument-strip { padding-top: 2px; }
+        .control-bar { position: static; }
+        .search-box { flex: 1 1 100%; max-width: none; }
+        .toolbar-divider { display: none; }
+        .legend { display: none; }
+        .toast-stack { left: 16px; right: 16px; bottom: 16px; }
+        .toast { max-width: none; }
+        .modal-header, .modal-body { padding-left: 18px; padding-right: 18px; }
+        .modal-footer { padding-left: 18px; padding-right: 18px; }
+        .booking-meta { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+        .instrument { flex: 1 1 45%; border-right: none; margin-right: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .flow-line, .pulse-dot { animation: none; }
+    }
 </style>
 </head>
 <body>
+<div class="app-shell">
 
-<div class="container">
-
-  <div class="util-bar">
-    <div class="crumb">
-      <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
-      <span class="sep">/</span>
-      <span class="current">Users</span>
-    </div>
-    <div class="sync-pill"><span class="sync-dot"></span> Live directory data</div>
-  </div>
-
-  <!-- ================= HEADER ================= -->
-  <div class="top-panel">
-    <div class="header-flex">
-      <div class="title-box">
-        <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M17 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" stroke="#8FE8FB" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="7.5" r="3.5" stroke="#8FE8FB" stroke-width="1.6"/><path d="M17.5 10.3a3.3 3.3 0 1 0 0-6.6" stroke="#8FE8FB" stroke-width="1.6" stroke-linecap="round"/><path d="M20.5 20v-1.3a3.7 3.7 0 0 0-2.4-3.5" stroke="#8FE8FB" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <!-- ================= TOP BAR ================= -->
+    <div class="topbar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fas fa-droplet"></i></div>
+            <div class="brand-text">
+                <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+                <p>Customer directory &amp; account oversight</p>
+            </div>
         </div>
-        <div>
-          <h1>Users</h1>
-          <p>Every registered AquaFlow customer, their orders and account status in one place.</p>
-          <div class="premium-badge">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2s7 7.58 7 12.5A7 7 0 0 1 5 14.5C5 9.58 12 2 12 2Z" stroke="currentColor" stroke-width="1.6"/></svg>
-            AquaFlow Admin
-          </div>
+        <div class="topbar-right">
+            <a href="{{ url_for('admin_dashboard') }}" class="dispatch-link" title="Back to Admin Dashboard"><i class="fas fa-arrow-left"></i><span>Back to Admin Dashboard</span></a>
+            <div class="sync-chip"><div class="pulse-dot"></div><span>Live directory data</span></div>
+            <div class="admin-chip">
+                <div class="admin-avatar">A</div>
+                <span>Admin</span>
+            </div>
         </div>
-      </div>
-      <div class="header-actions">
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-on-dark">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5m0 0 7-7m-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Back to Admin Dashboard
-        </a>
-      </div>
     </div>
-  </div>
+    <div class="flow-line"></div>
 
-  <!-- ================= STATS ================= -->
-  <div class="stats-grid">
-    <div class="stat-tile">
-      <div class="stat-top">
-        <span class="stat-label">Total users</span>
-        <div class="stat-icon i-blue"><svg viewBox="0 0 24 24" fill="none"><path d="M17 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="7.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M17.5 10.3a3.3 3.3 0 1 0 0-6.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20.5 20v-1.3a3.7 3.7 0 0 0-2.4-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-      </div>
-      <div class="stat-value">{{ total_users }}</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill blue" style="width:100%;"></div></div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-top">
-        <span class="stat-label">New this month</span>
-        <div class="stat-icon i-aqua"><svg viewBox="0 0 24 24" fill="none"><path d="M16 21v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M19 8v6m3-3h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-      </div>
-      <div class="stat-value">{{ new_this_month }}</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill aqua" style="width:{{ ((new_this_month / total_users * 100) if total_users else 0) | round(0, 'floor') }}%;"></div></div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-top">
-        <span class="stat-label">Total orders placed</span>
-        <div class="stat-icon i-green"><svg viewBox="0 0 24 24" fill="none"><path d="M21 8 12 3 3 8m18 0-9 5m9-5v9l-9 5m0-9L3 8m9 5v9M3 8v9l9 5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="stat-value">{{ total_orders_all }}</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill green" style="width:100%;"></div></div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-top">
-        <span class="stat-label">Blocked accounts</span>
-        <div class="stat-icon i-amber" style="background:var(--red-bg);color:var(--red);"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 20a8 8 0 0 1 12.3-6.7M17 15l4 4m0-4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-      </div>
-      <div class="stat-value">{{ blocked_users }}</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="background:var(--red);width:{{ ((blocked_users / total_users * 100) if total_users else 0) | round(0, 'floor') }}%;"></div></div>
-    </div>
-  </div>
-
-  <!-- ================= TOOLBAR ================= -->
-  <div class="toolbar">
-    <div class="search-box">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <input type="text" id="userSearchInput" placeholder="Search by name, email or phone..." autocomplete="off">
-    </div>
-    <select class="control-select" id="statusFilter">
-      <option value="">All statuses</option>
-      <option value="active">Active</option>
-      <option value="blocked">Blocked</option>
-    </select>
-    <div class="toolbar-divider"></div>
-    <select class="control-select" id="sortFilter">
-      <option value="newest">Newest joined</option>
-      <option value="oldest">Oldest joined</option>
-      <option value="orders">Most orders</option>
-    </select>
-    <button class="btn btn-outline btn-sm" id="resetFiltersBtn">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7M3 12V6m0 6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Reset
-    </button>
-  </div>
-
-  <!-- ================= CUSTOMER DIRECTORY ================= -->
-
-  {% if users %}
-
-  <div class="directory-panel">
-
-    <div class="directory-head">
-      <div class="dir-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-      <h2>Customer Directory</h2>
-      <span class="count-chip" id="visibleCountChip">{{ users|length }} customer{{ 's' if users|length != 1 else '' }}</span>
-    </div>
-
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Contact</th>
-            <th>Orders</th>
-            <th>Last Order</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="usersTableBody">
-          {% for u in users %}
-          <tr data-search="{{ (u.name or '') ~ ' ' ~ (u.email or '') ~ ' ' ~ (u.phone or '') | lower }}"
-              data-status="{{ 'blocked' if u.is_blocked else 'active' }}"
-              data-joined="{{ u.created_at.isoformat() if u.created_at else '' }}"
-              data-orders="{{ u.total_orders }}">
-
-            <td>
-              <div class="user-cell">
-                <div class="avatar">{{ (u.name or "U")[0] | upper }}</div>
-                <div>
-                  <div class="user-name">{{ u.name or "Unnamed User" }}</div>
-                  <div class="user-joined">Joined {{ u.created_at.strftime("%d %b %Y") if u.created_at else "—" }}</div>
-                </div>
-              </div>
-            </td>
-
-            <td>
-              <div class="contact-line">
-                <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.2" stroke="currentColor" stroke-width="1.7"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                {{ u.email or "—" }}
-              </div>
-              <div class="contact-line">
-                <svg viewBox="0 0 24 24" fill="none"><path d="M6.6 10.8a15.6 15.6 0 0 0 6.6 6.6l2.2-2.2a1.2 1.2 0 0 1 1.2-.3c1.3.4 2.7.6 4.1.6.7 0 1.3.6 1.3 1.3V20.7c0 .7-.6 1.3-1.3 1.3C10.6 22 2 13.4 2 3.3 2 2.6 2.6 2 3.3 2H6.9c.7 0 1.3.6 1.3 1.3 0 1.4.2 2.8.6 4.1.1.4 0 .9-.3 1.2L6.6 10.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-                {{ u.phone if u.phone else "Not provided" }}
-              </div>
-            </td>
-
-            <td>
-              <div class="orders-pills">
-                <span class="pill pill-total">{{ u.total_orders }} placed</span>
-                <span class="pill pill-delivered">{{ u.delivered_orders }} delivered</span>
-                {% if u.cancelled_orders %}
-                <span class="pill pill-cancelled">{{ u.cancelled_orders }} cancelled</span>
-                {% endif %}
-                {% if u.active_orders %}
-                <span class="pill pill-active">{{ u.active_orders }} active</span>
-                {% endif %}
-              </div>
-            </td>
-
-            <td>
-              {% if u.last_order %}
-              <div class="last-order-date">{{ u.last_order.created_at.strftime("%d %b %Y, %I:%M %p") if u.last_order.created_at else (u.last_order.delivery_date or "—") }}</div>
-              <div class="last-order-driver">Driver: <b>{{ u.last_order.driver_name or "Not Assigned" }}</b></div>
-              {% else %}
-              <span class="no-orders">No orders yet</span>
-              {% endif %}
-            </td>
-
-            <td>
-              <button
-                class="status-pill {{ 'st-cancelled' if u.is_blocked else 'st-delivered' }}"
-                onclick="requestToggleBlock('{{ u._id }}', this)"
-                title="Click to {{ 'unblock' if u.is_blocked else 'block' }} this user"
-              >
-                <span class="dot"></span>
-                {{ "Blocked" if u.is_blocked else "Active" }}
-              </button>
-            </td>
-
-            <td>
-              <div class="row-actions">
-                <button
-                  class="row-icon-btn"
-                  title="View previous booking history"
-                  onclick="openHistoryModal('{{ u._id }}', '{{ (u.name or "User") | replace("'", "") }}')"
-                >
-                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v5.5M12 8v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                </button>
-                <button
-                  class="row-icon-btn msg-btn"
-                  title="Send this user a message"
-                  onclick="openMessageModal('{{ u._id }}', '{{ (u.name or "User") | replace("'", "") }}', '{{ u.email or "" }}')"
-                >
-                  <svg viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-                </button>
-              </div>
-            </td>
-
-          </tr>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="padding:14px 32px 0;">
+          {% for category, message in messages %}
+            <div class="flash-toast" style="
+                background:{{ '#fdecea' if category == 'danger' else '#fff8e1' if category == 'warning' else '#e7f2ff' }};
+                color:{{ '#a02622' if category == 'danger' else '#8a6100' if category == 'warning' else '#0d61b8' }};
+                border-color:{{ '#f5c2c0' if category == 'danger' else '#ffe28a' if category == 'warning' else '#cddff3' }};">
+              <i class="fas fa-triangle-exclamation" style="margin-top:2px;"></i>
+              <span style="flex:1;">{{ message }}</span>
+              <button type="button" onclick="this.closest('.flash-toast').remove()"
+                      style="background:none;border:none;cursor:pointer;font-size:15px;line-height:1;color:inherit;">&times;</button>
+            </div>
           {% endfor %}
-        </tbody>
-      </table>
+        </div>
+        <script>
+          setTimeout(function () {
+            document.querySelectorAll('.flash-toast').forEach(function (el) {
+              el.style.transition = 'opacity .4s';
+              el.style.opacity = '0';
+              setTimeout(function () { el.remove(); }, 400);
+            });
+          }, 6000);
+        </script>
+      {% endif %}
+    {% endwith %}
 
-      <div id="noResultsRow" class="no-results-cell" style="display:none;">No customers match that search.</div>
+    <!-- ================= STATS ================= -->
+    <div class="instrument-strip">
+        <div class="instrument">
+            <div class="instrument-icon total"><i class="fas fa-users"></i></div>
+            <div class="instrument-copy"><h4>Total Users</h4><div class="val">{{ total_users }}</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon fresh"><i class="fas fa-user-plus"></i></div>
+            <div class="instrument-copy"><h4>New This Month</h4><div class="val">{{ new_this_month }}</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon orders"><i class="fas fa-box"></i></div>
+            <div class="instrument-copy"><h4>Total Orders Placed</h4><div class="val">{{ total_orders_all }}</div></div>
+        </div>
+        <div class="instrument">
+            <div class="instrument-icon blocked"><i class="fas fa-user-slash"></i></div>
+            <div class="instrument-copy"><h4>Blocked Accounts</h4><div class="val">{{ blocked_users }}</div></div>
+        </div>
+        <div class="instrument-spacer"></div>
     </div>
 
-  </div>
+    <!-- ================= CONTROL BAR ================= -->
+    <div class="control-bar">
+        <div class="filter-group">
+            <div class="search-box">
+                <i class="fas fa-magnifying-glass"></i>
+                <input type="text" id="userSearchInput" placeholder="Search by name, email or phone..." autocomplete="off">
+            </div>
+            <div class="select-wrap">
+                <select class="control-select" id="statusFilter" aria-label="Filter by account status">
+                    <option value="">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="blocked">Blocked</option>
+                </select>
+            </div>
+            <div class="toolbar-divider"></div>
+            <div class="select-wrap">
+                <select class="control-select" id="sortFilter" aria-label="Sort customers">
+                    <option value="newest">Newest joined</option>
+                    <option value="oldest">Oldest joined</option>
+                    <option value="orders">Most orders</option>
+                </select>
+            </div>
+            <button class="btn-reset" id="resetFiltersBtn" type="button">
+                <i class="fas fa-rotate-left"></i>Reset
+            </button>
+        </div>
+    </div>
 
-  {% else %}
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="main-content">
 
-  <div class="empty-state">
-    <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none"><path d="M17 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="7.5" r="3.5" stroke="currentColor" stroke-width="1.8"/></svg></div>
-    <h3>No users yet</h3>
-    <p>Registered customers will show up here as soon as they sign up.</p>
-  </div>
+        <div class="crumb">
+            <a href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+            <span class="sep">/</span>
+            <span class="current">Users</span>
+        </div>
 
-  {% endif %}
+        {% if users %}
 
-  <div class="page-footer">AquaFlow<span class="dot"></span>{{ total_users }} user{{ 's' if total_users != 1 else '' }} registered</div>
+        <div class="section-head">
+            <h2><i class="fas fa-clipboard-list"></i>Customer Directory
+                <span class="count-chip" id="visibleCountChip">{{ users|length }} customer{{ 's' if users|length != 1 else '' }}</span>
+            </h2>
+            <div class="legend">
+                <span><i class="fas fa-circle" style="color:var(--green-600);"></i>Active</span>
+                <span><i class="fas fa-circle" style="color:var(--red-600);"></i>Blocked</span>
+            </div>
+        </div>
 
+        <div class="ledger-wrap">
+            <div class="table-scroll">
+                <table class="ledger">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Customer</th>
+                            <th>Contact</th>
+                            <th>Orders</th>
+                            <th>Last Order</th>
+                            <th>Status</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        {% for u in users %}
+                        <tr data-search="{{ ((u.name or '') ~ ' ' ~ (u.email or '') ~ ' ' ~ (u.phone or '')) | lower }}"
+                            data-status="{{ 'blocked' if u.is_blocked else 'active' }}"
+                            data-joined="{{ u.created_at.isoformat() if u.created_at else '' }}"
+                            data-orders="{{ u.total_orders }}">
+
+                            <td class="status-rail-cell"><div class="status-rail"></div></td>
+
+                            <td>
+                                <div class="user-cell">
+                                    <div class="avatar">{{ (u.name or "U")[0] | upper }}</div>
+                                    <div>
+                                        <div class="cell-primary">{{ u.name or "Unnamed User" }}</div>
+                                        <div class="cell-secondary">Joined {{ u.created_at.strftime("%d %b %Y") if u.created_at else "—" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="contact-line">
+                                    <i class="far fa-envelope"></i>
+                                    {{ u.email or "—" }}
+                                </div>
+                                <div class="contact-line">
+                                    <i class="fas fa-phone"></i>
+                                    {{ u.phone if u.phone else "Not provided" }}
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="orders-pills">
+                                    <span class="pill pill-total">{{ u.total_orders }} placed</span>
+                                    <span class="pill pill-delivered">{{ u.delivered_orders }} delivered</span>
+                                    {% if u.cancelled_orders %}
+                                    <span class="pill pill-cancelled">{{ u.cancelled_orders }} cancelled</span>
+                                    {% endif %}
+                                    {% if u.active_orders %}
+                                    <span class="pill pill-active">{{ u.active_orders }} active</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <td>
+                                {% if u.last_order %}
+                                <div class="last-order-date">{{ u.last_order.created_at.strftime("%d %b %Y, %I:%M %p") if u.last_order.created_at else (u.last_order.delivery_date or "—") }}</div>
+                                <div class="last-order-driver">Driver: <b>{{ u.last_order.driver_name or "Not Assigned" }}</b></div>
+                                {% else %}
+                                <span class="no-orders">No orders yet</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <button
+                                    class="status-pill {{ 'st-cancelled' if u.is_blocked else 'st-delivered' }}"
+                                    onclick="requestToggleBlock('{{ u._id }}', this)"
+                                    title="Click to {{ 'unblock' if u.is_blocked else 'block' }} this user"
+                                >
+                                    <span class="dot"></span>
+                                    {{ "Blocked" if u.is_blocked else "Active" }}
+                                </button>
+                            </td>
+
+                            <td class="actions-cell">
+                                <div class="row-actions">
+                                    <button
+                                        class="row-icon-btn"
+                                        title="View previous booking history"
+                                        onclick="openHistoryModal('{{ u._id }}', '{{ (u.name or "User") | replace("'", "") }}')"
+                                    >
+                                        <i class="fas fa-circle-info"></i>Details
+                                    </button>
+                                    <button
+                                        class="row-icon-btn msg-btn"
+                                        title="Send this user a message"
+                                        onclick="openMessageModal('{{ u._id }}', '{{ (u.name or "User") | replace("'", "") }}', '{{ u.email or "" }}')"
+                                    >
+                                        <i class="fas fa-paper-plane"></i>Message
+                                    </button>
+                                </div>
+                            </td>
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div id="noResultsRow" class="no-results-cell" style="display:none;">No customers match that search.</div>
+            </div>
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none"><path d="M17 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="10" cy="7.5" r="3.5" stroke="currentColor" stroke-width="1.8"/></svg></div>
+            <h3>No users yet</h3>
+            <p>Registered customers will show up here as soon as they sign up.</p>
+        </div>
+
+        {% endif %}
+
+        <div class="page-footer">AquaFlow<span class="dot"></span>{{ total_users }} user{{ 's' if total_users != 1 else '' }} registered</div>
+
+    </div>
 </div>
 
 <!-- ================= BOOKING HISTORY MODAL ================= -->
@@ -416,7 +808,7 @@
         <div class="modal-title">Booking History</div>
         <div class="modal-subtitle" id="historyModalSubtitle">—</div>
       </div>
-      <button class="modal-close" onclick="closeModal('historyModal')">
+      <button class="modal-close" onclick="closeModal('historyModal')" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </div>
@@ -434,7 +826,7 @@
         <div class="modal-title">Send Message</div>
         <div class="modal-subtitle">Delivered straight to their notifications</div>
       </div>
-      <button class="modal-close" onclick="closeModal('messageModal')">
+      <button class="modal-close" onclick="closeModal('messageModal')" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </div>

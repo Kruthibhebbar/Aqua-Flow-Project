@@ -1,6 +1,5 @@
 from datetime import datetime
 from flask import (
-    render_template,
     session,
     redirect,
     url_for,
@@ -17,53 +16,11 @@ def init_driver_notifications(
     notifications_collection
 ):
 
-    # =====================================
-    # DRIVER NOTIFICATION PAGE
-    # =====================================
+    # NOTE: the driver notifications PAGE now lives in driver_portal.py
+    # (/driver-notifications). The old handler that used to be here was
+    # shadowed by driver_dashboard.py's route of the same URL and has been
+    # removed so there is a single source of truth.
 
-    @app.route("/driver-notifications")
-    def driver_notifications_page():
-
-        # DRIVER LOGIN CHECK
-        if "driver_email" not in session:
-            flash("Please login to continue", "warning")
-            return redirect(url_for("driver_login"))
-
-        # GET DRIVER - Check if exists
-        driver = drivers_collection.find_one({
-            "email": session["driver_email"]
-        })
-        
-        if not driver:
-            flash("Driver account not found. Please login again.", "danger")
-            session.pop("driver_email", None)
-            return redirect(url_for("driver_login"))
-
-        # GET PENDING REQUESTS - using correct field names from your booking schema
-        pending_bookings = list(
-            bookings_collection.find({
-                "driver_email": session["driver_email"],
-                "driver_response": "Pending"
-            })
-        )
-
-        accepted_count = bookings_collection.count_documents({
-            "driver_email": session["driver_email"],
-            "driver_response": "Accepted"
-        })
-
-        rejected_count = bookings_collection.count_documents({
-            "driver_email": session["driver_email"],
-            "driver_response": "Rejected"
-        })
-
-        return render_template(
-            "driver_notifications.html",
-            driver=driver,
-            pending_bookings=pending_bookings,
-            accepted_count=accepted_count,
-            rejected_count=rejected_count
-        )
 
     # =====================================
     # ACCEPT BOOKING (FIXED - sends notification to USER with driver details)
@@ -85,7 +42,7 @@ def init_driver_notifications(
 
             if not booking:
                 flash("Booking not found or unauthorized", "danger")
-                return redirect(url_for("driver_notifications_page"))
+                return redirect(url_for("driver_notifications"))
 
             # Get driver details
             driver = drivers_collection.find_one({
@@ -98,10 +55,14 @@ def init_driver_notifications(
             # This matches /api/accept-booking in driver_dashboard.py so
             # both the notifications page and the main dashboard leave
             # bookings in a consistent state.
+            # Only an order still waiting for this driver's decision can be
+            # accepted - without the status guard a driver could drag an
+            # already Delivered/Cancelled order back to "Accepted".
             result = bookings_collection.update_one(
                 {
                     "_id": ObjectId(booking_id),
-                    "driver_email": session["driver_email"]
+                    "driver_email": session["driver_email"],
+                    "status": "Assigned"
                 },
                 {
                     "$set": {
@@ -166,7 +127,7 @@ def init_driver_notifications(
             print(f"Error accepting booking: {e}")
             flash("An error occurred while accepting the booking", "danger")
 
-        return redirect(url_for("driver_notifications_page"))
+        return redirect(url_for("driver_notifications"))
 
     # =====================================
     # REJECT BOOKING
@@ -187,13 +148,19 @@ def init_driver_notifications(
 
             if not booking:
                 flash("Booking not found or unauthorized", "danger")
-                return redirect(url_for("driver_notifications_page"))
+                return redirect(url_for("driver_notifications"))
 
             # Unassign this driver entirely so admin can hand the order to
             # someone else - matches /api/reject-booking in
             # driver_dashboard.py so both entry points behave the same way.
+            # Same guard as accept: only a still-"Assigned" order can be
+            # handed back, never a delivered or in-progress one.
             result = bookings_collection.update_one(
-                {"_id": ObjectId(booking_id)},
+                {
+                    "_id": ObjectId(booking_id),
+                    "driver_email": session["driver_email"],
+                    "status": "Assigned"
+                },
                 {
                     "$set": {
                         "status": "Approved",
@@ -234,4 +201,4 @@ def init_driver_notifications(
             print(f"Error rejecting booking: {e}")
             flash("An error occurred while rejecting the booking", "danger")
 
-        return redirect(url_for("driver_notifications_page"))
+        return redirect(url_for("driver_notifications"))

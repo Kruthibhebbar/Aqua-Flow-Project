@@ -1119,6 +1119,255 @@
                 display: block;
             }
         }
+
+        /* =====================================================================
+           HOME PAGE ADDITIONS (hp-*) - page-scoped; desktop hero rules above
+           are untouched. Mobile refinements are in the @media blocks below.
+           ===================================================================== */
+        .hp-cta-row { display:flex; flex-wrap:wrap; align-items:center; gap:16px; }
+        .hp-ghost-btn {
+            display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:48px;
+            padding:14px 28px; border-radius:60px; font-weight:700; font-size:1.05rem; text-decoration:none;
+            color:#2c5bff; background:rgba(255,255,255,.9); border:1.5px solid rgba(53,101,255,.35); transition:.2s;
+        }
+        .hp-ghost-btn:hover { background:#eef2ff; color:#1f49d6; transform:translateY(-2px); }
+        .hp-small-btn { font-size:1rem; padding:13px 30px; }
+        a:focus-visible, button:focus-visible { outline:3px solid #8fb0ff; outline-offset:3px; }
+
+        .hp-caps-wrap { background:#fff; padding:64px 5% 70px; }
+        .hp-caps-title { text-align:center; font-size:2rem; font-weight:800; color:#061132; letter-spacing:-.5px; margin-bottom:36px; }
+        .hp-caps { list-style:none; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; max-width:1150px; margin:0 auto; padding:0; }
+        .hp-caps li { display:flex; gap:16px; align-items:flex-start; background:#f7f9fd; border:1px solid #e6edff; border-radius:18px; padding:22px; }
+        .hp-ico { flex:none; width:46px; height:46px; border-radius:13px; background:#eaf1ff; color:#2c5bff; display:flex; align-items:center; justify-content:center; font-size:1.15rem; }
+        .hp-caps h3 { font-size:1.05rem; font-weight:700; color:#061132; margin:0 0 4px; }
+        .hp-caps p { font-size:.92rem; line-height:1.5; color:#4a5578; margin:0; }
+
+        .hp-mine { background:#f7f9fd; padding:50px 5%; }
+        .hp-mine-inner { max-width:1000px; margin:0 auto; background:#fff; border:1px solid #e6edff; border-radius:24px; padding:30px 32px; box-shadow:0 14px 30px rgba(20,50,130,.05); }
+        .hp-mine h2 { font-size:1.5rem; font-weight:800; color:#061132; margin-bottom:20px; }
+        .hp-mine-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+        .hp-mine-grid > div { background:#f7f9fd; border-radius:16px; padding:18px 20px; }
+        .hp-mine-grid small { display:block; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#6b7aa3; }
+        .hp-mine-grid strong { display:block; font-size:1.5rem; color:#2c5bff; margin:6px 0 2px; overflow-wrap:anywhere; }
+        .hp-mine-grid span { font-size:.88rem; color:#4a5578; }
+        .hp-mine-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; }
+        .hp-empty { text-align:center; padding:10px 0; color:#4a5578; }
+        .hp-empty i { font-size:2rem; color:#3565ff; margin-bottom:10px; }
+        .hp-empty p { margin-bottom:16px; }
+
+        .service-card.hp-link { display:block; color:inherit; text-decoration:none; }
+        .service-card.hp-link:hover { transform:translateY(-5px); border-color:#c9d8ff; box-shadow:0 20px 36px rgba(53,101,255,.12); }
+        .contact-card a { color:inherit; text-decoration:none; font-weight:600; overflow-wrap:anywhere; }
+        .contact-card a:hover { color:#2c5bff; text-decoration:underline; }
+        .contact-card p { overflow-wrap:anywhere; }
+
+        .hp-cta-text { margin-top:15px; font-size:1.2rem; max-width:640px; margin-left:auto; margin-right:auto; opacity:.92; }
+        .hp-cta-center { justify-content:center; margin-top:28px; }
+        .hp-cta-primary { display:inline-flex; align-items:center; gap:10px; min-height:48px; background:#fff; color:#0a1e52; padding:14px 36px; border-radius:50px; font-weight:700; font-size:1.1rem; text-decoration:none; transition:.2s; }
+        .hp-cta-primary:hover { transform:translateY(-2px); box-shadow:0 12px 24px rgba(0,0,0,.2); color:#0a1e52; }
+        .hp-cta-link { color:#fff; font-weight:600; text-decoration:underline; text-underline-offset:4px; padding:12px 8px; }
+        .hp-cta-link:hover { color:#cfe0ff; }
+
+        .hp-footer { margin-top:60px; background:#061132; color:#b7c3e6; padding:56px 5% 24px; }
+        .hp-footer-grid { display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr; gap:36px; max-width:1150px; margin:0 auto; }
+        .hp-footer-name { font-weight:800; font-size:1.5rem; color:#fff; }
+        .hp-footer-name span { color:#7c9bff; }
+        .hp-footer .logo-area { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+        .hp-footer p { font-size:.92rem; line-height:1.6; max-width:34ch; }
+        .hp-footer h5 { color:#fff; font-size:.85rem; letter-spacing:.1em; text-transform:uppercase; margin-bottom:14px; }
+        .hp-footer nav a { display:block; color:#b7c3e6; text-decoration:none; padding:5px 0; font-size:.95rem; }
+        .hp-footer nav a:hover { color:#fff; }
+        .hp-footer-bottom { max-width:1150px; margin:36px auto 0; padding-top:20px; border-top:1px solid rgba(255,255,255,.12); font-size:.85rem; text-align:center; }
+
+        @media (max-width: 1400px) {
+            .nav-buttons .nav-btn.nav-btn-logout { width:100%; justify-content:flex-start; }
+        }
+        @media (max-width: 1100px) {
+            .hp-caps { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .hp-footer-grid { grid-template-columns:1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+            .hero-modern { min-height:auto; padding:22px 20px 30px; }
+            .hero-title { font-size:clamp(30px, 9vw, 42px); letter-spacing:-.5px; }
+            .hero-text { max-width:36ch; }
+            .hp-cta-row { flex-direction:column; align-items:stretch; gap:12px; }
+            .hp-ghost-btn, .book-primary-btn { width:100%; min-height:48px; }
+            .hero-mobile-image { margin:22px auto 0; width:100%; max-width:480px; transform:none; }
+            .hp-caps-wrap { padding:44px 20px 48px; }
+            .hp-caps-title { font-size:1.5rem; margin-bottom:24px; }
+            .hp-caps { grid-template-columns:1fr; gap:14px; }
+            .hp-caps li { padding:18px; }
+            .hp-mine { padding:30px 16px; }
+            .hp-mine-inner { padding:22px 18px; }
+            .hp-mine-grid { grid-template-columns:1fr; }
+            .about-wrap, .services-wrap, .how-it-works-wrap, .features-wrap, .contact-wrap { padding-top:56px; padding-bottom:56px; padding-left:20px; padding-right:20px; }
+            .how-title { font-size:1.7rem; margin-bottom:30px; }
+            .services-grid { gap:14px; margin-top:30px; }
+            .service-card { width:100%; padding:24px 22px; }
+            .contact-card { width:100%; }
+            .cta-premium { margin:24px 16px 0; padding:40px 22px; border-radius:28px; }
+            .cta-premium h2 { font-size:1.5rem; }
+            .hp-cta-text { font-size:1rem; }
+            .hp-cta-primary { width:100%; justify-content:center; }
+            .hp-footer { margin-top:40px; padding:40px 20px 20px; }
+            .hp-footer-grid { grid-template-columns:1fr 1fr; gap:28px 20px; }
+            .hp-footer-brand { grid-column:1 / -1; }
+            .nav-buttons a { min-height:44px; }
+            .mobile-menu-toggle { min-width:44px; min-height:44px; }
+        }
+        @media (max-width: 400px) {
+            .hp-footer-grid { grid-template-columns:1fr; }
+            .logo-area h1 { font-size:1.5rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior:auto; }
+            *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+        }
+
+        /* =====================================================================
+           HERO REFINEMENT (scoped to section.hero-modern)
+           Two balanced columns, vertically centred, with the tanker as a real
+           <img> (alt text, intrinsic aspect ratio, never cropped). Replaces the
+           old background-image/mask approach, which faded the truck at laptop
+           widths. Mobile stacks text first, then the truck.
+           ===================================================================== */
+        section.hero-modern {
+            display: grid;
+            grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr);
+            align-items: center;
+            column-gap: clamp(24px, 4vw, 72px);
+            /* fills the first screen exactly (below the sticky nav), so the next
+               section always starts below the fold */
+            min-height: clamp(500px, calc(100vh - 70px), 1040px);
+            min-height: clamp(500px, calc(100svh - 70px), 1040px);
+            padding: clamp(28px, 5vh, 60px) clamp(24px, 5.5vw, 110px);
+            overflow: hidden;
+            background:
+                radial-gradient(60% 75% at 76% 52%, rgba(53, 101, 255, 0.10), rgba(53, 101, 255, 0) 70%),
+                linear-gradient(180deg, #f7f9fd 0%, #ffffff 100%);
+        }
+        section.hero-modern::before { content: none; }
+        section.hero-modern .hero-left { max-width: none; width: auto; height: auto; padding: 0; flex: none; }
+        section.hero-modern .badge-tag { margin-bottom: 22px; padding: 8px 18px; font-size: 0.85rem; letter-spacing: .02em; }
+        section.hero-modern .hero-title {
+            font-size: clamp(2.25rem, 1rem + 2.6vw, 3.9rem);
+            line-height: 1.08;
+            letter-spacing: -0.035em;
+            margin-bottom: 0;
+            text-wrap: balance;
+        }
+        section.hero-modern .hero-title span { display: block; }
+        section.hero-modern .line-accent { width: 72px; height: 4px; margin: 22px 0 24px; }
+        section.hero-modern .hero-text {
+            font-size: clamp(1.02rem, 0.9rem + 0.4vw, 1.22rem);
+            line-height: 1.6;
+            max-width: 34em;
+            margin: 0 0 32px;
+            color: #2a3a5c;
+            font-weight: 500;
+        }
+        section.hero-modern .hp-cta-row { gap: 14px; }
+        section.hero-modern .book-primary-btn,
+        section.hero-modern .hp-ghost-btn {
+            min-height: 54px; padding: 0 30px; border-radius: 60px; font-size: 1.05rem; line-height: 1; white-space: nowrap;
+        }
+        section.hero-modern .book-primary-btn { font-weight: 700; box-shadow: 0 12px 26px rgba(53, 101, 255, 0.30); }
+        section.hero-modern .book-primary-btn:hover { box-shadow: 0 16px 32px rgba(53, 101, 255, 0.38); }
+        section.hero-modern .hp-ghost-btn {
+            font-weight: 600; background: transparent; color: #2447c9; border: 1.5px solid #c9d6ff; box-shadow: none;
+        }
+        section.hero-modern .hp-ghost-btn:hover { background: #eef2ff; border-color: #9bb4ff; }
+        section.hero-modern .hero-right {
+            display: flex; align-items: center; justify-content: center; flex: none; pointer-events: auto; min-width: 0;
+        }
+        section.hero-modern .hero-truck {
+            display: block; width: 100%; max-width: 720px; height: auto;
+            filter: drop-shadow(0 22px 28px rgba(20, 50, 130, 0.18));
+        }
+        @media (max-width: 1100px) {
+            section.hero-modern { column-gap: 20px; padding-left: 28px; padding-right: 28px; }
+            section.hero-modern .book-primary-btn,
+            section.hero-modern .hp-ghost-btn { padding: 0 24px; font-size: 1rem; }
+        }
+        @media (max-width: 899px) {
+            section.hero-modern {
+                grid-template-columns: minmax(0, 1fr);
+                row-gap: 20px; min-height: 0;
+                padding: 26px 20px 34px;
+                background:
+                    radial-gradient(90% 40% at 50% 88%, rgba(53, 101, 255, 0.10), rgba(53, 101, 255, 0) 70%),
+                    linear-gradient(180deg, #f7f9fd 0%, #ffffff 100%);
+            }
+            section.hero-modern .hero-title { font-size: clamp(2rem, 8.4vw, 3rem); }
+            section.hero-modern .hero-text { font-size: 1rem; max-width: 36em; margin-bottom: 24px; }
+            section.hero-modern .hp-cta-row { flex-direction: column; align-items: stretch; gap: 12px; }
+            section.hero-modern .book-primary-btn,
+            section.hero-modern .hp-ghost-btn { width: 100%; min-height: 52px; justify-content: center; }
+            section.hero-modern .hero-right { margin-top: 4px; }
+            section.hero-modern .hero-truck { max-width: 540px; margin: 0 auto; }
+        }
+        @media (max-width: 380px) {
+            section.hero-modern { padding: 22px 16px 28px; }
+            section.hero-modern .badge-tag { font-size: .78rem; padding: 7px 14px; }
+        }
+
+        /* ===== HERO: reference-image composition (feature row, floating card, city + wave) ===== */
+        section.hero-modern { position: relative; padding-bottom: clamp(44px, 5.8vw, 88px); }
+        section.hero-modern .hero-left, section.hero-modern .hero-right { position: relative; z-index: 2; }
+        section.hero-modern .book-primary-btn, section.hero-modern .hp-ghost-btn { border-radius: 14px; }
+        section.hero-modern .badge-tag { border-radius: 10px; }
+        .hero-wave { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: clamp(34px, 5.5vw, 80px); z-index: 1; pointer-events: none; display: block; }
+        .hero-feats { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 28px 0 0; padding: 0; max-width: 700px; }
+        .hero-feats li { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-height: 100%; padding: 16px 14px 18px; background: #fff; border: 1px solid #e1e9ff; border-radius: 12px; box-shadow: 0 2px 8px rgba(20, 50, 130, 0.05); font-size: .86rem; font-weight: 600; line-height: 1.3; color: #14224a; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+        .hero-feats li:hover { transform: translateY(-2px); border-color: #9bb4ff; box-shadow: 0 8px 18px rgba(53, 101, 255, 0.12); }
+        .hero-feats li span { flex: none; width: 36px; height: 36px; border-radius: 9px; background: #eaf1ff; color: #2c5bff; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        section.hero-modern .hero-right { flex-direction: column; justify-content: flex-end; padding-top: 124px; }
+        .hero-float {
+            position: absolute; top: 0; right: max(0px, calc((100% - 720px) / 2)); z-index: 3;
+            display: flex; align-items: center; gap: 14px;
+            width: max-content; max-width: min(356px, 100%);
+            padding: 14px 18px 14px 14px;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+            border: 1px solid #e3eaf7; border-radius: 18px;
+            box-shadow: 0 1px 2px rgba(37, 84, 200, 0.05), 0 16px 36px -14px rgba(37, 84, 200, 0.24);
+        }
+        .hero-float-ico {
+            flex: none; width: 42px; height: 42px; border-radius: 12px;
+            background: linear-gradient(145deg, #f1f6ff 0%, #dce8ff 100%);
+            box-shadow: inset 0 0 0 1px rgba(53, 101, 255, 0.12);
+            color: #2c5bff; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+        }
+        .hero-float strong { display: block; font-size: .95rem; font-weight: 650; letter-spacing: -0.01em; line-height: 1.3; color: #0b1a45; white-space: nowrap; }
+        .hero-float p { margin: 3px 0 0; font-size: .82rem; line-height: 1.5; color: #5a6b8f; text-wrap: balance; }
+        @media (max-width: 1100px) {
+            .hero-feats { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 460px; }
+            .hero-feats li { flex-direction: row; align-items: center; min-height: 0; }
+            section.hero-modern .hero-right { padding-top: 152px; }
+            .hero-float { max-width: min(300px, 100%); }
+            .hero-float strong { white-space: normal; }
+        }
+        @media (max-width: 899px) {
+            section.hero-modern { padding-bottom: 56px; }
+            .hero-feats { max-width: none; margin-top: 26px; }
+            section.hero-modern .hero-right { padding-top: 0; justify-content: flex-start; }
+            .hero-float { position: static; width: 100%; max-width: none; margin-top: 14px; }
+            .hero-float strong { white-space: normal; }
+            .hero-wave { height: 34px; }
+        }
+        @media (max-width: 380px) { .hero-feats { gap: 10px; } .hero-feats li { font-size: .8rem; padding: 12px; gap: 10px; } }
+        /* Short laptop windows (e.g. 1366x~650 browser area): tighten vertical rhythm so the
+           whole hero, including the left end of the wave, fits on the first screen. */
+        @media (min-width: 900px) and (max-height: 740px) {
+            section.hero-modern { padding-top: 18px; padding-bottom: clamp(46px, calc(5.5vw + 10px), 90px); }
+            section.hero-modern .badge-tag { margin-bottom: 14px; padding: 6px 14px; }
+            section.hero-modern .line-accent { margin: 14px 0 16px; }
+            section.hero-modern .hero-text { margin-bottom: 20px; }
+            section.hero-modern .book-primary-btn, section.hero-modern .hp-ghost-btn { min-height: 48px; }
+            .hero-feats { margin-top: 18px; gap: 12px; }
+            .hero-feats li { padding: 12px 12px 14px; gap: 8px; }
+            section.hero-modern .hero-right { padding-top: 110px; }
+        }
     </style>
 </head>
 <body>
@@ -1129,7 +1378,7 @@
             <div class="logo-icon"><i class="fa-solid fa-droplet"></i></div>
             <h1>Aqua<span>Flow</span></h1>
         </div>
-        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-expanded="false">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-controls="navButtons" aria-expanded="false">
             <i class="fa-solid fa-bars" id="menuIcon"></i>
         </button>
         <div class="nav-buttons" id="navButtons">
@@ -1138,7 +1387,7 @@
                 <a href="#about" class="nav-link"><i class="fa-regular fa-circle-user"></i> About</a>
                 <a href="#services" class="nav-link"><i class="fa-solid fa-list-check"></i> Services</a>
                 <a href="#how-it-works" class="nav-link"><i class="fa-regular fa-circle-question"></i> How It Works</a>
-                <a href="#contact" class="nav-link"><i class="fa-regular fa-envelope"></i> Contact</a>
+                {% if contact.phone or contact.email or contact.address %}<a href="#contact" class="nav-link"><i class="fa-regular fa-envelope"></i> Contact</a>{% endif %}
             </div>
             <div class="nav-divider"></div>
             <div class="nav-actions-group">
@@ -1160,78 +1409,133 @@
 
     <!-- ===== HERO SECTION: FULL LEFT SIDE (truck rendered via pseudo-element) ===== -->
     <section class="hero-modern" id="home">
-        <div id="particles-container"></div>
         <div class="hero-left">
             <div class="badge-tag">
-                <i class="fa-solid fa-bolt"></i> Fast • Smart • Reliable
+                <i class="fa-solid fa-bolt"></i> Smart Water Logistics
             </div>
             <h1 class="hero-title">
-                Online Water Tanker <br>
-                <span>Booking & Tracking</span>
+                Water Delivered. <br>
+                <span>Convenience Tracked.</span>
             </h1>
             <div class="line-accent"></div>
             <p class="hero-text">
-                Book water tankers online and track your delivery in real-time.<br>
-                Fast, smart & reliable water delivery at your doorstep.
+                Book water tankers online, manage your bookings, and follow delivery progress through one convenient platform.
             </p>
-            <a href="{{ '/booking' if session.user_email else '/login' }}" class="book-primary-btn">
-                <i class="fa-regular fa-calendar-check"></i> Book Now
-            </a>
-            <img src="{{ url_for('static', filename='images/aquaflow-truck-hero.webp') }}" alt="AquaFlow water tanker truck" class="hero-mobile-image" loading="lazy">
-            <div class="trust-stats">
-                <div class="stat-pill"><i class="fa-solid fa-truck"></i> 10,000+ Deliveries</div>
-                <div class="stat-pill"><i class="fa-regular fa-clock"></i> 24/7 Emergency</div>
-                <div class="stat-pill"><i class="fa-solid fa-tint"></i> ISO Certified</div>
-                <!-- 4.9 ★ Rating stat pill removed -->
+            <div class="hp-cta-row">
+                <a href="{{ '/booking' if session.user_email else '/login' }}" class="book-primary-btn">
+                    <i class="fa-regular fa-calendar-check"></i> Book a Water Tanker
+                </a>
+                <a href="#how-it-works" class="hp-ghost-btn">See How It Works <i class="fa-solid fa-arrow-down"></i></a>
             </div>
+            <ul class="hero-feats" aria-label="Key features">
+                <li><span><i class="fa-regular fa-calendar-check"></i></span>Easy Online Booking</li>
+                <li><span><i class="fa-regular fa-clock"></i></span>Choose Your Schedule</li>
+                <li><span><i class="fa-solid fa-list-check"></i></span>Track Delivery Status</li>
+                <li><span><i class="fa-solid fa-user-shield"></i></span>Secure Customer Account</li>
+            </ul>
         </div>
         <div class="hero-right">
-            <!-- decorative bubbles only -->
-            <div class="bubble-item" style="width: 16px; height: 16px; top: 20%; right: 12%; animation-duration: 3.5s;"></div>
-            <div class="bubble-item" style="width: 24px; height: 24px; top: 45%; right: 20%; animation-duration: 4.2s;"></div>
-            <div class="bubble-item" style="width: 12px; height: 12px; bottom: 25%; right: 30%; animation-duration: 3s;"></div>
+            <img src="{{ url_for('static', filename='images/aquaflow-truck-hero.webp') }}" alt="AquaFlow water tanker truck" class="hero-truck" width="1000" height="596" fetchpriority="high" decoding="async">
+            <aside class="hero-float" aria-label="About AquaFlow">
+                <span class="hero-float-ico"><i class="fa-solid fa-droplet"></i></span>
+                <div><strong>Water Delivery, Made Simpler</strong><p>Manage bookings and delivery information through one convenient platform.</p></div>
+            </aside>
+        </div>
+        <svg class="hero-wave" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M0 22C240 4 480 8 720 38C960 68 1200 76 1440 28V80H0Z" fill="#d6e3ff"/>
+            <path d="M0 36C300 10 600 30 840 50C1080 70 1260 70 1440 46V80H0Z" fill="#ffffff"/>
+        </svg>
+    </section>
+
+    {% if home_summary is not none %}
+    <!-- ===== LOGGED-IN CUSTOMER SUMMARY (real data from this customer's bookings) ===== -->
+    <section class="hp-mine" id="my-bookings" aria-labelledby="mineTitle">
+        <div class="hp-mine-inner">
+            <h2 id="mineTitle">Your bookings at a glance</h2>
+            {% if home_summary.total %}
+            <div class="hp-mine-grid">
+                <div><small>Current bookings</small><strong>{{ home_summary.current }}</strong><span>pending or in progress</span></div>
+                <div><small>Next scheduled delivery</small>
+                    {% if home_summary.next %}<strong>{{ home_summary.next.delivery_date or 'Date not set' }}</strong><span>{{ home_summary.next.quantity }} L · {{ home_summary.next.status }}</span>
+                    {% else %}<strong>None</strong><span>no upcoming delivery</span>{% endif %}</div>
+                <div><small>Latest booking</small><strong>{{ home_summary.latest.status }}</strong><span>{{ home_summary.latest.quantity }} L · {{ home_summary.latest.water_type }}</span></div>
+            </div>
+            <div class="hp-mine-actions"><a class="hp-ghost-btn" href="/dashboard">Open dashboard</a><a class="hp-ghost-btn" href="/history">Booking history</a></div>
+            {% else %}
+            <div class="hp-empty"><i class="fa-solid fa-droplet"></i><p>You have no bookings yet. Book your first water tanker to get started.</p>
+                <a href="/booking" class="book-primary-btn hp-small-btn">Book a Water Tanker</a></div>
+            {% endif %}
         </div>
     </section>
+    {% endif %}
 
     <!-- ===== ABOUT SECTION ===== -->
     <div class="about-wrap" id="about">
         <div class="about-inner">
-            <div class="how-eyebrow">About Us</div>
-            <div class="how-title">Who <span>We Are</span></div>
-            <p>AquaFlow is an online water tanker booking and tracking platform built to make water delivery fast, transparent and reliable. From booking to doorstep delivery, every step is tracked in real-time so you always know when your water is arriving.</p>
-            <div class="about-stats">
-                <div class="about-stat"><span class="num">10,000+</span><span class="label">Deliveries Completed</span></div>
-                <div class="about-stat"><span class="num">24/7</span><span class="label">Emergency Support</span></div>
-                <div class="about-stat"><span class="num">100%</span><span class="label">ISO Certified Water</span></div>
-            </div>
+            <div class="how-eyebrow">About</div>
+            <div class="how-title">What <span>AquaFlow</span> Is</div>
+            <p>AquaFlow is an online platform for booking water tankers and managing deliveries. Customers book and follow their bookings from one account, drivers receive and complete assignments, and administrators coordinate the whole process.</p>
         </div>
     </div>
 
-    <!-- ===== SERVICES SECTION ===== -->
+    <!-- ===== BUILT FOR CONVENIENT WATER DELIVERY (real capabilities only) ===== -->
+    <section class="hp-caps-wrap" aria-labelledby="capsTitle">
+        <h2 class="hp-caps-title" id="capsTitle">Built for Convenient Water Delivery</h2>
+        <ul class="hp-caps">
+            <li><span class="hp-ico"><i class="fa-regular fa-calendar-check"></i></span><div><h3>Simple Online Booking</h3><p>Choose the water quantity, water type, delivery address and preferred schedule.</p></div></li>
+            <li><span class="hp-ico"><i class="fa-solid fa-list-check"></i></span><div><h3>Booking Status Tracking</h3><p>Check the current status of each booking.</p></div></li>
+            <li><span class="hp-ico"><i class="fa-solid fa-truck-fast"></i></span><div><h3>Delivery Coordination</h3><p>See the assigned driver and delivery details once they are available.</p></div></li>
+            <li><span class="hp-ico"><i class="fa-solid fa-clock-rotate-left"></i></span><div><h3>Booking History</h3><p>Review your previous and upcoming bookings.</p></div></li>
+            <li><span class="hp-ico"><i class="fa-solid fa-user-shield"></i></span><div><h3>Secure Customer Accounts</h3><p>Register with email verification and log in to manage your bookings.</p></div></li>
+            <li><span class="hp-ico"><i class="fa-solid fa-credit-card"></i></span><div><h3>Payment Records</h3><p>View your payment information and wallet in one place.</p></div></li>
+        </ul>
+    </section>
+
+    <!-- ===== SERVICES / FEATURE SHOWCASE ===== -->
     <div class="services-wrap" id="services">
         <div class="how-eyebrow">Services</div>
-        <div class="how-title">What We <span>Offer</span></div>
+        <div class="how-title">Everything You Need to <span>Manage Your Water Bookings</span></div>
         <div class="services-grid">
-            <div class="service-card">
-                <div class="service-icon"><i class="fa-solid fa-house-chimney"></i></div>
-                <h4>Residential Delivery</h4>
-                <p>On-demand water tanker delivery for homes and apartments, booked in a few taps.</p>
-            </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fa-solid fa-building"></i></div>
-                <h4>Bulk & Commercial Supply</h4>
-                <p>Reliable large-volume water supply for offices, construction sites & businesses.</p>
-            </div>
-            <div class="service-card">
-                <div class="service-icon"><i class="fa-solid fa-truck-fast"></i></div>
-                <h4>Emergency Delivery</h4>
-                <p>Round-the-clock emergency water delivery when you need it most.</p>
-            </div>
-            <div class="service-card">
+            <a class="service-card hp-link" href="{{ '/booking' if session.user_email else '/login' }}">
+                <div class="service-icon"><i class="fa-regular fa-calendar-check"></i></div>
+                <h4>Online Tanker Booking</h4>
+                <p>Request a tanker with your quantity, water type and delivery address.</p>
+            </a>
+            <a class="service-card hp-link" href="{{ '/booking' if session.user_email else '/login' }}">
                 <div class="service-icon"><i class="fa-solid fa-calendar-days"></i></div>
-                <h4>Scheduled Subscription</h4>
-                <p>Set up recurring deliveries on a schedule that fits your routine.</p>
-            </div>
+                <h4>Scheduled Deliveries</h4>
+                <p>Pick a delivery date and time that suits you.</p>
+            </a>
+            <a class="service-card hp-link" href="{{ '/history' if session.user_email else '/login' }}">
+                <div class="service-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <h4>Booking History</h4>
+                <p>Review previous and upcoming bookings in one list.</p>
+            </a>
+            <a class="service-card hp-link" href="{{ '/history' if session.user_email else '/login' }}">
+                <div class="service-icon"><i class="fa-solid fa-list-check"></i></div>
+                <h4>Delivery Status Updates</h4>
+                <p>Follow your booking from request to delivery.</p>
+            </a>
+            <a class="service-card hp-link" href="{{ '/history' if session.user_email else '/login' }}">
+                <div class="service-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                <h4>Driver Coordination</h4>
+                <p>See the assigned driver and vehicle once a booking is assigned.</p>
+            </a>
+            <a class="service-card hp-link" href="{{ '/profile' if session.user_email else '/login' }}">
+                <div class="service-icon"><i class="fa-regular fa-id-card"></i></div>
+                <h4>Customer Profile</h4>
+                <p>Keep your details and booking preferences up to date.</p>
+            </a>
+            <a class="service-card hp-link" href="{{ '/my-payments' if session.user_email else '/login' }}">
+                <div class="service-icon"><i class="fa-solid fa-credit-card"></i></div>
+                <h4>Payment History</h4>
+                <p>See your payments and wallet activity.</p>
+            </a>
+            <a class="service-card hp-link" href="{{ '/notification' if session.user_email else '/login' }}">
+                <div class="service-icon"><i class="fa-regular fa-bell"></i></div>
+                <h4>Notifications</h4>
+                <p>Get updates about your bookings in your account.</p>
+            </a>
         </div>
     </div>
 
@@ -1241,116 +1545,117 @@
         <div class="how-title">Simple Steps. <span>Seamless Delivery.</span></div>
         <div class="how-steps">
             <div class="how-step how-step-1">
-                <div class="how-step-icon"><i class="fa-regular fa-calendar-check"></i><span class="step-num">1</span></div>
-                <h4>Book Tanker</h4>
-                <p>Choose your tank size, address & preferred delivery time.</p>
+                <div class="how-step-icon"><i class="fa-solid fa-droplet"></i><span class="step-num">1</span></div>
+                <h4>Choose Your Water</h4>
+                <p>Select the water type and tanker quantity.</p>
             </div>
             <div class="how-connector"></div>
             <div class="how-step how-step-2">
-                <div class="how-step-icon"><i class="fa-solid fa-user-check"></i><span class="step-num">2</span></div>
-                <h4>Driver Assigned</h4>
-                <p>We instantly assign the nearest verified driver to you.</p>
+                <div class="how-step-icon"><i class="fa-regular fa-calendar-check"></i><span class="step-num">2</span></div>
+                <h4>Schedule Delivery</h4>
+                <p>Enter the delivery address and your preferred date and time.</p>
             </div>
             <div class="how-connector"></div>
             <div class="how-step how-step-3">
-                <div class="how-step-icon"><i class="fa-solid fa-location-crosshairs"></i><span class="step-num">3</span></div>
-                <h4>Live Tracking</h4>
-                <p>Track your tanker in real-time on the map, every step of the way.</p>
+                <div class="how-step-icon"><i class="fa-solid fa-list-check"></i><span class="step-num">3</span></div>
+                <h4>Track Your Booking</h4>
+                <p>Follow the booking status and see driver details once assigned.</p>
             </div>
             <div class="how-connector"></div>
             <div class="how-step how-step-4">
-                <div class="how-step-icon"><i class="fa-solid fa-shield-halved"></i><span class="step-num">4</span></div>
-                <h4>Delivery Complete</h4>
-                <p>Safe, verified delivery straight to your doorstep.</p>
+                <div class="how-step-icon"><i class="fa-solid fa-circle-check"></i><span class="step-num">4</span></div>
+                <h4>Receive Your Delivery</h4>
+                <p>See the final delivery status and keep the booking in your history.</p>
             </div>
         </div>
     </div>
 
-    <!-- FEATURE SECTION -->
+    <!-- ===== TRUST & TRANSPARENCY ===== -->
     <div class="features-wrap" id="features">
-        <div class="section-title">Why Choose <span style="color:#3565ff;">AquaFlow</span>?</div>
+        <div class="section-title">Clear and <span style="color:#3565ff;">Transparent</span></div>
         <div style="width: 80px; height: 4px; background: #3565ff; margin: 0 auto 20px; border-radius: 4px;"></div>
         <div class="features-grid">
             <div class="feature-card">
+                <div class="feature-icon"><i class="fa-solid fa-route"></i></div>
+                <h3>How bookings work</h3>
+                <p>You submit a booking, it is reviewed and assigned to a driver, and its status updates in your account until delivery.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fa-solid fa-user-lock"></i></div>
+                <h3>Your account, your data</h3>
+                <p>Bookings, payments and profile details are only visible when you are logged in to your own account.</p>
+            </div>
+            <div class="feature-card">
                 <div class="feature-icon"><i class="fa-solid fa-map-location-dot"></i></div>
-                <h3>Real-Time Tracking</h3>
-                <p>Live GPS tracking from dispatch to your doorstep. Total visibility.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fa-solid fa-headset"></i></div>
-                <h3>24/7 Support</h3>
-                <p>Emergency water delivery & customer support round the clock.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><i class="fa-solid fa-hand-holding-droplet"></i></div>
-                <h3>Safe & Pure</h3>
-                <p>ISO certified water, quality tested for 100% safe drinking water.</p>
+                <h3>Availability</h3>
+                <p>Delivery depends on the service areas supported at the time and on driver availability for the date you choose.</p>
             </div>
         </div>
     </div>
 
-    <!-- ===== CONTACT SECTION ===== -->
+    <!-- ===== CONTACT SECTION (only details configured in CONTACT_* settings) ===== -->
+    {% if contact.phone or contact.email or contact.address %}
     <div class="contact-wrap" id="contact">
         <div class="how-eyebrow">Contact</div>
         <div class="how-title">Get In <span>Touch</span></div>
         <div class="contact-grid">
-            <div class="contact-card">
+            {% if contact.phone %}<div class="contact-card">
                 <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
                 <h4>Call Us</h4>
-                <p>+91 63619 62280</p>
-            </div>
-            <div class="contact-card">
+                <p><a href="tel:{{ contact.phone_href }}">{{ contact.phone }}</a></p>
+            </div>{% endif %}
+            {% if contact.email %}<div class="contact-card">
                 <div class="contact-icon"><i class="fa-regular fa-envelope"></i></div>
                 <h4>Email Us</h4>
-                <p>aquaflowproject@gmail.com</p>
-            </div>
-            <div class="contact-card">
+                <p><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></p>
+            </div>{% endif %}
+            {% if contact.address %}<div class="contact-card">
                 <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
-                <h4>Visit Us</h4>
-                <p>Your City, State, India</p>
-            </div>
+                <h4>Address</h4>
+                <p>{{ contact.address }}</p>
+            </div>{% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div id="contact"></div>
+    {% endif %}
+
+    <!-- ===== FINAL CTA ===== -->
+    <div class="cta-premium">
+        <h2>Ready to Schedule Your Water Delivery?</h2>
+        <p class="hp-cta-text">Choose your required quantity, set your preferred delivery details, and manage your booking from one place.</p>
+        <div class="hp-cta-row hp-cta-center">
+            <a href="{{ '/booking' if session.user_email else '/login' }}" id="ctaBookBtn" class="hp-cta-primary"><i class="fa-regular fa-calendar-check"></i> Book a Water Tanker</a>
+            <a href="#how-it-works" class="hp-cta-link">View How It Works</a>
         </div>
     </div>
 
-    <!-- CTA SECTION (footer removed, bottom margin adjusted) -->
-    <div class="cta-premium">
-        <h2><i class="fa-regular fa-calendar-check"></i> Ready for Fast & Reliable Water Delivery?</h2>
-        <p style="margin-top: 15px; font-size: 1.2rem;">Join thousands of happy customers — instant booking & tracking available.</p>
-        <a href="{{ '/booking' if session.user_email else '/login' }}" id="ctaBookBtn" style="background: white; color:#0a1e52; border: none; margin-top: 28px; padding: 14px 38px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; text-decoration: none; display: inline-block;"><i class="fa-regular fa-calendar-check me-2"></i> Book Your Tanker Now</a>
-    </div>
-
-    <!-- FOOTER SECTION COMPLETELY REMOVED (no footer, no copyright, no contact info, no links) -->
+    <!-- ===== FOOTER ===== -->
+    <footer class="hp-footer">
+        <div class="hp-footer-grid">
+            <div class="hp-footer-brand">
+                <div class="logo-area"><div class="logo-icon"><i class="fa-solid fa-droplet"></i></div><span class="hp-footer-name">Aqua<span>Flow</span></span></div>
+                <p>An online platform for booking water tankers, managing deliveries and following booking status.</p>
+            </div>
+            <nav aria-label="Explore"><h5>Explore</h5>
+                <a href="#home">Home</a><a href="#about">About</a><a href="#services">Services</a><a href="#how-it-works">How It Works</a>{% if contact.phone or contact.email or contact.address %}<a href="#contact">Contact</a>{% endif %}
+            </nav>
+            <nav aria-label="Customers"><h5>Customers</h5>
+                <a href="{{ '/booking' if session.user_email else '/login' }}">Book a Tanker</a>
+                {% if session.user_email %}<a href="/dashboard">Dashboard</a><a href="/history">Booking History</a><a href="/my-payments">My Payments</a>
+                {% else %}<a href="/login">Login</a><a href="/signup">Sign up</a>{% endif %}
+            </nav>
+            <nav aria-label="Drivers"><h5>Drivers</h5>
+                <a href="/driver-register">Become a Driver</a><a href="/driver-login">Driver Login</a>
+            </nav>
+        </div>
+        <div class="hp-footer-bottom">&copy; {{ current_year }} AquaFlow. All rights reserved.</div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
     </script>
 
     <script>
-        // Create floating water particles
-        function createParticles() {
-            const container = document.getElementById('particles-container');
-            if (!container) return;
-
-            const particleCount = 30;
-
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'water-particle';
-
-                const size = Math.random() * 55 + 18;
-                particle.style.width = size + 'px';
-                particle.style.height = size + 'px';
-
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
-
-                const duration = Math.random() * 14 + 10;
-                particle.style.animation = `floatParticle ${duration}s linear infinite`;
-                particle.style.animationDelay = Math.random() * 12 + 's';
-
-                container.appendChild(particle);
-            }
-        }
-
         // navbar scroll effect
         window.addEventListener('scroll', () => {
             const nav = document.querySelector('.navbar-custom');
@@ -1363,48 +1668,16 @@
             }
         });
 
-        // Smooth scroll for any anchor links that might exist
+        // Smooth scroll for in-page anchors (CSS scroll-behavior handles reduced motion)
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
-                e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
-                    target.scrollIntoView({ behavior: 'smooth' });
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
                 }
             });
         });
-
-        // stat pills interaction
-        const statPills = document.querySelectorAll('.stat-pill');
-        statPills.forEach(pill => {
-            pill.addEventListener('mouseenter', () => {
-                pill.style.transform = 'translateY(-3px)';
-                pill.style.transition = '0.2s';
-            });
-            pill.addEventListener('mouseleave', () => {
-                pill.style.transform = 'translateY(0)';
-            });
-        });
-
-        // extra bubbles on hero right
-        const heroRight = document.querySelector('.hero-right');
-        if (heroRight) {
-            for (let i = 0; i < 6; i++) {
-                let extraBubble = document.createElement('div');
-                extraBubble.className = 'bubble-item';
-                let size = Math.random() * 20 + 8;
-                extraBubble.style.width = size + 'px';
-                extraBubble.style.height = size + 'px';
-                extraBubble.style.position = 'absolute';
-                extraBubble.style.left = Math.random() * 70 + 20 + '%';
-                extraBubble.style.top = Math.random() * 80 + '%';
-                extraBubble.style.animationDuration = (Math.random() * 5 + 3) + 's';
-                extraBubble.style.opacity = '0.6';
-                heroRight.appendChild(extraBubble);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', createParticles);
 
         // mobile hamburger menu toggle
         const menuToggle = document.getElementById('mobileMenuToggle');
@@ -1449,6 +1722,14 @@
             });
         }
 
+        // Escape closes the menu and returns focus to the button
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && navButtons.classList.contains('open')) {
+                closeMobileMenu();
+                menuToggle.focus();
+            }
+        });
+
         // close mobile menu automatically if window resizes back to desktop
         window.addEventListener('resize', () => {
             if (window.innerWidth > 1400) {
@@ -1456,7 +1737,6 @@
             }
         });
 
-        console.log("AquaFlow: full-width navbar, hero expanded, background image merged, edges faded, How It Works section added, mobile hamburger nav enabled");
     </script>
 </body>
 </html>

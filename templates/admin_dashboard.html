@@ -89,6 +89,14 @@
             display: none;
             animation: pulse 1s infinite;
         }
+        .support-count {
+            display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #e5384f; color: #fff;
+            font-size: 11px; font-weight: 700; line-height: 20px; text-align: center;
+            animation: supPulse 1.6s ease-in-out infinite;
+        }
+        .support-count.show { display: block; }
+        @keyframes supPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(229,56,79,.45); } 50% { box-shadow: 0 0 0 6px rgba(229,56,79,0); } }
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.4); opacity: 0.6; }
@@ -275,6 +283,7 @@
                     <a href="/driver-management">
                         <i class="fas fa-id-card"></i>
                         Driver Management
+                        <span id="driverSupportBadge" class="support-count" title="Open driver support requests"></span>
                     </a>
                 </li>
                 <li class="sidebar-link" id="newDriverRequestLi">
@@ -285,8 +294,8 @@
                     </a>
                 </li>
                 <li class="sidebar-link">
-                    <a href="/finance-management">
-                        <i class="fas fa-sack-dollar"></i>
+                    <a href="{{ url_for('finance_management') }}" aria-label="Finance Management: driver payouts, deposits and bank details">
+                        <i class="fas fa-wallet"></i>
                         Finance Management
                     </a>
                 </li>
@@ -552,7 +561,21 @@ async function markRequestsAsSeen() {
     try { await fetch("/mark-driver-requests-seen", { method: "POST" }); } catch (err) { console.log("Failed to mark seen:", err); }
 }
 
+async function checkDriverSupport() {
+    try {
+        const r = await fetch("/admin/driver-support/summary", { cache: "no-store" });
+        if (!r.ok) return;
+        const d = await r.json();
+        const b = document.getElementById("driverSupportBadge");
+        if (!b || !d.ok) return;
+        b.textContent = d.open > 99 ? "99+" : d.open;
+        b.classList.toggle("show", d.open > 0);
+    } catch (err) { /* badge is best-effort */ }
+}
+
 checkDriverRequests();
+checkDriverSupport();
+setInterval(checkDriverSupport, 8000);
 markRequestsAsSeen();
 setInterval(checkDriverRequests, 5000);
 

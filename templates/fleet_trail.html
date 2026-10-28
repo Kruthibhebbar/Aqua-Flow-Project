@@ -1,0 +1,58 @@
+{% extends "fleet_base.html" %}
+{% block title %}GPS tracking — {{ drv.name }}{% endblock %}
+{% block crumbs %}
+<nav class="crumbs" aria-label="Breadcrumb">
+    <a href="{{ url_for('admin_live_tracking') }}">Fleet Map</a><span class="sep">›</span>
+    <a href="{{ url_for('fleet_driver_page', driver_id=drv.id) }}">Driver {{ drv.name }}</a><span class="sep">›</span>
+    <span>GPS tracking details</span>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-head"><h2><i class="fas fa-route"></i> GPS tracking details — {{ drv.name }} {% if drv.truck_number %}<span class="ref">{{ drv.truck_number }}</span>{% endif %}</h2></div>
+<form method="get" class="filters" style="grid-template-columns: repeat(3, max-content); max-width: 560px; align-items:center;">
+    <select name="hours" aria-label="Time window">
+        {% for h in (1, 6, 24, 72) %}<option value="{{ h }}" {{ 'selected' if h == hours }}>Last {{ h }} h</option>{% endfor %}
+    </select>
+    <select name="limit" aria-label="Maximum points">
+        {% for n in (100, 300, 1000) %}<option value="{{ n }}" {{ 'selected' if n == limit }}>Up to {{ n }} points</option>{% endfor %}
+    </select>
+    <button class="btn btn-primary" type="submit">Apply</button>
+</form>
+<div class="grid grid-even" style="margin-top:14px;">
+    <div class="stack">
+        <div class="map-box"><div id="map" class="map map-sm"></div><div class="map-banner" id="mapBanner"></div></div>
+        <div class="map-note" id="mapNote"></div>
+    </div>
+    <div class="card">
+        <h3>Recorded GPS points ({{ points | length }})</h3>
+        {% if points %}
+        <div class="list-scroll"><div class="table-wrap"><table class="data">
+            <thead><tr><th>Time (server)</th><th>Latitude</th><th>Longitude</th><th>Speed</th></tr></thead>
+            <tbody>
+            {% for p in points | reverse %}
+            <tr><td>{{ p.t }}</td><td>{{ '%.5f' | format(p.lat) }}</td><td>{{ '%.5f' | format(p.lng) }}</td>
+                <td>{{ ((p.speed * 3.6) | round(0) | int ~ ' km/h') if p.speed is not none else '—' }}</td></tr>
+            {% endfor %}
+            </tbody></table></div></div>
+        {% else %}
+        <div class="state"><i class="fa-solid fa-location-crosshairs"></i>No GPS points were recorded for this driver in the selected window.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    const P = {{ points | tojson }};
+    const map = AquaFleet.createMap('map', { bannerId: 'mapBanner' });
+    const note = document.getElementById('mapNote');
+    if (!P.length) { note.textContent = 'Nothing to draw: no recorded GPS points in this window.'; return; }
+    const ll = P.map(p => [p.lat, p.lng]);
+    const line = L.polyline(ll, { color: '#0E7C86', weight: 4, opacity: .85 }).addTo(map);
+    L.circleMarker(ll[0], { radius: 6, color: '#fff', fillColor: '#2C5F9E', fillOpacity: 1, weight: 2 }).addTo(map).bindPopup('Oldest point shown<br>' + AquaFleet.esc(P[0].t));
+    L.circleMarker(ll[ll.length - 1], { radius: 7, color: '#fff', fillColor: '#157A50', fillOpacity: 1, weight: 2 }).addTo(map).bindPopup('Most recent point<br>' + AquaFleet.esc(P[P.length - 1].t));
+    map.fitBounds(line.getBounds(), { padding: [40, 40], maxZoom: 16 });
+    note.textContent = 'Straight lines join the recorded GPS fixes in time order (blue = oldest, green = newest). This is recorded data, not a re-routed path.';
+})();
+</script>
+{% endblock %}

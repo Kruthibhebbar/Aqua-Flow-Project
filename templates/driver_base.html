@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page_title }} | AquaFlow Driver</title>
+    <meta name="csrf-token" content="{{ driver_csrf_token() }}">
+    <meta name="robots" content="noindex">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ driver_asset('css/driver-suite.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="af-body">
+<a class="af-skip" href="#af-main">Skip to content</a>
+
+<div class="af-app" id="af-app">
+
+    <aside class="af-side" id="af-side" aria-label="Driver navigation">
+        <a class="af-brand" href="{{ url_for('driver_dashboard') }}" aria-label="AquaFlow Driver home">
+            <span class="af-brand-mark"><i class="fa-solid fa-droplet" aria-hidden="true"></i></span>
+            <span class="af-brand-text"><b>AquaFlow</b><span>Driver Operations</span></span>
+        </a>
+
+        <div class="af-me">
+            {% set photo = driver|af_photo %}
+            {% if photo %}<img class="af-avatar" src="{{ photo }}" alt="" width="42" height="42">
+            {% else %}<span class="af-avatar" aria-hidden="true">{{ driver.name|af_initials }}</span>{% endif %}
+            <div class="af-me-text">
+                <b>{{ driver.name }}</b>
+                <span>{{ driver.truck_number or 'No vehicle on file' }}</span>
+                <span><i class="af-dot {{ 'is-on' if driver.online_status == 'Online' else '' }}" data-af-status-dot></i><span data-af-status-text>{{ driver.online_status or 'Offline' }}</span></span>
+            </div>
+        </div>
+
+        <nav aria-label="Main">
+            <ul class="af-nav">
+                {% for endpoint, key, label, icon in nav_items %}
+                <li>
+                    <a href="{{ url_for(endpoint) }}" data-tip="{{ label }}" {% if page == key %}aria-current="page"{% endif %}>
+                        <i class="fa-solid {{ icon }}" aria-hidden="true"></i>
+                        <span class="af-label">{{ label }}</span>
+                        {% if key == 'notifications' %}<span class="af-badge" data-af-unread {% if not unread_count %}hidden{% endif %}>{{ unread_count if unread_count < 100 else '99+' }}</span>{% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+
+        <div class="af-side-foot">
+            <button type="button" class="af-linklike af-collapse" id="af-collapse" data-tip="Collapse menu" aria-pressed="false">
+                <i class="fa-solid fa-angles-left" aria-hidden="true"></i><span class="af-label">Collapse menu</span>
+            </button>
+            <a class="af-linklike" href="{{ url_for('driver_logout') }}" data-tip="Log out">
+                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i><span class="af-label">Log out</span>
+            </a>
+        </div>
+    </aside>
+
+    <div class="af-main">
+        <header class="af-top">
+            <button type="button" class="af-icon-btn af-menu-btn" id="af-menu-btn" aria-label="Open menu" aria-controls="af-side" aria-expanded="false">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <div class="af-top-title">
+                {% if crumbs %}
+                <nav class="af-crumbs" aria-label="Breadcrumb">
+                    {% for name, endpoint in crumbs %}
+                        {% if endpoint %}<a href="{{ url_for(endpoint) }}">{{ name }}</a><span class="sep" aria-hidden="true">/</span>
+                        {% else %}<span aria-current="page">{{ name }}</span>{% endif %}
+                    {% endfor %}
+                </nav>
+                {% endif %}
+                <h1>{{ page_title }}</h1>
+                <p class="af-top-sub">{{ page_subtitle }}</p>
+            </div>
+
+            <div class="af-top-tools">
+                <div class="af-clock" aria-hidden="true"><b id="af-time">--:--</b><span id="af-date"></span></div>
+
+                <span class="af-gps" id="af-gps" data-state="idle" role="status">
+                    <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i><span class="gps-text">GPS idle</span>
+                </span>
+
+                <button type="button" class="af-switch" id="af-online" role="switch" aria-checked="{{ 'true' if driver.online_status == 'Online' else 'false' }}" aria-label="Availability">
+                    <span class="track" aria-hidden="true"></span><span class="sw-text" id="af-online-text">{{ 'Online' if driver.online_status == 'Online' else 'Offline' }}</span>
+                </button>
+
+                <div class="af-pop" id="af-bell-wrap">
+                    <button type="button" class="af-icon-btn" id="af-bell" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="af-bell-panel">
+                        <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                        <span class="af-pip" data-af-unread {% if not unread_count %}hidden{% endif %}>{{ unread_count if unread_count < 100 else '99+' }}</span>
+                    </button>
+                    <div class="af-pop-panel" id="af-bell-panel" hidden>
+                        <div class="af-pop-head"><span>Notifications</span>
+                            <button type="button" class="btn btn-ghost btn-sm" id="af-read-all">Mark all as read</button>
+                        </div>
+                        <div class="af-pop-list">
+                            {% for n in shell_notes %}
+                            <a class="note-row {{ 'is-unread' if n.unread }}" href="{{ n.href or url_for('driver_notifications') }}" data-note-id="{{ n.id }}">
+                                <span class="ico tone-{{ n.tone if n.tone != 'info' else 'accent' }}"><i class="fa-solid {{ n.icon }}" aria-hidden="true"></i></span>
+                                <span class="grow"><b>{{ n.title }}</b><p>{{ n.message|truncate(90) }}</p></span>
+                                <time>{{ n.ago }}</time>
+                            </a>
+                            {% else %}
+                            <div class="empty compact"><i class="fa-regular fa-bell-slash" aria-hidden="true"></i><p>You're all caught up.</p></div>
+                            {% endfor %}
+                        </div>
+                        <div class="af-pop-foot"><a href="{{ url_for('driver_notifications') }}">View all notifications</a></div>
+                    </div>
+                </div>
+
+                <div class="af-pop" id="af-user-wrap">
+                    <button type="button" class="af-icon-btn" id="af-user" aria-label="Account menu" aria-haspopup="true" aria-expanded="false" aria-controls="af-user-panel">
+                        <i class="fa-regular fa-user" aria-hidden="true"></i>
+                    </button>
+                    <div class="af-pop-panel af-menu-list" id="af-user-panel" style="width:230px" hidden>
+                        <a href="{{ url_for('driver_profile') }}"><i class="fa-regular fa-id-badge" aria-hidden="true"></i>My Profile</a>
+                        <a href="{{ url_for('driver_documents') }}"><i class="fa-regular fa-folder-open" aria-hidden="true"></i>Documents</a>
+                        <a href="{{ url_for('driver_support') }}"><i class="fa-regular fa-life-ring" aria-hidden="true"></i>Help &amp; Support</a>
+                        <a href="{{ url_for('driver_logout') }}"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>Log out</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="af-content" id="af-main" tabindex="-1">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="af-flash" role="status">
+                {% for category, message in messages %}
+                {% set tone = 'danger' if category in ('danger', 'error') else ('warning' if category == 'warning' else ('success' if category == 'success' else 'info')) %}
+                <div class="alert tone-{{ tone }}"><i class="fa-solid {{ {'danger': 'fa-circle-exclamation', 'warning': 'fa-triangle-exclamation', 'success': 'fa-circle-check', 'info': 'fa-circle-info'}[tone] }}" aria-hidden="true"></i><span class="grow">{{ message }}</span></div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<div class="af-scrim" data-af-nav-close></div>
+<div class="toasts" id="af-toasts" aria-live="polite"></div>
+
+{% block dialogs %}{% endblock %}
+
+<script id="af-config" type="application/json">{{ {
+    'online': driver.online_status == 'Online',
+    'page': page,
+    'urls': {
+        'status': url_for('api_driver_status'),
+        'gps': '/api/gps/update',
+        'notifications': url_for('api_driver_notifications'),
+        'readAll': url_for('api_driver_notifications_read_all'),
+        'live': url_for('api_driver_dashboard_live'),
+        'login': url_for('driver_login'),
+    }
+}|tojson }}</script>
+<script src="{{ driver_asset('js/driver-suite.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

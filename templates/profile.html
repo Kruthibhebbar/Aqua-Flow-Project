@@ -3,770 +3,540 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AquaFlow | Profile</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>AquaFlow | My Profile</title>
 
     <style>
+        /* ==========================================================
+           AquaFlow - My Profile
+           Uses the same design language as Booking History
+           (Booking Suite): Space Grotesk + Inter, navy panel,
+           cobalt actions, soft white cards. Page-scoped styles.
+           ========================================================== */
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:'Poppins',sans-serif;
+        :root{
+            --navy:#0B1F3A; --navy-700:#12315C;
+            --cobalt:#1D4ED8; --cobalt-600:#1640B8;
+            --aqua:#06AED4; --aqua-100:#E3F7FB;
+
+            --ink-900:#0B1526; --ink-700:#33415A; --ink-500:#64748B; --ink-400:#94A3B8;
+            --line:#E5EAF2; --line-soft:#EEF2F8; --paper:#F5F7FB; --surface:#FFFFFF;
+
+            --amber:#92400E; --amber-bg:#FEF3E2;
+            --sky:#075985;   --sky-bg:#E0F4FB;
+            --blue:#1E40AF;  --blue-bg:#E3EAFC;
+            --green:#15803D; --green-bg:#E3F7EA;
+            --red:#B91C1C;   --red-bg:#FBE9E9;
+
+            --shadow-xs:0 1px 2px rgba(11,21,38,.05);
+            --shadow-sm:0 2px 8px rgba(11,21,38,.06);
+            --shadow-md:0 8px 24px rgba(11,21,38,.08);
+            --shadow-lg:0 18px 40px rgba(11,21,38,.12);
+
+            --r-sm:10px; --r-md:14px; --r-lg:20px;
+            --control-h:46px;
         }
+
+        *{ margin:0; padding:0; box-sizing:border-box; }
+        html{ scroll-behavior:smooth; }
 
         body{
-            background:#f3f8ff;
-            height:100vh;
-            overflow:hidden;
-            padding:30px;
-            color:#1e293b;
+            background:var(--paper); color:var(--ink-900);
+            font-family:'Inter',system-ui,-apple-system,sans-serif;
+            -webkit-font-smoothing:antialiased;
+            padding:20px 32px 28px;
+            zoom:0.9;
+            overflow-x:hidden;
         }
 
-        .container{
-            max-width:1400px;
-            margin:auto;
-            height:100%;
-            display:flex;
-            flex-direction:column;
+        ::-webkit-scrollbar{ width:9px; height:9px; }
+        ::-webkit-scrollbar-track{ background:transparent; }
+        ::-webkit-scrollbar-thumb{ background:#C7D2E3; border-radius:20px; }
+
+        a{ color:inherit; text-decoration:none; }
+        button{ font-family:inherit; }
+        :focus-visible{ outline:2px solid var(--cobalt); outline-offset:2px; border-radius:6px; }
+
+        svg.ic{
+            width:16px; height:16px; flex:none;
+            fill:none; stroke:currentColor; stroke-width:1.8;
+            stroke-linecap:round; stroke-linejoin:round;
         }
 
-        .top-bar{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:25px;
-            flex:none;
+        .container{ max-width:1440px; margin:0 auto; }
+
+        /* ---------- breadcrumb / utility bar ---------- */
+        .util-bar{
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:14px; flex-wrap:wrap; gap:10px;
+        }
+        .crumb{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--ink-500); }
+        .crumb a{ color:var(--ink-500); transition:color .15s; }
+        .crumb a:hover{ color:var(--cobalt); }
+        .crumb .sep{ color:var(--line); }
+        .crumb .current{ color:var(--navy); }
+
+        .util-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .sync-pill{
+            display:inline-flex; align-items:center; gap:7px;
+            font-size:12px; font-weight:600; color:var(--ink-500);
+            background:var(--surface); border:1px solid var(--line);
+            padding:6px 12px; border-radius:100px;
+            font-variant-numeric:tabular-nums;
+        }
+        .sync-dot{ width:7px; height:7px; border-radius:50%; background:#22C55E; box-shadow:0 0 0 3px rgba(34,197,94,.18); }
+
+        .icon-pill{
+            position:relative; width:34px; height:34px; border-radius:50%;
+            display:inline-flex; align-items:center; justify-content:center;
+            background:var(--surface); border:1px solid var(--line); color:var(--ink-700);
+            transition:border-color .15s, color .15s;
+        }
+        .icon-pill:hover{ border-color:var(--cobalt); color:var(--cobalt); }
+        .icon-pill .bell-dot{
+            position:absolute; top:6px; right:7px; width:8px; height:8px;
+            border-radius:50%; background:#EF4444; border:2px solid var(--surface);
         }
 
-        .logo{
-            font-size:30px;
-            font-weight:700;
-            color:#0077ff;
+        /* ---------- buttons ---------- */
+        .btn{
+            height:var(--control-h); display:inline-flex; align-items:center; justify-content:center; gap:8px;
+            padding:0 20px; border-radius:var(--r-sm); border:1px solid transparent;
+            font-size:13.5px; font-weight:600; cursor:pointer; transition:all .15s ease; white-space:nowrap;
         }
+        .btn svg{ width:15px; height:15px; }
+        .btn-primary{ background:var(--cobalt); color:#fff; box-shadow:0 6px 16px rgba(29,78,216,.28); }
+        .btn-primary:hover{ background:var(--cobalt-600); transform:translateY(-1px); box-shadow:0 8px 20px rgba(29,78,216,.34); }
+        .btn-on-dark{ background:rgba(255,255,255,.10); color:#fff; border-color:rgba(255,255,255,.22); }
+        .btn-on-dark:hover{ background:rgba(255,255,255,.18); }
+        .btn-outline{ background:var(--surface); color:var(--cobalt); border-color:var(--line); }
+        .btn-outline:hover{ border-color:var(--cobalt); background:#F3F7FF; }
+        .btn-sm{ height:38px; padding:0 15px; font-size:12.5px; }
 
-        .current-time{
-            background:white;
-            padding:12px 20px;
-            border-radius:50px;
-            box-shadow:0 5px 20px rgba(0,0,0,0.05);
-            font-weight:600;
+        /* ---------- top panel ---------- */
+        .top-panel{
+            background:linear-gradient(135deg,#081A33 0%,#0F2C59 35%,#1B4B91 68%,#0A2044 100%);
+            border-radius:var(--r-lg); padding:30px 34px;
+            box-shadow:0 18px 40px rgba(14,165,233,.28);
+            margin-bottom:16px; position:relative; overflow:hidden;
         }
-
-        .profile-layout{
-            display:grid;
-            grid-template-columns:350px 1fr;
-            gap:25px;
-            align-items:stretch;
-            flex:1;
-            min-height:0;
+        .top-panel::before{
+            content:""; position:absolute; inset:0;
+            background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 45%);
+            pointer-events:none;
         }
-
-        .flash-msg{ flex:none; }
-
-        .right-panel{
-            height:100%;
-            overflow-y:auto;
-            padding-right:6px;
-            padding-bottom:6px;
+        .top-panel::after{
+            content:""; position:absolute; right:-60px; bottom:-90px; width:280px; height:280px;
+            border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.14), transparent 70%);
+            pointer-events:none;
         }
-
-        /* Slim, matching scrollbar for both independently-scrolling panes,
-           replacing the default thick OS scrollbar. */
-        .left-card::-webkit-scrollbar,
-        .right-panel::-webkit-scrollbar{
-            width:7px;
+        .header-flex{
+            position:relative; z-index:1;
+            display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;
         }
+        .title-box{ display:flex; gap:22px; align-items:center; min-width:0; }
 
-        .left-card::-webkit-scrollbar-track,
-        .right-panel::-webkit-scrollbar-track{
-            background:transparent;
-        }
-
-        .left-card::-webkit-scrollbar-thumb,
-        .right-panel::-webkit-scrollbar-thumb{
-            background:#c7d2e3;
-            border-radius:20px;
-        }
-
-        .left-card::-webkit-scrollbar-thumb:hover,
-        .right-panel::-webkit-scrollbar-thumb:hover{
-            background:#aab8cf;
-        }
-
-        .left-card,
-        .right-panel{
-            scrollbar-width:thin;
-            scrollbar-color:#c7d2e3 transparent;
-        }
-
-        .card{
-            background:white;
-            border-radius:25px;
-            overflow:hidden;
-            box-shadow:0 5px 20px rgba(0,0,0,0.05);
-        }
-
-        .left-card{
-            position:relative;
-            height:100%;
-            overflow-y:auto;
-        }
-
-        .profile-header{
-            background:linear-gradient(135deg,#0077ff,#00b7ff);
-            padding:35px 20px;
-            text-align:center;
-            color:white;
-        }
-
-        .profile-header img{
-            width:130px;
-            height:130px;
-            border-radius:50%;
-            object-fit:cover;
-            border:5px solid white;
-            background:white;
-        }
-
-        .profile-name{
-            margin-top:15px;
-            font-size:25px;
-            font-weight:700;
-        }
-
-        .profile-email{
-            font-size:14px;
-            opacity:0.9;
-            margin-top:5px;
-        }
-
-        /* NEW EDIT PROFILE BUTTON CSS */
-
-        .edit-btn{
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 15px;
-        }
-
-        .edit-btn:hover{
-            background: #0056b3;
-        }
-
-        .section{
-            padding:25px;
-            border-bottom:1px solid #eee;
-        }
-
-        .section:last-child{
-            border-bottom:none;
-        }
-
-        .section-title{
-            font-size:18px;
-            font-weight:700;
-            margin-bottom:20px;
-            color:#0f172a;
-        }
-
-        .info-row{
-            display:flex;
-            justify-content:space-between;
-            margin-bottom:15px;
-            gap:15px;
-        }
-
-        .label{
-            color:#64748b;
-            font-weight:500;
-        }
-
-        .value{
-            font-weight:600;
-            text-align:right;
-            word-break:break-word;
-        }
-
-        .stats-grid{
-            display:grid;
-            grid-template-columns:repeat(5,1fr);
-            gap:18px;
-        }
-
-        .stat-card{
-            background:linear-gradient(135deg,#0077ff,#00c6ff);
-            color:white;
-            border-radius:22px;
-            padding:32px 16px;
-            text-align:center;
-            min-width:0;
-        }
-
-        .stat-card h1{
-            font-size:40px;
-            margin-bottom:10px;
-            white-space:nowrap;
-        }
-
-        .stat-card p{
-            font-size:14px;
-            font-weight:500;
-        }
-
-        .main-card{
-            padding:25px;
-        }
-
-        .detail-grid{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:20px;
-        }
-
-        .detail-box{
-            background:#f8fbff;
-            padding:20px;
-            border-radius:20px;
-        }
-
-        .detail-box h4{
-            color:#0077ff;
-            margin-bottom:10px;
-        }
-
-        .detail-box p{
-            color:#1e293b;
-            font-weight:500;
-        }
-
-        .logout-btn{
-            width:100%;
-            margin-top:20px;
-            padding:15px;
-            border:none;
-            border-radius:50px;
-            background:#dc2626;
-            color:white;
-            font-size:16px;
-            font-weight:700;
-            cursor:pointer;
-            transition:0.3s;
-        }
-
-        .logout-btn:hover{
-            background:#b91c1c;
-        }
-
-        .empty{
-            color:#94a3b8;
-            font-style:italic;
-        }
-
-        @media(max-width:950px){
-
-            body{
-                height:auto;
-                overflow:visible;
-            }
-
-            .container{
-                height:auto;
-                display:block;
-            }
-
-            .profile-layout{
-                grid-template-columns:1fr;
-                flex:none;
-                min-height:0;
-                display:block;
-            }
-
-            .detail-grid{
-                grid-template-columns:1fr;
-            }
-
-            .left-card{
-                position:relative;
-                height:auto;
-                max-height:none;
-                overflow-y:visible;
-                margin-bottom:25px;
-            }
-
-            .right-panel{
-                height:auto;
-                max-height:none;
-                overflow-y:visible;
-                padding-right:0;
-                padding-bottom:0;
-            }
-
-            .stats-grid{
-                grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-            }
-
-        }
-
-        .avatar-wrap{
-            position:relative;
-            width:130px;
-            height:130px;
-            margin:0 auto;
-        }
-
+        .avatar-wrap{ position:relative; width:96px; height:96px; flex:none; }
         .avatar-wrap img{
-            width:130px;
-            height:130px;
-            border-radius:50%;
-            object-fit:cover;
-            border:5px solid white;
-            background:white;
-            display:block;
+            width:96px; height:96px; border-radius:50%; object-fit:cover; display:block;
+            background:rgba(255,255,255,.1); border:3px solid rgba(255,255,255,.35);
+            box-shadow:0 8px 24px rgba(0,0,0,.25);
         }
-
-        .avatar-edit{
-            position:absolute;
-            bottom:2px;
-            right:2px;
-            width:38px;
-            height:38px;
-            border-radius:50%;
-            background:#0077ff;
-            border:3px solid white;
-            color:white;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            cursor:pointer;
-            font-size:14px;
-            transition:0.2s;
+        .avatar-btn{
+            position:absolute; right:-2px; bottom:2px; width:32px; height:32px; border-radius:50%;
+            background:var(--cobalt); color:#fff; border:2px solid #fff;
+            display:flex; align-items:center; justify-content:center; cursor:pointer;
+            transition:background .15s;
         }
+        .avatar-btn:hover{ background:var(--cobalt-600); }
+        .avatar-btn svg{ width:14px; height:14px; }
+        .avatar-wrap input:focus-visible + .avatar-btn{ outline:2px solid #fff; outline-offset:2px; }
 
-        .avatar-edit:hover{
-            background:#0056b3;
-            transform:scale(1.06);
+        .eyebrow{ font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:rgba(255,255,255,.6); }
+        .title-box h1{
+            font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:#fff;
+            letter-spacing:-0.3px; line-height:1.2; margin-top:2px; overflow-wrap:anywhere;
         }
+        .meta-line{ display:flex; flex-wrap:wrap; gap:6px 20px; margin-top:8px; color:rgba(255,255,255,.72); font-size:14px; font-weight:500; }
+        .meta-line span{ display:inline-flex; align-items:center; gap:8px; overflow-wrap:anywhere; min-width:0; }
+        .meta-line svg{ color:#8FE8FB; }
 
-        .member-since{
-            margin-top:12px;
-            font-size:13px;
-            opacity:0.85;
+        .premium-badge{
+            display:inline-flex; align-items:center; gap:6px; margin-top:12px;
+            background:rgba(6,174,212,.16); color:#8FE8FB; border:1px solid rgba(6,174,212,.35);
+            padding:5px 13px; border-radius:100px; font-size:11.5px; font-weight:700; letter-spacing:.3px;
         }
+        .premium-badge svg{ width:12px; height:12px; }
+        .premium-badge.warn{ background:rgba(254,243,226,.14); color:#FCD9A0; border-color:rgba(252,217,160,.4); }
 
-        .flash-msg{
-            max-width:1400px;
-            margin:0 auto 18px;
-            padding:14px 18px;
-            border-radius:14px;
-            font-weight:600;
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:12px;
+        .header-actions{ position:relative; z-index:1; display:flex; gap:8px; flex-wrap:wrap; }
+        .header-actions .btn{ padding:0 14px; }
+
+        /* ---------- flash ---------- */
+        .flash-toast{
+            display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+            border-radius:var(--r-sm); padding:13px 16px; font-size:13.5px;
+            box-shadow:var(--shadow-sm); margin-bottom:14px; font-weight:500;
         }
+        .flash-toast.success{ background:var(--green-bg); color:var(--green); border:1px solid #BFE8CC; }
+        .flash-toast.danger{ background:var(--red-bg); color:var(--red); border:1px solid #F3C3C3; }
+        .flash-toast button{ background:none; border:0; color:inherit; font-size:18px; cursor:pointer; min-width:28px; min-height:28px; }
 
-        .flash-msg.success{ background:#dcfce7; color:#15803d; }
-        .flash-msg.danger{ background:#fee2e2; color:#b91c1c; }
-
-        .flash-msg button{
-            background:none;
-            border:none;
-            font-size:18px;
-            cursor:pointer;
-            color:inherit;
+        /* ---------- stat tiles ---------- */
+        .stats-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:16px; }
+        .stat-tile{
+            background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
+            padding:16px 18px; display:flex; flex-direction:column; gap:14px; min-width:0;
+            box-shadow:var(--shadow-xs); transition:box-shadow .15s, border-color .15s;
         }
-
-        .next-delivery-card{
-            background:linear-gradient(135deg,#0F2C59,#1B4B91 55%,#2E7BC4);
-            color:white;
-            border-radius:25px;
-            padding:25px;
-            margin-bottom:25px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:20px;
-            flex-wrap:wrap;
+        .stat-tile:hover{ box-shadow:var(--shadow-sm); border-color:#D8E0EE; }
+        .stat-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .stat-label{ font-size:11px; font-weight:700; color:var(--ink-500); text-transform:uppercase; letter-spacing:.6px; }
+        .stat-icon{ width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:none; }
+        .stat-icon svg{ width:17px; height:17px; }
+        .i-blue{ background:var(--blue-bg); color:var(--cobalt); }
+        .i-green{ background:var(--green-bg); color:var(--green); }
+        .i-red{ background:var(--red-bg); color:var(--red); }
+        .i-aqua{ background:var(--aqua-100); color:var(--aqua); }
+        .i-amber{ background:var(--amber-bg); color:#B45309; }
+        .stat-value{
+            font-family:'Space Grotesk',sans-serif; font-size:27px; font-weight:700; color:var(--navy);
+            letter-spacing:-0.5px; line-height:1; overflow-wrap:anywhere;
         }
+        .stat-value small{ font-size:13px; font-weight:600; color:var(--ink-400); margin-left:3px; letter-spacing:0; }
+        .stat-bar-track{ height:4px; border-radius:4px; background:var(--line-soft); overflow:hidden; }
+        .stat-bar-fill{ height:100%; border-radius:4px; }
+        .stat-bar-fill.blue{ background:var(--cobalt); }
+        .stat-bar-fill.green{ background:var(--green); }
+        .stat-bar-fill.red{ background:#DC2626; }
+        .stat-bar-fill.aqua{ background:var(--aqua); }
+        .stat-bar-fill.amber{ background:#D97706; }
 
-        .next-delivery-card .label{
-            color:rgba(255,255,255,0.75);
-            font-weight:600;
-            font-size:13px;
-            text-transform:uppercase;
-            letter-spacing:0.5px;
+        /* ---------- entity cards ---------- */
+        .entity-card{
+            background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
+            position:relative; overflow:hidden; box-shadow:var(--shadow-xs); min-width:0;
         }
+        .card-rail{ position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--cobalt); }
+        .card-rail.pending{ background:#D97706; }
+        .card-rail.onway{ background:#0EA5C4; }
+        .card-rail.idle{ background:var(--line); }
 
-        .next-delivery-card h3{
-            font-size:22px;
-            margin:6px 0;
+        .card-head{ display:flex; align-items:center; gap:12px; padding:18px 20px 14px 24px; }
+        .tile-ico{
+            width:40px; height:40px; border-radius:11px; flex:none;
+            background:var(--blue-bg); color:var(--cobalt);
+            display:flex; align-items:center; justify-content:center;
         }
+        .tile-ico svg{ width:19px; height:19px; }
+        .card-title{ font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:700; color:var(--navy); line-height:1.3; }
+        .card-sub{ font-size:12.5px; font-weight:500; color:var(--ink-500); }
+        .card-head .push{ margin-left:auto; }
 
-        .next-delivery-card p{
-            color:rgba(255,255,255,0.85);
-            font-size:14px;
+        .field-ico{
+            width:26px; height:26px; border-radius:8px; background:var(--paper); color:var(--ink-500);
+            flex:none; display:flex; align-items:center; justify-content:center; margin-top:1px;
         }
-
-        .next-delivery-card .nd-status{
-            background:rgba(255,255,255,0.18);
-            border:1px solid rgba(255,255,255,0.3);
-            padding:6px 16px;
-            border-radius:30px;
-            font-weight:600;
-            font-size:13px;
-            white-space:nowrap;
+        .field-ico svg{ width:13px; height:13px; }
+        /* status pills */
+        .status-pill{
+            flex:none; display:inline-flex; align-items:center; gap:5px;
+            padding:5px 11px; border-radius:100px; font-size:11px; font-weight:700; white-space:nowrap;
         }
+        .status-pill .dot{ width:6px; height:6px; border-radius:50%; }
+        .st-pending{ background:var(--amber-bg); color:var(--amber); } .st-pending .dot{ background:#D97706; }
+        .st-assigned{ background:var(--blue-bg); color:var(--blue); }  .st-assigned .dot{ background:var(--cobalt); }
+        .st-onway{ background:var(--sky-bg); color:var(--sky); }       .st-onway .dot{ background:#0EA5C4; }
 
-        .next-delivery-empty{
-            background:white;
-            border-radius:25px;
-            padding:25px;
-            margin-bottom:25px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:20px;
-            flex-wrap:wrap;
-            box-shadow:0 5px 20px rgba(0,0,0,0.05);
+        /* next delivery */
+        .delivery{ margin-bottom:0; }
+        .delivery .card-head{ padding-bottom:16px; }
+        .delivery-grid{
+            display:flex; align-items:stretch; flex-wrap:wrap;
+            margin:0 24px 0 24px; padding:16px 0 18px;
+            border-top:1px solid var(--line-soft);
         }
-
-        .next-delivery-empty p{
-            color:#64748b;
-            font-weight:500;
+        .d-cell{ display:flex; align-items:flex-start; gap:12px; min-width:0; padding:0 28px; }
+        .d-cell:first-child{ padding-left:0; }
+        .d-cell + .d-cell{ border-left:1px solid var(--line-soft); }
+        .d-cell h4{ font-size:10px; font-weight:700; color:var(--ink-400); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+        .d-cell p{ font-size:14px; font-weight:600; color:var(--ink-900); line-height:1.5; overflow-wrap:anywhere; }
+        .d-cell.date{ flex:0 0 auto; flex-direction:column; gap:0; }
+        .d-cell.date .d-date{ font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700; color:var(--navy); letter-spacing:-0.5px; line-height:1.1; white-space:nowrap; }
+        .d-cell.addr{ flex:1 1 320px; }
+        .d-cell.addr p{ max-width:520px; }
+        .d-cell.small{ flex:0 0 auto; }
+        .d-cell .field-ico{ margin-top:0; width:28px; height:28px; }
+        .d-act{ display:flex; align-items:center; margin-left:auto; padding-left:28px; }
+        .track-btn{
+            height:44px; padding:0 24px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+            border-radius:var(--r-sm); border:1px solid var(--cobalt);
+            color:#fff; font-weight:600; font-size:13px; background:var(--cobalt); transition:.15s; white-space:nowrap;
+            box-shadow:0 6px 16px rgba(29,78,216,.22);
         }
+        .track-btn svg{ width:14px; height:14px; transition:transform .15s; }
+        .track-btn:hover{ background:var(--cobalt-600); border-color:var(--cobalt-600); }
+        .track-btn:hover svg{ transform:translateX(3px); }
+        .delivery .empty-text{ padding:0 24px 20px 24px; color:var(--ink-500); font-size:13.5px; font-weight:500; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
 
+        /* ---------- responsive ---------- */
+        @media (max-width:1280px){
+            .d-cell{ padding:0 20px; }
+            .d-cell.addr{ flex-basis:100%; order:5; border-left:0; padding:16px 0 0; margin-top:16px; border-top:1px solid var(--line-soft); }
+            .d-cell.addr p{ max-width:none; }
+            .d-cell.date + .d-cell.small{ border-left:1px solid var(--line-soft); }
+        }
+        @media (max-width:1100px){
+            .stats-grid{ grid-template-columns:repeat(3,1fr); }
+        }
+        @media (max-width:760px){
+            body{ padding:16px; zoom:1; }
+            .top-panel{ padding:22px 20px; }
+            .title-box{ flex-direction:column; align-items:flex-start; gap:16px; }
+            .title-box h1{ font-size:24px; }
+            .header-actions{ width:100%; }
+            .header-actions .btn{ flex:1; }
+            .stats-grid{ grid-template-columns:1fr 1fr; gap:10px; }
+            .stats-grid .stat-tile:nth-child(5){ grid-column:1 / -1; }
+            .stat-tile{ padding:14px; }
+            .delivery-grid{ flex-direction:column; margin:0 20px 0 24px; }
+            .d-cell, .d-cell + .d-cell, .d-cell.date + .d-cell.small{ border-left:0; padding:14px 0; border-top:1px solid var(--line-soft); }
+            .d-cell:first-child{ border-top:0; padding-top:0; }
+            .d-cell.addr{ order:0; margin-top:0; }
+            .d-cell.date{ order:-1; }
+            .d-act{ margin:0; padding:16px 0 0; }
+            .d-act .track-btn{ width:100%; }
+            .card-head{ flex-wrap:wrap; }
+            .util-right .sync-pill{ display:none; }
+            .btn, .track-btn, .icon-pill{ min-height:44px; }
+            .icon-pill{ min-width:44px; }
+        }
+        @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
     </style>
 </head>
 <body>
-
 <div class="container">
+
+    <!-- ================= BREADCRUMB / UTILITY BAR ================= -->
+    <div class="util-bar">
+        <div class="crumb">
+            <a href="/dashboard">Dashboard</a>
+            <span class="sep">/</span>
+            <span class="current" aria-current="page">My Profile</span>
+        </div>
+
+        <div class="util-right">
+            <a class="icon-pill" href="/notification" aria-label="Notifications{% if unread_notifications %} ({{ unread_notifications }} unread){% endif %}">
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15L6 16.5ZM10 21h4"/></svg>
+                {% if unread_notifications %}<span class="bell-dot"></span>{% endif %}
+            </a>
+            <span class="sync-pill"><span class="sync-dot"></span><span id="timeNow"></span></span>
+            <a class="btn btn-outline btn-sm" href="/logout">
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/></svg>
+                Logout
+            </a>
+        </div>
+    </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="flash-msg {{ 'danger' if category == 'danger' else 'success' }}">
+          <div class="flash-toast {{ 'danger' if category == 'danger' else 'success' }}" role="status">
             <span>{{ message }}</span>
-            <button type="button" onclick="this.parentElement.remove()">&times;</button>
+            <button type="button" aria-label="Dismiss" onclick="this.parentElement.remove()">&times;</button>
           </div>
         {% endfor %}
       {% endif %}
     {% endwith %}
 
-    <div class="top-bar">
-
-        <div class="logo">
-            <i class="fa-solid fa-water"></i> AquaFlow
-        </div>
-
-        <div class="current-time" id="timeNow"></div>
-
-    </div>
-
-    <div class="profile-layout">
-
-        <!-- LEFT SIDE -->
-
-        <div class="card left-card">
-
-            <div class="profile-header">
-
+    <!-- ================= TOP PANEL: PROFILE ================= -->
+    <section class="top-panel" aria-label="Profile">
+        <div class="header-flex">
+            <div class="title-box">
                 <form action="{{ url_for('upload_profile_photo') }}" method="POST" enctype="multipart/form-data" id="photoForm">
                     <div class="avatar-wrap">
                         {% if user.profile_image %}
-                            <img src="{{ user.profile_image }}" alt="Profile">
+                            <img src="{{ user.profile_image }}" alt="Profile photo of {{ user.name }}">
                         {% else %}
-                            <img src="https://ui-avatars.com/api/?background=ffffff&color=0077ff&name={{ user.name|urlencode }}&size=200" alt="Profile">
+                            <img src="https://ui-avatars.com/api/?background=12315C&color=8FE8FB&name={{ user.name|urlencode }}&size=240" alt="Profile photo of {{ user.name }}">
                         {% endif %}
 
-                        <label for="photoInput" class="avatar-edit" title="Change photo">
-                            <i class="fa-solid fa-camera"></i>
+                        <input type="file" id="photoInput" name="photo" accept="image/png,image/jpeg,image/webp"
+                               style="position:absolute;width:1px;height:1px;opacity:0;"
+                               onchange="document.getElementById('photoForm').submit()">
+                        <label for="photoInput" class="avatar-btn" title="Change photo">
+                            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.2-2h6.6l1.2 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="13" r="3.2"/></svg>
+                            <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Change photo</span>
                         </label>
-                        <input type="file" id="photoInput" name="photo" accept="image/png,image/jpeg,image/webp" hidden onchange="document.getElementById('photoForm').submit()">
                     </div>
                 </form>
 
-                <div class="profile-name">
-                    {{ user.name }}
-                </div>
-
-                <div class="profile-email">
-                    {{ user.email }}
-                </div>
-
-                {% if user.created_at %}
-                <div class="member-since">
-                    Member since {{ user.created_at.strftime('%b %Y') }}
-                </div>
-                {% endif %}
-
-                <!-- NEW EDIT PROFILE BUTTON -->
-
-                <a href="{{ url_for('edit_profile') }}">
-                    <button class="edit-btn">Edit Profile</button>
-                </a>
-
-            </div>
-
-            <div class="section">
-
-                <div class="section-title">
-                    <i class="fa-solid fa-user"></i>
-                    Personal Information
-                </div>
-
-                <div class="info-row">
-                    <div class="label">Phone</div>
-                    <div class="value">
-                        {{ user.phone if user.phone else "Not Added" }}
-                    </div>
-                </div>
-
-                <div class="info-row">
-                    <div class="label">Gender</div>
-                    <div class="value">
-                        {{ user.gender if user.gender else "Not Added" }}
-                    </div>
-                </div>
-
-                <div class="info-row">
-                    <div class="label">Date of Birth</div>
-                    <div class="value">
-                        {{ user.dob if user.dob else "Not Added" }}
-                    </div>
-                </div>
-
-                <div class="info-row">
-                    <div class="label">Address</div>
-                    <div class="value">
-                        {{ user.address if user.address else "Not Added" }}
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="section">
-
-                <div class="section-title">
-                    <i class="fa-solid fa-shield"></i>
-                    Account Details
-                </div>
-
-                <div class="info-row">
-                    <div class="label">Verification</div>
-                    <div class="value">
-                        {% if user.is_verified %}
-                            Verified ✓
-                        {% else %}
-                            Not Verified
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="info-row">
-                    <div class="label">Created</div>
-                    <div class="value">
+                <div style="min-width:0;">
+                    <div class="eyebrow">My Profile</div>
+                    <h1>{{ user.name }}</h1>
+                    <div class="meta-line">
+                        <span>
+                            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="m4 7 8 6 8-6"/></svg>
+                            {{ user.email }}
+                        </span>
                         {% if user.created_at %}
-                            {{ user.created_at.strftime('%d %b %Y') }}
-                        {% else %}
-                            N/A
+                        <span>
+                            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="1.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>
+                            Member since {{ user.created_at.strftime('%b %Y') }}
+                        </span>
                         {% endif %}
                     </div>
+                    {% if user.is_verified %}
+                    <span class="premium-badge">
+                        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+                        Verified Account
+                    </span>
+                    {% else %}
+                    <span class="premium-badge warn">Not verified</span>
+                    {% endif %}
                 </div>
-
-                <div class="info-row">
-                    <div class="label">Last Login</div>
-                    <div class="value">
-                        {% if user.last_login %}
-                            {{ user.last_login.strftime('%d %b %Y %I:%M %p') }}
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </div>
-                </div>
-
             </div>
 
-        </div>
-
-        <!-- RIGHT SIDE -->
-
-        <div class="right-panel">
-
-            <!-- NEXT DELIVERY (real, computed from actual bookings) -->
-
-            {% if next_delivery %}
-            <div class="next-delivery-card">
-                <div>
-                    <div class="label">Next Delivery</div>
-                    <h3>{{ next_delivery.delivery_date }}</h3>
-                    <p><i class="fa-solid fa-location-dot"></i> {{ next_delivery.address }}</p>
-                </div>
-                <div class="nd-status">{{ next_delivery.status }}</div>
-            </div>
-            {% else %}
-            <div class="next-delivery-empty">
-                <div>
-                    <div class="label" style="color:#64748b;">Next Delivery</div>
-                    <p>No upcoming deliveries scheduled right now.</p>
-                </div>
-                <a href="/booking">
-                    <button style="padding:10px 18px;border:none;border-radius:30px;background:#0077ff;color:white;cursor:pointer;font-weight:600;">
-                        Book Now
-                    </button>
+            <div class="header-actions">
+                <a class="btn btn-on-dark" href="{{ url_for('account_information') }}">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.3"/><path d="M5.8 16c.5-1.9 1.8-2.8 3.2-2.8s2.7.9 3.2 2.8M14.5 10h4M14.5 13.5h3"/></svg>
+                    Account Information
                 </a>
+                <a class="btn btn-on-dark" href="{{ url_for('edit_profile') }}">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4ZM13 7l4 4"/></svg>
+                    Edit Profile
+                </a>
+                <a class="btn btn-on-dark" href="/my-payments">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12.5" rx="2"/><path d="M3 10.5h18M7 15h3"/></svg>
+                    My Payments
+                </a>
+                <a class="btn btn-on-dark" href="/booking">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    New Booking
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= STAT TILES ================= -->
+    {% set t = total_orders or 0 %}
+    <section class="stats-grid" aria-label="Order statistics">
+        <a class="stat-tile" href="/history">
+            <div class="stat-top">
+                <span class="stat-label">Total Orders</span>
+                <span class="stat-icon i-blue"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20V3.5ZM14 3.5V8h4M9.5 12.5h5M9.5 16h5"/></svg></span>
+            </div>
+            <div class="stat-value">{{ t }}</div>
+            <div class="stat-bar-track"><div class="stat-bar-fill blue" style="width:{{ 100 if t else 0 }}%"></div></div>
+        </a>
+        <a class="stat-tile" href="/history">
+            <div class="stat-top">
+                <span class="stat-label">Completed Orders</span>
+                <span class="stat-icon i-green"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+            </div>
+            <div class="stat-value">{{ completed_orders or 0 }}</div>
+            <div class="stat-bar-track"><div class="stat-bar-fill green" style="width:{{ ((completed_orders or 0) * 100 / t)|round|int if t else 0 }}%"></div></div>
+        </a>
+        <a class="stat-tile" href="/history">
+            <div class="stat-top">
+                <span class="stat-label">Cancelled Orders</span>
+                <span class="stat-icon i-red"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/></svg></span>
+            </div>
+            <div class="stat-value">{{ cancelled_orders or 0 }}</div>
+            <div class="stat-bar-track"><div class="stat-bar-fill red" style="width:{{ ((cancelled_orders or 0) * 100 / t)|round|int if t else 0 }}%"></div></div>
+        </a>
+        <a class="stat-tile" href="/history">
+            <div class="stat-top">
+                <span class="stat-label">Active Orders</span>
+                <span class="stat-icon i-aqua"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg></span>
+            </div>
+            <div class="stat-value">{{ active_orders or 0 }}</div>
+            <div class="stat-bar-track"><div class="stat-bar-fill aqua" style="width:{{ ((active_orders or 0) * 100 / t)|round|int if t else 0 }}%"></div></div>
+        </a>
+        <a class="stat-tile" href="/history">
+            <div class="stat-top">
+                <span class="stat-label">Liters Delivered</span>
+                <span class="stat-icon i-amber"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c3 3.8 5.5 6.8 5.5 10a5.5 5.5 0 0 1-11 0c0-3.2 2.5-6.2 5.5-10Z"/></svg></span>
+            </div>
+            <div class="stat-value">{{ "{:,}".format(total_liters or 0) }}<small>L</small></div>
+            <div class="stat-bar-track"><div class="stat-bar-fill amber" style="width:{{ 100 if total_liters else 0 }}%"></div></div>
+        </a>
+    </section>
+
+    <!-- ================= NEXT DELIVERY ================= -->
+    {% if next_delivery %}
+        {% set st = next_delivery.status %}
+        {% set rail = 'pending' if st == 'Pending' else ('onway' if st == 'On The Way' else '') %}
+        {% set pill = 'st-pending' if st == 'Pending' else ('st-onway' if st == 'On The Way' else 'st-assigned') %}
+        {% set dd = next_delivery.delivery_date %}
+        {% set months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
+        {% set has_driver = next_delivery.driver_name and next_delivery.driver_name != "Not Assigned" %}
+        {% set has_truck = next_delivery.truck_number and next_delivery.truck_number != "Not Assigned" %}
+    <section class="entity-card delivery" aria-label="Next delivery">
+        <span class="card-rail {{ rail }}"></span>
+        <div class="card-head">
+            <span class="tile-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a1.5 1.5 0 1 0 0-.01M17 19a1.5 1.5 0 1 0 0-.01"/></svg></span>
+            <div>
+                <div class="card-title">Next Delivery</div>
+                <div class="card-sub">Your soonest upcoming booking</div>
+            </div>
+            <span class="status-pill {{ pill }} push"><span class="dot"></span>{{ st }}</span>
+        </div>
+        <div class="delivery-grid">
+            <div class="d-cell date">
+                <h4>Delivery date</h4>
+                <div class="d-date">{% if dd is string and dd|length >= 10 and dd[4] == '-' %}{{ dd[8:10] }} {{ months[(dd[5:7]|int) - 1] }} {{ dd[0:4] }}{% elif dd and dd.strftime is defined %}{{ dd.strftime('%d %b %Y') }}{% else %}{{ dd }}{% endif %}</div>
+            </div>
+            <div class="d-cell addr">
+                <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 0 0-13 0c0 5.4 6.5 11 6.5 11Z"/><circle cx="12" cy="10" r="2.2"/></svg></span>
+                <div><h4>Delivery address</h4><p>{{ next_delivery.address }}</p></div>
+            </div>
+            {% if has_driver %}
+            <div class="d-cell small">
+                <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></span>
+                <div><h4>Driver</h4><p>{{ next_delivery.driver_name }}</p></div>
             </div>
             {% endif %}
-
-            <!-- STATS -->
-
-            <div class="stats-grid">
-
-                <div class="stat-card">
-                    <h1>{{ total_orders or 0 }}</h1>
-                    <p>Total Orders</p>
-                </div>
-
-                <div class="stat-card">
-                    <h1>{{ completed_orders or 0 }}</h1>
-                    <p>Completed Orders</p>
-                </div>
-
-                <div class="stat-card">
-                    <h1>{{ cancelled_orders or 0 }}</h1>
-                    <p>Cancelled Orders</p>
-                </div>
-
-                <div class="stat-card">
-                    <h1>{{ active_orders or 0 }}</h1>
-                    <p>Active Orders</p>
-                </div>
-
-                <div class="stat-card">
-                    <h1>{{ "{:,}".format(total_liters or 0) }}</h1>
-                    <p>Liters Delivered</p>
-                </div>
-
+            {% if has_truck %}
+            <div class="d-cell small">
+                <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/></svg></span>
+                <div><h4>Vehicle</h4><p>{{ next_delivery.truck_number }}</p></div>
             </div>
-
-            <!-- MAIN INFO -->
-
-            <div class="card main-card" style="margin-top:25px; padding-bottom:22px;">
-
-                <div class="section-title">
-                    <i class="fa-solid fa-water"></i>
-                    Water Booking Preferences
-                </div>
-                <p style="color:#94a3b8;font-size:13px;margin-top:-14px;margin-bottom:24px;">
-                    Set these from <a href="{{ url_for('edit_profile') }}" style="color:#0077ff;font-weight:600;">Edit Profile</a> — they'll prefill your next booking.
-                </p>
-
-                <div class="detail-grid">
-
-                    <div class="detail-box" style="padding:28px 20px; min-height:100px;">
-                        <h4>Favorite Tanker</h4>
-                        <p>
-                            {{ user.favorite_tanker if user.favorite_tanker else "Not Selected" }}
-                        </p>
-                    </div>
-
-                    <div class="detail-box" style="padding:28px 20px; min-height:100px;">
-                        <h4>Preferred Water</h4>
-                        <p>
-                            {{ user.preferred_water if user.preferred_water else "Not Selected" }}
-                        </p>
-                    </div>
-
-                </div>
-
+            {% endif %}
+            <div class="d-act">
+                <a class="track-btn" href="/live-status/{{ next_delivery._id }}">
+                    Track booking
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+                </a>
             </div>
-
-            <!-- QUICK ACTIONS -->
-
-            <div class="card main-card" style="margin-top:25px;">
-
-                <div class="section-title">
-                    <i class="fa-solid fa-bolt"></i>
-                    Quick Actions
-                </div>
-
-                <div class="detail-grid">
-
-                    <div class="detail-box">
-                        <h4>Booking History</h4>
-                        <p>
-                            View all your tanker bookings
-                        </p>
-
-                        <br>
-
-                        <a href="/history">
-                            <button style="padding:10px 18px;border:none;border-radius:30px;background:#0077ff;color:white;cursor:pointer;">
-                                Open History
-                            </button>
-                        </a>
-                    </div>
-
-                    <div class="detail-box">
-                        <h4>Book Water Tanker</h4>
-                        <p>
-                            Book fresh water instantly
-                        </p>
-
-                        <br>
-
-                        <a href="/booking">
-                            <button style="padding:10px 18px;border:none;border-radius:30px;background:#00a86b;color:white;cursor:pointer;">
-                                Book Now
-                            </button>
-                        </a>
-                    </div>
-
-                </div>
-
-                <form action="/logout" method="get">
-
-                    <button type="submit" class="logout-btn">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                        Logout
-                    </button>
-
-                </form>
-
-            </div>
-
         </div>
-
-    </div>
+    </section>
+    {% else %}
+    <section class="entity-card delivery" aria-label="Next delivery">
+        <span class="card-rail idle"></span>
+        <div class="card-head">
+            <span class="tile-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a1.5 1.5 0 1 0 0-.01M17 19a1.5 1.5 0 1 0 0-.01"/></svg></span>
+            <div>
+                <div class="card-title">Next Delivery</div>
+                <div class="card-sub">Your soonest upcoming booking</div>
+            </div>
+        </div>
+        <div class="empty-text">
+            <span>No upcoming deliveries scheduled right now.</span>
+            <a class="btn btn-primary btn-sm" href="/booking">Book Now</a>
+        </div>
+    </section>
+    {% endif %}
 
 </div>
 
 <script>
-
     function updateTime(){
-
-        const now = new Date();
-
-        document.getElementById("timeNow").innerHTML =
-            `<i class="fa-regular fa-clock"></i> ` +
-            now.toLocaleString();
-
+        document.getElementById("timeNow").textContent = new Date().toLocaleString();
     }
-
     updateTime();
-
-    setInterval(updateTime,1000);
-
+    setInterval(updateTime, 1000);
 </script>
-
 
 <!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
 <script>

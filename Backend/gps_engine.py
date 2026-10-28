@@ -33,6 +33,7 @@ OSRM_TIMEOUT_SECONDS = 4
 GPS_STALE_AFTER_SECONDS = 30      # driver health monitor threshold
 IDLE_AFTER_SECONDS = 5 * 60       # "Stopped" if no real movement for 5 min
 IDLE_MOVE_THRESHOLD_KM = 0.03     # < 30m counts as "hasn't moved"
+ACTIVE_DELIVERY_STATUSES = ["Assigned", "Accepted", "On The Way", "Arrived"]
 ARRIVAL_RADIUS_KM = 0.1           # ~100 meters
 ROUTE_DEVIATION_KM = 0.5          # notify if driver strays >500m off route
 
@@ -104,6 +105,69 @@ def point_to_route_min_distance_km(lat, lng, geometry):
         if best is None or d < best:
             best = d
     return best
+
+
+# =====================================================
+# LOCATION FRESHNESS (used by the Live Fleet Command Center)
+#
+# Documented threshold: a driver's location is
+#   "live"        - last real GPS ping is <= FRESHNESS_LIVE_SECONDS old
+#   "stale"       - coordinates exist but the last ping is older than that
+#                   (shown as "last known location" with its timestamp)
+#   "unavailable" - no coordinates / no timestamp were ever received
+# The driver app pushes a ping every ~5 s, so 30 s allows for a few
+# missed pings. This is the same threshold the existing health monitor
+# uses to flip a driver to Offline, so the two can never disagree.
+# =====================================================
+
+FRESHNESS_LIVE_SECONDS = GPS_STALE_AFTER_SECONDS
+
+
+def classify_freshness(last_gps_at, has_coords, now=None):
+    """Return 'live' | 'stale' | 'unavailable' based on the real GPS timestamp."""
+    if not has_coords or not last_gps_at:
+        return "unavailable"
+    now = now or datetime.now()
+    try:
+        age = (now - last_gps_at).total_seconds()
+    except TypeError:
+        return "unavailable"
+    return "live" if age <= FRESHNESS_LIVE_SECONDS else "stale"
+
+
+def gps_age_seconds(last_gps_at, now=None):
+    """Seconds since the last real GPS ping, or None if there never was one.
+    Computed on the server so it never depends on the browser's time zone."""
+    if not isinstance(last_gps_at, datetime):
+        return None
+    return max(0, int(((now or datetime.now()) - last_gps_at).total_seconds()))
+
+
+def gps_label(last_gps_at):
+    """Human-readable absolute time of the last ping (server local time)."""
+    return last_gps_at.strftime("%d %b %Y, %H:%M:%S") if isinstance(last_gps_at, datetime) else None
+
+
+# Small in-process cache so the admin console polling every 5 s does not
+# hit the public OSRM demo server once per delivery per poll (its usage
+# policy asks for light use). Routes are re-used for ROUTE_CACHE_TTL
+# seconds when both end-points have moved less than ~11 m (4 d.p.).
+ROUTE_CACHE_TTL_SECONDS = 20
+_ROUTE_CACHE = {}
+_ROUTE_CACHE_MAX = 500
+
+
+def cached_osrm_route(lat1, lng1, lat2, lng2):
+    key = (round(lat1, 4), round(lng1, 4), round(lat2, 4), round(lng2, 4))
+    now = datetime.now()
+    hit = _ROUTE_CACHE.get(key)
+    if hit and (now - hit[0]).total_seconds() < ROUTE_CACHE_TTL_SECONDS:
+        return hit[1]
+    route = osrm_route(lat1, lng1, lat2, lng2)
+    if len(_ROUTE_CACHE) >= _ROUTE_CACHE_MAX:
+        _ROUTE_CACHE.clear()
+    _ROUTE_CACHE[key] = (now, route)
+    return route
 
 
 # =====================================================
@@ -501,61 +565,136 @@ def init_gps_engine(
             return jsonify({"success": False, "message": "Unauthorized"}), 401
 
         sync_stale_drivers()
+        now = datetime.now()
 
         active_bookings = list(bookings_collection.find({
-            "status": {"$in": ["Assigned", "Accepted", "On The Way", "Arrived"]}
+            "status": {"$in": ACTIVE_DELIVERY_STATUSES}
         }).sort("driver_assigned_at", -1))
 
+        # One query for every driver instead of one per delivery.
+        drivers = list(drivers_collection.find({"approval_status": "Approved"}))
+        drivers_by_email = {d.get("email"): d for d in drivers if d.get("email")}
+
+        def driver_location(d):
+            """Real last-known fix for a driver, or None. Never invented."""
+            if not d or d.get("current_lat") is None or d.get("current_lng") is None:
+                return None
+            return d["current_lat"], d["current_lng"]
+
         deliveries = []
+        busy_driver_ids = {}
+        issue_count = 0
+
         for b in active_bookings:
-            driver = None
-            if b.get("driver_email"):
-                driver = drivers_collection.find_one({"email": b["driver_email"]})
+            driver = drivers_by_email.get(b.get("driver_email"))
+            loc = driver_location(driver)
+            freshness = classify_freshness(
+                driver.get("last_gps_at") if driver else None, loc is not None, now
+            )
 
             item = {
                 "booking_id": str(b["_id"]),
+                "booking_ref": str(b["_id"])[-6:].upper(),
                 "customer": b.get("fullname"),
                 "address": b.get("address"),
                 "status": b.get("status"),
+                "driver_id": str(driver["_id"]) if driver else None,
                 "driver_name": b.get("driver_name"),
+                "driver_phone": driver.get("phone") if driver else None,
                 "truck_number": b.get("truck_number"),
                 "customer_lat": b.get("latitude"),
                 "customer_lng": b.get("longitude"),
                 "quantity": b.get("quantity"),
-                "route_deviated": b.get("route_deviated", False)
+                "route_deviated": b.get("route_deviated", False),
+                "driver_assigned_at": (
+                    b["driver_assigned_at"].isoformat() if b.get("driver_assigned_at") else None
+                ),
+                "location_freshness": freshness,
+                "driver_online": False,
+                "last_gps_at": None,
+                "last_gps_age_s": None,
+                "last_gps_label": None,
             }
 
-            if driver and driver.get("current_lat") is not None:
+            if driver:
+                busy_driver_ids.setdefault(str(driver["_id"]), item["booking_id"])
+
+            if loc is not None:
                 stale = is_driver_stale(driver)
-                item["driver_lat"] = driver["current_lat"]
-                item["driver_lng"] = driver["current_lng"]
+                item["driver_lat"], item["driver_lng"] = loc
                 item["driver_online"] = not stale
                 item["moving_status"] = driver.get("moving_status", "Unknown")
                 item["driver_speed"] = driver.get("current_speed")
                 item["last_gps_at"] = (
                     driver["last_gps_at"].isoformat() if driver.get("last_gps_at") else None
                 )
+                item["last_gps_age_s"] = gps_age_seconds(driver.get("last_gps_at"), now)
+                item["last_gps_label"] = gps_label(driver.get("last_gps_at"))
 
                 if (not stale and item["customer_lat"] is not None
                         and b.get("status") in ("Accepted", "On The Way", "Arrived")):
-                    route = osrm_route(
-                        driver["current_lat"], driver["current_lng"],
-                        b["latitude"], b["longitude"]
+                    route = cached_osrm_route(
+                        loc[0], loc[1], b["latitude"], b["longitude"]
                     )
                     item["distance_remaining_km"] = route["distance_km"]
                     item["eta_min"] = route["duration_min"]
-            else:
-                item["driver_online"] = False
+                    # 'osrm' = real road routing, 'fallback' = straight-line estimate
+                    item["route_source"] = route["source"]
+
+            if freshness != "live":
+                issue_count += 1
 
             deliveries.append(item)
 
-        online_drivers = drivers_collection.count_documents({"online_status": "Online"})
-        total_drivers = drivers_collection.count_documents({"approval_status": "Approved"})
+        # Every approved driver (so idle drivers show on the map too).
+        fleet = []
+        online_drivers = 0
+        for d in drivers:
+            loc = driver_location(d)
+            freshness = classify_freshness(d.get("last_gps_at"), loc is not None, now)
+            is_online = d.get("online_status") == "Online" and not is_driver_stale(d)
+            if is_online:
+                online_drivers += 1
+            fleet.append({
+                "id": str(d["_id"]),
+                "name": d.get("name", "Driver"),
+                "phone": d.get("phone", ""),
+                "truck_number": d.get("truck_number", ""),
+                "online": is_online,
+                "lat": loc[0] if loc else None,
+                "lng": loc[1] if loc else None,
+                "last_gps_at": d["last_gps_at"].isoformat() if d.get("last_gps_at") else None,
+                "last_gps_age_s": gps_age_seconds(d.get("last_gps_at"), now),
+                "last_gps_label": gps_label(d.get("last_gps_at")),
+                "location_freshness": freshness,
+                "moving_status": d.get("moving_status", "Unknown"),
+                "active_booking_id": busy_driver_ids.get(str(d["_id"])),
+            })
+
+        approved_drivers = len(drivers)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        completed_today = bookings_collection.count_documents({
+            "status": "Delivered",
+            "delivered_at": {"$gte": today_start}
+        })
 
         return jsonify({
             "success": True,
             "deliveries": deliveries,
+            "drivers": fleet,
+            # existing keys kept for backwards compatibility
             "online_drivers": online_drivers,
-            "total_drivers": total_drivers,
-            "timestamp": datetime.now().isoformat()
+            "total_drivers": approved_drivers,
+            # new overview numbers
+            "stats": {
+                "registered_drivers": drivers_collection.count_documents({}),
+                "approved_drivers": approved_drivers,
+                "online_drivers": online_drivers,
+                "offline_drivers": max(0, approved_drivers - online_drivers),
+                "active_deliveries": len(deliveries),
+                "completed_today": completed_today,
+                "location_issues": issue_count,
+            },
+            "freshness_live_seconds": FRESHNESS_LIVE_SECONDS,
+            "timestamp": now.isoformat()
         })

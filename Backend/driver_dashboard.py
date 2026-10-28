@@ -1,5 +1,4 @@
 from flask import (
-    render_template,
     session,
     redirect,
     url_for,
@@ -10,21 +9,17 @@ from flask import (
 from bson.objectid import ObjectId
 from datetime import datetime
 from functools import wraps
+import hmac
+from pymongo import ReturnDocument
 from flask_mail import Message
 from mail_utils import send_mail_capped
 import random
 import re
-import os
 import logging
-from werkzeug.utils import secure_filename
 from typing import Dict, Any
 
-from payment_ledger import log_transaction
-from image_utils import compress_image_file
+from payment_ledger import record_cod_submission
 from payment_admin import (
-    get_bank_details_masked as get_bank_details,
-    get_driver_wallet_summary,
-    get_driver_settlement_summary,
     save_payment_screenshot,
     DRIVER_SHARE_RATE
 )
@@ -46,6 +41,57 @@ _payment_transactions_collection = None
 _mail = None
  
 # =====================================================
+# DELIVERY WORKFLOW RULES (shared by every driver endpoint)
+# =====================================================
+# Status flow:  Assigned -> Accepted -> On The Way -> Arrived -> Delivered
+#
+# Through the status endpoints a driver may only take the two forward steps
+# below, each from exactly one status. "Delivered" is deliberately NOT here:
+# it is reachable only via /verify-delivery-otp (the customer's OTP).
+DRIVER_STATUS_TRANSITIONS = {
+    "On The Way": ("Accepted",),
+    "Arrived": ("On The Way",),
+}
+OTP_COMPLETABLE_STATUSES = ("On The Way", "Arrived")
+OTP_MAX_ATTEMPTS = 5
+
+
+def transition_delivery(booking_id, driver_email, new_status, extra_fields=None):
+    """Atomically move a delivery owned by `driver_email` to `new_status`.
+
+    Returns (booking_as_it_was_before, error_message, http_status). On
+    success the error is None. The status check is part of the update
+    filter itself, so a double click or a stale tab can never apply a
+    transition twice or skip a step.
+    """
+    allowed_from = DRIVER_STATUS_TRANSITIONS.get(new_status)
+    if allowed_from is None:
+        if new_status == "Delivered":
+            return None, "A delivery can only be completed with the OTP the customer received.", 400
+        return None, f"'{new_status}' is not a status you can set.", 400
+
+    try:
+        oid = ObjectId(booking_id)
+    except Exception:
+        return None, "Invalid booking ID", 400
+
+    fields = {"status": new_status, "last_updated": datetime.now()}
+    fields.update(extra_fields or {})
+
+    before = _bookings_collection.find_one_and_update(
+        {"_id": oid, "driver_email": driver_email, "status": {"$in": list(allowed_from)}},
+        {"$set": fields}
+    )
+    if before is not None:
+        return before, None, 200
+
+    current = _bookings_collection.find_one({"_id": oid, "driver_email": driver_email})
+    if not current:
+        return None, "Booking not found or not assigned to you", 404
+    return None, f"This delivery is '{current.get('status')}' and can't be moved to '{new_status}'.", 409
+
+
+# =====================================================
 # DECORATORS FOR AUTHENTICATION
 # =====================================================
  
@@ -61,6 +107,7 @@ def driver_login_required(f):
         "/verify-delivery-otp/",
         "/generate-delivery-otp/",
         "/update-delivery-status/",
+        "/arrived-location/",
     )
 
     @wraps(f)
@@ -189,8 +236,10 @@ def init_driver_dashboard(
         active_orders = [o for o in all_orders if o.get("status") not in ["Delivered", "Cancelled"]]
         
         # Calculate average rating from completed orders
-        ratings = [o.get("customer_rating", 0) for o in completed_orders if o.get("customer_rating")]
-        avg_rating = sum(ratings) / len(ratings) if ratings else 5.0
+        # Only real customer ratings count. With none, this stays None -
+        # it must never be filled with a made-up default score.
+        ratings = [o.get("customer_rating") for o in completed_orders if o.get("customer_rating")]
+        avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else None
         
         _drivers_collection.update_one(
             {"email": driver_email},
@@ -202,540 +251,100 @@ def init_driver_dashboard(
                     "total_deliveries": len(all_orders),
                     "completed_deliveries": len(completed_orders),
                     "active_deliveries": len(active_orders),
-                    "average_rating": round(avg_rating, 1),
+                    "average_rating": avg_rating,
                     "last_stats_update": datetime.now()
                 }
             }
         )
         
         return earnings_data
-    
     # =====================================================
-    # DRIVER DASHBOARD
+    # DELIVERY STATUS UPDATE (AJAX)
+    # -----------------------------------------------------
+    # Only the forward steps a driver controls are allowed here
+    # (Accepted -> On The Way -> Arrived), enforced server-side by
+    # transition_delivery(). "Delivered" is refused outright: a delivery
+    # can only be completed through /verify-delivery-otp, which needs the
+    # code the customer received by email.
     # =====================================================
-    
-    @app.route("/driver-dashboard")
-    @driver_login_required
-    def driver_dashboard():
-        try:
-            driver = _drivers_collection.find_one({"email": session["driver_email"]})
-            if not driver:
-                flash("Driver profile not found", "danger")
-                return redirect(url_for("driver_login"))
-            
-            # Update driver stats before displaying
-            earnings_data = update_driver_stats(session["driver_email"])
-            
-            # Get assigned orders with proper sorting
-            assigned_orders = list(
-                _bookings_collection.find({
-                    "driver_email": session["driver_email"]
-                }).sort("created_at", -1)
-            )
-            
-            # Separate orders by status
-            active_orders_list = [o for o in assigned_orders 
-                                if o.get("status") not in ["Delivered", "Cancelled"]]
-            
-            # Add delivery_status to each active order for template compatibility
-            for order in active_orders_list:
-                status = order.get("status", "Pending")
-                if status == "On The Way":
-                    order["delivery_status"] = "On The Way"
-                elif status == "Arrived":
-                    order["delivery_status"] = "Arrived"
-                elif status == "Delivered":
-                    order["delivery_status"] = "Delivered"
-                else:
-                    order["delivery_status"] = "Pending"
-            
-            completed_orders_list = [o for o in assigned_orders 
-                                   if o.get("status") == "Delivered"]
-            cancelled_orders_list = [o for o in assigned_orders 
-                                   if o.get("status") == "Cancelled"]
 
-            # ---------------------------------------------------------
-            # Orders that are still waiting on this driver's Accept /
-            # Reject decision. These must NOT show a map or a Start
-            # button - only Accept / Reject.
-            # ---------------------------------------------------------
-            pending_decision_orders = [
-                o for o in active_orders_list if o.get("status") == "Assigned"
-            ]
-
-            # ---------------------------------------------------------
-            # The order (if any) that should drive the live map. Only
-            # orders the driver has actually accepted (Accepted / On
-            # The Way / Arrived) qualify - never a still-pending
-            # "Assigned" order.
-            # ---------------------------------------------------------
-            in_progress_statuses = ["Accepted", "On The Way", "Arrived"]
-            current_delivery_order = next(
-                (o for o in active_orders_list if o.get("status") in in_progress_statuses),
-                None
-            )
-
-            # ---------------------------------------------------------
-            # Completed deliveries that were paid in cash and still
-            # need the driver to submit / remit the collected amount
-            # to the company.
-            # ---------------------------------------------------------
-            cash_pending_orders = [
-                o for o in completed_orders_list
-                if not o.get("payment_submitted")
-                and not o.get("payment_processed")
-                and o.get("payment_status") != "Paid (Online)"
-            ]
-
-            # ---------------------------------------------------------
-            # Real-money reconciliation with the company: how much cash
-            # this driver has collected, how much is already submitted
-            # and awaiting admin verification, how much admin has
-            # confirmed received, and how much is still owed right now.
-            # ---------------------------------------------------------
-            wallet = get_driver_wallet_summary(_bookings_collection, session["driver_email"])
-            bank_details = get_bank_details(_settings_collection)
-
-            # Submissions the driver has already made, most recent first,
-            # so they can see what's pending / approved / rejected.
-            payment_submissions = [
-                o for o in completed_orders_list if o.get("payment_submitted")
-            ]
-            payment_submissions.sort(
-                key=lambda o: o.get("payment_submitted_at") or datetime.min,
-                reverse=True
-            )
-            payment_submissions = payment_submissions[:10]
-            
-            # Calculate today's deliveries
-            today = datetime.now().date()
-            today_deliveries = len([
-                o for o in assigned_orders
-                if o.get("delivery_date") and 
-                isinstance(o["delivery_date"], datetime) and
-                o["delivery_date"].date() == today
-            ])
-            
-            # Get emergency messages (last 5)
-            emergency_messages = list(
-                _notifications_collection.find({
-                    "driver_email": session["driver_email"],
-                    "type": "emergency"
-                }).sort("created_at", -1).limit(5)
-            )
-            
-            # Get unread notification count
-            unread_count = _notifications_collection.count_documents({
-                "driver_email": session["driver_email"],
-                "read": False
-            })
-            
-            # =============================================
-            # DEBUG PRINTS - ADDED BACK WITH CORRECT VARIABLES
-            # =============================================
-            print("=" * 50)
-            print("LOGGED IN DRIVER:", session.get("driver_email"))
-            print("TOTAL ORDERS:", len(assigned_orders))
-            print("ACTIVE ORDERS:", len(active_orders_list))
-            print("COMPLETED ORDERS:", len(completed_orders_list))
-            print("-" * 30)
-            
-            for order in assigned_orders:
-                print("ORDER ID:", order.get("_id"))
-                print("DRIVER EMAIL:", order.get("driver_email"))
-                print("STATUS:", order.get("status"))
-                print("-" * 30)
-            
-            print("=" * 50)
-            # =============================================
-            
-            return render_template(
-                "driver_dashboard.html",
-                driver=driver,
-                assigned_orders=assigned_orders,
-                active_orders=active_orders_list,
-                completed_orders=completed_orders_list,
-                cancelled_orders=cancelled_orders_list,
-                pending_decision_orders=pending_decision_orders,
-                current_delivery_order=current_delivery_order,
-                cash_pending_orders=cash_pending_orders,
-                wallet=wallet,
-                bank_details=bank_details,
-                payment_submissions=payment_submissions,
-                total_orders=len(assigned_orders),
-                active_orders_count=len(active_orders_list),
-                completed_orders_count=len(completed_orders_list),
-                cancelled_orders_count=len(cancelled_orders_list),
-                total_earnings=earnings_data["total_earnings"] if earnings_data else 0,
-                pending_payments=earnings_data["pending_payments"] if earnings_data else 0,
-                approved_payments=earnings_data["approved_payments"] if earnings_data else 0,
-                weekly_earnings=earnings_data["weekly_earnings"] if earnings_data else {"Mon": 0, "Tue": 0, "Wed": 0, "Thu": 0, "Fri": 0, "Sat": 0, "Sun": 0},
-                emergency_messages=emergency_messages,
-                today_deliveries=today_deliveries,
-                unread_notifications=unread_count,
-                current_time=datetime.now()
-            )
-        except Exception as e:
-            logger.error(f"Error in driver_dashboard: {str(e)}")
-            flash("An error occurred loading the dashboard", "danger")
-            return redirect(url_for("driver_login"))
-    
-    # =====================================================
-    # DRIVER PROFILE
-    # =====================================================
-    
-    @app.route("/driver-profile")
-    @driver_login_required
-    def driver_profile():
-        driver_email = session["driver_email"]
-
-        # Refresh stats first (same helper the main dashboard uses) so
-        # total_deliveries / total_earnings / average_rating are never stale.
-        update_driver_stats(driver_email)
-        driver = _drivers_collection.find_one({"email": driver_email})
-
-        all_orders = list(
-            _bookings_collection.find({"driver_email": driver_email}).sort("created_at", -1)
-        )
-
-        active_deliveries = [
-            o for o in all_orders if o.get("status") not in ("Delivered", "Cancelled")
-        ][:5]
-
-        completed_orders = [o for o in all_orders if o.get("status") == "Delivered"]
-        cancelled_orders = [o for o in all_orders if o.get("status") == "Cancelled"]
-
-        # Completion rate replaces the old fake "98% On-Time Rate" - there's
-        # no real on-time tracking in this app, so rather than invent one,
-        # this uses real math the data actually supports.
-        if completed_orders or cancelled_orders:
-            completion_rate = round(
-                len(completed_orders) / (len(completed_orders) + len(cancelled_orders)) * 100
-            )
-        else:
-            completion_rate = None
-
-        recent_completed = sorted(
-            completed_orders,
-            key=lambda o: o.get("delivered_at") or datetime.min,
-            reverse=True
-        )[:3]
-        for o in recent_completed:
-            o["driver_earning"] = round(
-                o.get("delivery_fee", 500) * DRIVER_SHARE_RATE
-            ) + o.get("tip_amount", 0)
-
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        todays_deliveries = [o for o in all_orders if o.get("delivery_date") == today_str][:5]
-
-        # Real reviews only - a booking only shows up here if a customer
-        # actually left a rating. No fabricated names or quotes.
-        reviews = sorted(
-            [o for o in completed_orders if o.get("customer_rating")],
-            key=lambda o: o.get("delivered_at") or datetime.min,
-            reverse=True
-        )[:5]
-
-        # Profile completeness based on which fields are actually filled in.
-        completeness_fields = [
-            driver.get("photo"),
-            driver.get("phone"),
-            driver.get("address"),
-            driver.get("truck_number"),
-            driver.get("truck_capacity"),
-            driver.get("license_number"),
-            driver.get("experience_years"),
-        ]
-        filled = sum(1 for f in completeness_fields if f not in (None, "", 0))
-        profile_completion = round((filled / len(completeness_fields)) * 100)
-
-        # Driver ID - derived deterministically from the real Mongo _id
-        # (no separate driver_id field exists in the schema), so every
-        # existing driver gets a stable, real ID with no migration needed.
-        driver_id = "AF-DR-" + str(driver["_id"])[-6:].upper()
-
-        # "Verified" reuses the real admin approval workflow that already
-        # gates driver login - an Approved driver's identity/vehicle info
-        # has genuinely been checked by an admin.
-        is_verified = driver.get("approval_status") == "Approved"
-        registration_status = "Verified" if is_verified else driver.get("approval_status", "Pending")
-
-        # Documents - one current record per required type, from the real
-        # upload flow (re-uploading replaces the old one).
-        documents = {}
-        if _documents_collection is not None:
-            for d in _documents_collection.find({"driver_email": driver_email}):
-                documents[d.get("document_type")] = d
-
-        # Recent Activity - a real merged feed: delivery/order events come
-        # from bookings, Login/Profile/Vehicle events come from the real
-        # activity log written by the login and profile-update routes.
-        activity_feed = []
-        for o in completed_orders:
-            if o.get("delivered_at"):
-                activity_feed.append({
-                    "type": "Delivery Completed",
-                    "detail": o.get("fullname", "a customer"),
-                    "at": o["delivered_at"]
-                })
-        for o in all_orders:
-            if o.get("driver_assigned_at") and o.get("status") not in ("Pending",):
-                activity_feed.append({
-                    "type": "Order Accepted",
-                    "detail": o.get("fullname", "a customer"),
-                    "at": o["driver_assigned_at"]
-                })
-        if _activity_collection is not None:
-            for a in _activity_collection.find({"driver_email": driver_email}):
-                activity_feed.append({
-                    "type": a.get("type"),
-                    "detail": a.get("detail", ""),
-                    "at": a.get("at")
-                })
-        activity_feed = [a for a in activity_feed if a.get("at")]
-        activity_feed.sort(key=lambda a: a["at"], reverse=True)
-        activity_feed = activity_feed[:5]
-
-        return render_template(
-            "driver_profile.html",
-            driver=driver,
-            active_deliveries=active_deliveries,
-            recent_completed=recent_completed,
-            todays_deliveries=todays_deliveries,
-            reviews=reviews,
-            completion_rate=completion_rate,
-            profile_completion=profile_completion,
-            driver_id=driver_id,
-            is_verified=is_verified,
-            registration_status=registration_status,
-            documents=documents,
-            activity_feed=activity_feed,
-            current_time=datetime.now()
-        )
-    
-    @app.route("/update-driver-profile", methods=["POST"])
-    @driver_login_required
-    def update_driver_profile():
-        try:
-            driver_email = session["driver_email"]
-            existing = _drivers_collection.find_one({"email": driver_email}) or {}
-
-            update_data = {
-                "phone": request.form.get("phone"),
-                "address": request.form.get("address"),
-                "emergency_contact": request.form.get("emergency_contact"),
-                "truck_number": request.form.get("truck_number"),
-                "truck_capacity": request.form.get("truck_capacity"),
-                "license_number": request.form.get("license_number"),
-                "experience_years": int(request.form.get("experience_years") or 0),
-                "updated_at": datetime.now()
-            }
-
-            # Remove None values (fields not present in this particular form)
-            update_data = {k: v for k, v in update_data.items() if v is not None}
-
-            # Handle photo upload if present - actually persist the file this
-            # time (it was previously only storing the raw filename string
-            # with nothing saved to disk).
-            if "photo" in request.files:
-                photo = request.files["photo"]
-                if photo and photo.filename:
-                    ext = os.path.splitext(photo.filename)[1].lower()
-                    if ext in {".png", ".jpg", ".jpeg", ".webp"}:
-                        os.makedirs("static/uploads/drivers", exist_ok=True)
-                        filename = f"{int(datetime.now().timestamp())}_{secure_filename(photo.filename)}"
-                        photo_path = f"static/uploads/drivers/{filename}"
-                        photo.save(photo_path)
-                        compress_image_file(photo_path)  # safe no-op on failure
-                        update_data["photo"] = photo_path
-
-            _drivers_collection.update_one(
-                {"email": driver_email},
-                {"$set": update_data}
-            )
-
-            # Real activity log - distinguish a vehicle-info edit from a
-            # personal-info edit so Recent Activity reflects what actually
-            # changed, instead of always saying the same generic thing.
-            if _activity_collection is not None:
-                vehicle_fields = {"truck_number", "truck_capacity", "license_number"}
-                changed_vehicle = any(
-                    k in vehicle_fields and existing.get(k) != v
-                    for k, v in update_data.items()
-                )
-                changed_personal = any(
-                    k not in vehicle_fields and k != "updated_at" and existing.get(k) != v
-                    for k, v in update_data.items()
-                )
-                if changed_vehicle:
-                    _activity_collection.insert_one({
-                        "driver_email": driver_email, "type": "Vehicle Updated",
-                        "detail": "Vehicle details updated", "at": datetime.now()
-                    })
-                if changed_personal:
-                    _activity_collection.insert_one({
-                        "driver_email": driver_email, "type": "Profile Updated",
-                        "detail": "Profile details updated", "at": datetime.now()
-                    })
-
-            flash("Profile updated successfully", "success")
-        except Exception as e:
-            logger.error(f"Profile update error: {str(e)}")
-            flash("Error updating profile", "danger")
-        
-        return redirect(url_for("driver_profile"))
-    
-    # =====================================================
-    # DRIVER ACTIVE ORDERS
-    # =====================================================
-    
-    @app.route("/driver-active-orders")
-    @driver_login_required
-    def driver_active_orders():
-        active_orders = list(
-            _bookings_collection.find({
-                "driver_email": session["driver_email"],
-                "status": {"$nin": ["Delivered", "Cancelled"]}
-            }).sort("created_at", -1)
-        )
-        
-        return render_template(
-            "driver_active_orders.html",
-            active_orders=active_orders
-        )
-    
-    # =====================================================
-    # DRIVER COMPLETED ORDERS
-    # =====================================================
-    
-    @app.route("/driver-completed-orders")
-    @driver_login_required
-    def driver_completed_orders():
-        completed_orders = list(
-            _bookings_collection.find({
-                "driver_email": session["driver_email"],
-                "status": "Delivered"
-            }).sort("delivered_at", -1)
-        )
-        
-        return render_template(
-            "driver_completed_orders.html",
-            completed_orders=completed_orders
-        )
-    
-    # =====================================================
-    # DELIVERY STATUS UPDATE (AJAX Enhanced)
-    # =====================================================
-    
     @app.route("/api/update-delivery-status/<booking_id>", methods=["POST"])
     @driver_login_required
     def api_update_delivery_status(booking_id):
         try:
-            data = request.get_json()
-            new_status = data.get("status")
+            data = request.get_json(silent=True) or {}
+            new_status = str(data.get("status") or "").strip()
+
+            extra = {}
             live_location = data.get("live_location")
             eta = data.get("eta")
-            
-            update_fields = {
-                "status": new_status,
-                "last_updated": datetime.now()
-            }
-            
-            if live_location:
-                update_fields["live_location"] = live_location
-            if eta:
-                update_fields["eta"] = eta
-            
-            if new_status == "On The Way" and not data.get("started_at"):
-                update_fields["started_at"] = datetime.now()
+            if isinstance(live_location, str) and live_location.strip():
+                extra["live_location"] = live_location.strip()[:120]
+            if isinstance(eta, str) and eta.strip():
+                extra["eta"] = eta.strip()[:60]
+            if new_status == "On The Way":
+                extra["started_at"] = datetime.now()
             elif new_status == "Arrived":
-                update_fields["arrived_at"] = datetime.now()
-            elif new_status == "Delivered":
-                update_fields["delivered_at"] = datetime.now()
-            
-            result = _bookings_collection.update_one(
-                {"_id": ObjectId(booking_id), "driver_email": session["driver_email"]},
-                {"$set": update_fields}
+                extra["arrived_at"] = datetime.now()
+
+            _before, error, status_code = transition_delivery(
+                booking_id, session["driver_email"], new_status, extra
             )
-            
-            if result.modified_count > 0:
-                # Update driver stats
-                update_driver_stats(session["driver_email"])
-                return jsonify({"success": True, "message": "Status updated"})
-            else:
-                return jsonify({"success": False, "message": "No changes made"}), 400
-                
+            if error:
+                return jsonify({"success": False, "message": error}), status_code
+
+            update_driver_stats(session["driver_email"])
+            return jsonify({"success": True, "message": "Status updated"})
+
         except Exception as e:
             logger.error(f"Status update error: {str(e)}")
-            return jsonify({"success": False, "message": str(e)}), 500
-    
+            return jsonify({"success": False, "message": "Could not update the status"}), 500
     # =====================================================
     # START DELIVERY
     # =====================================================
-    
+
     @app.route("/start-delivery/<booking_id>", methods=["POST"])
     @driver_login_required
     def start_delivery(booking_id):
         try:
-            try:
-                oid = ObjectId(booking_id)
-            except Exception:
-                logger.error(f"Start delivery: invalid booking_id received: {booking_id!r}")
-                return jsonify({"success": False, "message": "Invalid booking ID"}), 400
-
-            booking = _bookings_collection.find_one({
-                "_id": oid,
-                "driver_email": session["driver_email"]
-            })
-
-            if not booking:
-                logger.error(f"Start delivery: no booking found for id={booking_id} driver={session.get('driver_email')}")
-                return jsonify({
-                    "success": False,
-                    "message": "Booking not found or not assigned to you"
-                }), 404
-
-            current_status = str(booking.get("status", "")).strip()
-            if current_status.lower() != "accepted":
-                return jsonify({
-                    "success": False,
-                    "message": f"Please accept this order before starting the delivery (current status: {current_status or 'Unknown'})"
-                }), 400
-
-            result = _bookings_collection.update_one(
-                {"_id": oid, "driver_email": session["driver_email"]},
-                {
-                    "$set": {
-                        "status": "On The Way",
-                        "started_at": datetime.now()
-                    }
-                }
+            booking, error, status_code = transition_delivery(
+                booking_id, session["driver_email"], "On The Way",
+                {"started_at": datetime.now()}
             )
 
-            if result.modified_count > 0 or result.matched_count > 0:
-                if _notifications_collection is not None:
-                    try:
-                        _notifications_collection.insert_one({
-                            "user_email": booking["user_email"],
-                            "title": "Delivery Started",
-                            "message": "Driver started delivery for your booking.",
-                            "type": "on_way",
-                            "status": "warning",
-                            "icon": "🚛",
-                            "read": False,
-                            "created_at": datetime.now()
-                        })
-                    except Exception as notify_err:
-                        logger.error(f"Start delivery notification error: {str(notify_err)}")
+            if error:
+                if status_code == 409:
+                    current = (
+                        _bookings_collection.find_one({"_id": ObjectId(booking_id)}) or {}
+                    ).get("status") or "Unknown"
+                    if current in ("On The Way", "Arrived"):
+                        error = "This delivery has already been started."
+                    else:
+                        error = (
+                            "Please accept this order before starting the delivery "
+                            f"(current status: {current})"
+                        )
+                    status_code = 400
+                return jsonify({"success": False, "message": error}), status_code
 
-                return jsonify({
-                    "success": True,
-                    "message": "Delivery started successfully"
-                })
+            if _notifications_collection is not None and booking.get("user_email"):
+                try:
+                    _notifications_collection.insert_one({
+                        "user_email": booking["user_email"],
+                        "title": "Delivery Started",
+                        "message": "Driver started delivery for your booking.",
+                        "type": "on_way",
+                        "status": "warning",
+                        "icon": "🚛",
+                        "read": False,
+                        "created_at": datetime.now()
+                    })
+                except Exception as notify_err:
+                    logger.error(f"Start delivery notification error: {str(notify_err)}")
 
             return jsonify({
-                "success": False,
-                "message": "Unable to start delivery"
+                "success": True,
+                "message": "Delivery started successfully"
             })
 
         except Exception as e:
@@ -743,36 +352,46 @@ def init_driver_dashboard(
             return jsonify({
                 "success": False,
                 "message": "Error starting delivery"
-            })
-    
+            }), 500
     # =====================================================
     # ARRIVED LOCATION
+    # -----------------------------------------------------
+    # POST only (it changes state), and only valid from "On The Way".
+    # The GPS engine also flips a delivery to Arrived automatically when
+    # the driver is within ~100 m; this is the manual fallback.
     # =====================================================
-    
-    @app.route("/arrived-location/<booking_id>")
+
+    @app.route("/arrived-location/<booking_id>", methods=["POST"])
     @driver_login_required
     def arrived_location(booking_id):
         try:
-            result = _bookings_collection.update_one(
-                {"_id": ObjectId(booking_id), "driver_email": session["driver_email"]},
-                {
-                    "$set": {
-                        "status": "Arrived",
-                        "arrived_at": datetime.now()
-                    }
-                }
+            now = datetime.now()
+            booking, error, status_code = transition_delivery(
+                booking_id, session["driver_email"], "Arrived", {"arrived_at": now}
             )
-            
-            if result.modified_count > 0:
-                flash("You have arrived at the location", "success")
-            else:
-                flash("Unable to update status", "warning")
-                
+            if error:
+                return jsonify({"success": False, "message": error}), status_code
+
+            if _notifications_collection is not None and booking.get("user_email"):
+                try:
+                    _notifications_collection.insert_one({
+                        "user_email": booking["user_email"],
+                        "title": "🚛 Driver Arrived",
+                        "message": "Your AquaFlow driver has arrived at your location.",
+                        "type": "arrived",
+                        "status": "success",
+                        "icon": "📍",
+                        "read": False,
+                        "created_at": now
+                    })
+                except Exception as notify_err:
+                    logger.error(f"Arrived notification error: {str(notify_err)}")
+
+            return jsonify({"success": True, "message": "Marked as arrived"})
+
         except Exception as e:
             logger.error(f"Arrived location error: {str(e)}")
-            flash("Error updating status", "danger")
-        
-        return redirect(url_for("driver_dashboard"))
+            return jsonify({"success": False, "message": "Error updating status"}), 500
     
     # =====================================================
     # PUSH DRIVER'S REAL GPS LOCATION (from browser geolocation)
@@ -1085,10 +704,18 @@ def init_driver_dashboard(
             if screenshot_path:
                 update_fields["payment_screenshot"] = screenshot_path
 
-            _bookings_collection.update_one(
-                {"_id": ObjectId(booking_id)},
-                {"$set": update_fields}
+            # Atomic claim: only ONE request can flip payment_submitted to True.
+            # A double tap / retry / second tab matches nothing here and stops,
+            # so it can't create a second notification or ledger row.
+            claimed = _bookings_collection.find_one_and_update(
+                {"_id": ObjectId(booking_id), "driver_email": session["driver_email"],
+                 "payment_submitted": {"$ne": True}},
+                {"$set": update_fields, "$inc": {"payment_submission_attempt": 1}},
+                return_document=ReturnDocument.AFTER
             )
+            if claimed is None:
+                return jsonify({"success": False, "message": "Payment already submitted for this order"}), 400
+            attempt = claimed.get("payment_submission_attempt", 1)
 
             driver = _drivers_collection.find_one({"email": session["driver_email"]})
             if _notifications_collection is not None:
@@ -1113,15 +740,15 @@ def init_driver_dashboard(
                 except Exception as notify_err:
                     logger.error(f"Payment submission notification error: {str(notify_err)}")
 
-            log_transaction(
+            # ONE ledger row for this submission; the admin's decision later
+            # updates this same row (see payment_admin.verify_driver_payment).
+            record_cod_submission(
                 _payment_transactions_collection,
-                type="cod_collection",
-                status="Waiting Admin Approval",
+                booking_id,
+                attempt,
                 amount=amount,
-                booking_id=booking_id,
                 user_email=booking.get("user_email"),
                 driver_email=session["driver_email"],
-                gateway="cash",
                 payment_screenshot=screenshot_path,
                 notes=f"{method} ref: {transaction_ref}" + (f" — {note}" if note else "")
             )
@@ -1139,7 +766,7 @@ def init_driver_dashboard(
     # DELIVERY OTP GENERATION
     # =====================================================
     
-    @app.route("/generate-delivery-otp/<booking_id>")
+    @app.route("/generate-delivery-otp/<booking_id>", methods=["GET", "POST"])
     @driver_login_required
     def generate_delivery_otp(booking_id):
         """
@@ -1163,7 +790,13 @@ def init_driver_dashboard(
             
             if not booking:
                 return jsonify({"success": False, "message": "Booking not found"}), 404
-            
+
+            if booking.get("status") not in ("Accepted",) + OTP_COMPLETABLE_STATUSES:
+                return jsonify({
+                    "success": False,
+                    "message": "An OTP is only needed for a delivery that is in progress."
+                }), 400
+
             existing_otp = booking.get("delivery_otp")
             
             if existing_otp:
@@ -1221,144 +854,149 @@ AquaFlow Team
         except Exception as e:
             logger.error(f"OTP generation error: {str(e)}")
             return jsonify({"success": False, "message": str(e)}), 500
-    
     # =====================================================
     # VERIFY DELIVERY OTP
+    # -----------------------------------------------------
+    # The ONLY way a delivery becomes "Delivered". Guarantees:
+    #   * the booking must belong to this driver and be On The Way/Arrived
+    #   * a delivery that is already Delivered can never be completed twice
+    #     (no double earnings)
+    #   * wrong codes are counted atomically - parallel requests cannot
+    #     squeeze extra guesses past the 5-attempt limit
+    #   * the final Delivered write is a compare-and-set on the status
     # =====================================================
-    
+
     @app.route("/verify-delivery-otp/<booking_id>", methods=["POST"])
     @driver_login_required
     def verify_delivery_otp(booking_id):
         try:
-            entered_otp = request.form.get("otp")
-            
+            entered_otp = (request.form.get("otp") or "").strip()
+            driver_email = session["driver_email"]
+
+            try:
+                oid = ObjectId(booking_id)
+            except Exception:
+                return jsonify({"success": False, "message": "Invalid booking ID"}), 400
+
             booking = _bookings_collection.find_one({
-                "_id": ObjectId(booking_id),
-                "driver_email": session["driver_email"]
+                "_id": oid,
+                "driver_email": driver_email
             })
-            
+
             if not booking:
                 return jsonify({"success": False, "message": "Booking not found"}), 404
-            
+
+            current_status = booking.get("status")
+            if current_status == "Delivered":
+                return jsonify({
+                    "success": False,
+                    "message": "This delivery has already been completed."
+                }), 409
+            if current_status not in OTP_COMPLETABLE_STATUSES:
+                return jsonify({
+                    "success": False,
+                    "message": f"Start the delivery before verifying the OTP (current status: {current_status or 'Unknown'})."
+                }), 400
+
             # Check OTP attempts (prevent brute force)
-            attempts = booking.get("otp_attempts", 0)
-            if attempts >= 5:
+            if (booking.get("otp_attempts") or 0) >= OTP_MAX_ATTEMPTS:
                 return jsonify({"success": False, "message": "Too many failed attempts. Please contact support."}), 400
-            
+
             real_otp = booking.get("delivery_otp")
-            
+
             if not real_otp:
                 return jsonify({"success": False, "message": "OTP not generated yet. Please generate OTP first."}), 400
-            
-            if entered_otp != real_otp:
-                # Increment failed attempts
-                _bookings_collection.update_one(
-                    {"_id": ObjectId(booking_id)},
-                    {"$inc": {"otp_attempts": 1}}
-                )
-                remaining_attempts = 4 - attempts
-                return jsonify({"success": False, "message": f"Invalid OTP. {remaining_attempts} attempts remaining."}), 400
-            
-            # OTP verified - complete delivery
+
+            # Claim one attempt atomically BEFORE comparing, so concurrent
+            # requests can't all slip under the limit.
+            attempt_guard = {
+                "_id": oid,
+                "driver_email": driver_email,
+                "status": {"$in": list(OTP_COMPLETABLE_STATUSES)},
+                "$or": [
+                    {"otp_attempts": {"$exists": False}},
+                    {"otp_attempts": {"$lt": OTP_MAX_ATTEMPTS}}
+                ]
+            }
+            after = _bookings_collection.find_one_and_update(
+                attempt_guard,
+                {"$inc": {"otp_attempts": 1}},
+                return_document=ReturnDocument.AFTER
+            )
+            if after is None:
+                return jsonify({"success": False, "message": "Too many failed attempts. Please contact support."}), 400
+
+            if not hmac.compare_digest(entered_otp.encode("utf-8"), str(real_otp).encode("utf-8")):
+                remaining = max(0, OTP_MAX_ATTEMPTS - (after.get("otp_attempts") or 0))
+                return jsonify({"success": False, "message": f"Invalid OTP. {remaining} attempts remaining."}), 400
+
+            # OTP verified - complete delivery (compare-and-set on status)
             delivery_fee = booking.get("delivery_fee", 500)
-            
-            # Update booking
-            _bookings_collection.update_one(
-                {"_id": ObjectId(booking_id)},
+            now = datetime.now()
+
+            completed = _bookings_collection.find_one_and_update(
+                {
+                    "_id": oid,
+                    "driver_email": driver_email,
+                    "status": {"$in": list(OTP_COMPLETABLE_STATUSES)}
+                },
                 {
                     "$set": {
                         "status": "Delivered",
-                        "delivered_at": datetime.now(),
+                        "delivered_at": now,
                         "otp_verified": True,
-                        "otp_verified_at": datetime.now()
+                        "otp_verified_at": now,
+                        "otp_attempts": 0
                     }
                 }
             )
-            
+            if completed is None:
+                return jsonify({
+                    "success": False,
+                    "message": "This delivery was just updated elsewhere. Refresh and check its status."
+                }), 409
+
             # Update driver earnings
             _drivers_collection.update_one(
-                {"email": session["driver_email"]},
+                {"email": driver_email},
                 {
                     "$inc": {
                         "completed_deliveries": 1,
                         "total_earnings": delivery_fee
                     },
                     "$set": {
-                        "last_delivery_at": datetime.now()
+                        "last_delivery_at": now
                     }
                 }
             )
-            
+
             # Create earnings record
             if _earnings_collection is not None:
                 _earnings_collection.insert_one({
-                    "driver_email": session["driver_email"],
+                    "driver_email": driver_email,
                     "booking_id": booking_id,
                     "amount": delivery_fee,
                     "type": "delivery",
                     "status": "pending",
-                    "created_at": datetime.now()
+                    "created_at": now
                 })
-            
+
             # Create notification for driver
             if _notifications_collection is not None:
                 _notifications_collection.insert_one({
-                    "driver_email": session["driver_email"],
+                    "driver_email": driver_email,
                     "type": "delivery_completed",
                     "title": "Delivery Completed",
                     "message": f"Delivery completed successfully. ₹{delivery_fee} added to your earnings.",
                     "read": False,
-                    "created_at": datetime.now()
+                    "created_at": now
                 })
-            
+
             return jsonify({"success": True, "message": "Delivery completed successfully!"})
-            
+
         except Exception as e:
             logger.error(f"OTP verification error: {str(e)}")
             return jsonify({"success": False, "message": "Error verifying OTP"}), 500
-    
-    # =====================================================
-    # DRIVER EARNINGS PAGE
-    # =====================================================
-    
-    @app.route("/driver-earnings")
-    @driver_login_required
-    def driver_earnings():
-        driver = _drivers_collection.find_one({"email": session["driver_email"]})
-        earnings_data = calculate_driver_earnings(session["driver_email"])
-
-        settlement = get_driver_settlement_summary(
-            _transactions_collection, _bookings_collection, session["driver_email"]
-        )
-
-        # Driver Bonus (Feature 16): every 25 completed deliveries earns
-        # a flat Rs500 bonus. Derived straight from the driver's
-        # existing completed_deliveries counter, so it's always in
-        # sync - nothing new to keep updated separately.
-        completed_deliveries_count = driver.get("completed_deliveries", 0) if driver else 0
-        bonus_tiers_reached = completed_deliveries_count // 25
-        current_bonus = bonus_tiers_reached * 500
-        deliveries_to_next_bonus = 25 - (completed_deliveries_count % 25) if completed_deliveries_count % 25 != 0 else 25
-
-        # Get earnings history
-        earnings_history = []
-        if _earnings_collection is not None:
-            earnings_history = list(
-                _earnings_collection.find({"driver_email": session["driver_email"]})
-                .sort("created_at", -1)
-                .limit(50)
-            )
-        
-        return render_template(
-            "driver_earnings.html",
-            driver=driver,
-            earnings=earnings_data,
-            settlement=settlement,
-            earnings_history=earnings_history,
-            current_bonus=current_bonus,
-            completed_deliveries_count=completed_deliveries_count,
-            deliveries_to_next_bonus=deliveries_to_next_bonus
-        )
 
     # =====================================================
     # DRIVER SUBMITS / UPDATES BANK DETAILS FOR PAYOUTS
@@ -1455,18 +1093,23 @@ AquaFlow Team
             flash("Error sending emergency message", "danger")
         
         return redirect(url_for("driver_dashboard"))
-    
     # =====================================================
     # DRIVER ONLINE STATUS (AJAX)
     # =====================================================
-    
+
     @app.route("/api/driver-status", methods=["POST"])
     @driver_login_required
     def api_driver_status():
         try:
-            data = request.get_json()
-            status = data.get("status", "Offline")
-            
+            data = request.get_json(silent=True) or {}
+            status = str(data.get("status") or "").strip().capitalize()
+
+            if status not in ("Online", "Offline"):
+                return jsonify({
+                    "success": False,
+                    "message": "Status must be Online or Offline"
+                }), 400
+
             _drivers_collection.update_one(
                 {"email": session["driver_email"]},
                 {
@@ -1476,60 +1119,16 @@ AquaFlow Team
                     }
                 }
             )
-            
+
             return jsonify({
                 "success": True,
                 "status": status,
                 "message": f"Status updated to {status}"
             })
-            
+
         except Exception as e:
             logger.error(f"Status update error: {str(e)}")
-            return jsonify({"success": False, "message": str(e)}), 500
-    
-    @app.route("/driver-online")
-    @driver_login_required
-    def driver_online():
-        _drivers_collection.update_one(
-            {"email": session["driver_email"]},
-            {"$set": {"online_status": "Online", "last_activity": datetime.now()}}
-        )
-        flash("You are now online and ready to accept deliveries", "success")
-        return redirect(url_for("driver_dashboard"))
-    
-    @app.route("/driver-offline")
-    @driver_login_required
-    def driver_offline():
-        _drivers_collection.update_one(
-            {"email": session["driver_email"]},
-            {"$set": {"online_status": "Offline", "last_activity": datetime.now()}}
-        )
-        flash("You are now offline", "info")
-        return redirect(url_for("driver_dashboard"))
-    
-    # =====================================================
-    # DRIVER NOTIFICATIONS
-    # =====================================================
-    
-    @app.route("/driver-notifications")
-    @driver_login_required
-    def driver_notifications():
-        # Mark all as read when viewing
-        _notifications_collection.update_many(
-            {"driver_email": session["driver_email"], "read": False},
-            {"$set": {"read": True}}
-        )
-        
-        notifications = list(
-            _notifications_collection.find({
-                "driver_email": session["driver_email"]
-            }).sort("created_at", -1).limit(100)
-        )
-        
-        return render_template(
-            "driver_notifications.html",
-            notifications=notifications
-        )
+            return jsonify({"success": False, "message": "Could not update status"}), 500
     
     @app.route("/api/notifications/unread-count")
     @driver_login_required
@@ -1539,184 +1138,6 @@ AquaFlow Team
             "read": False
         })
         return jsonify({"count": count})
-    
-    # =====================================================
-    # DRIVER ORDER DETAILS
-    # =====================================================
-    
-    @app.route("/driver-order-details/<booking_id>")
-    @driver_login_required
-    def driver_order_details(booking_id):
-        booking = _bookings_collection.find_one({
-            "_id": ObjectId(booking_id),
-            "driver_email": session["driver_email"]
-        })
-        
-        if not booking:
-            flash("Order not found", "danger")
-            return redirect(url_for("driver_dashboard"))
-        
-        return render_template(
-            "driver_order_details.html",
-            booking=booking
-        )
-    
-    # =====================================================
-    # DRIVER ANALYTICS
-    # =====================================================
-    
-    @app.route("/driver-analytics")
-    @driver_login_required
-    def driver_analytics():
-        driver = _drivers_collection.find_one({"email": session["driver_email"]})
-        
-        # Get analytics data
-        all_orders = list(_bookings_collection.find({"driver_email": session["driver_email"]}))
-        
-        # Monthly stats for last 6 months
-        monthly_stats = []
-        today = datetime.now()
-        
-        for i in range(6):
-            # Calculate month start
-            if today.month - i <= 0:
-                year = today.year - 1
-                month = 12 + (today.month - i)
-            else:
-                year = today.year
-                month = today.month - i
-            
-            month_start = datetime(year, month, 1)
-            
-            if i == 0:
-                month_end = today
-            else:
-                if month == 12:
-                    month_end = datetime(year + 1, 1, 1)
-                else:
-                    month_end = datetime(year, month + 1, 1)
-            
-            month_orders = [
-                o for o in all_orders
-                if o.get("delivered_at") and
-                isinstance(o["delivered_at"], datetime) and
-                month_start <= o["delivered_at"] < month_end
-            ]
-            
-            monthly_stats.append({
-                "month": month_start.strftime("%B %Y"),
-                "deliveries": len(month_orders),
-                "earnings": sum(o.get("delivery_fee", 500) for o in month_orders)
-            })
-        
-        # Performance metrics
-        completed_orders = [o for o in all_orders if o.get("status") == "Delivered"]
-        on_time_deliveries = len([
-            o for o in completed_orders
-            if o.get("delivered_at") and o.get("eta") and
-            isinstance(o["delivered_at"], datetime) and
-            isinstance(o["eta"], datetime) and
-            o["delivered_at"] <= o["eta"]
-        ])
-        
-        performance = {
-            "total_deliveries": len(all_orders),
-            "completed_deliveries": len(completed_orders),
-            "completion_rate": (len(completed_orders) / len(all_orders) * 100) if all_orders else 0,
-            "on_time_rate": (on_time_deliveries / len(completed_orders) * 100) if completed_orders else 0,
-            "average_response_time": "5 mins",
-            "customer_satisfaction": driver.get("average_rating", 4.8)
-        }
-        
-        return render_template(
-            "driver_analytics.html",
-            driver=driver,
-            monthly_stats=monthly_stats,
-            performance=performance
-        )
-    
-    # =====================================================
-    # DRIVER DOCUMENTS
-    # =====================================================
-    
-    @app.route("/driver-documents")
-    @driver_login_required
-    def driver_documents():
-        documents = []
-        if _documents_collection is not None:
-            documents = list(
-                _documents_collection.find({"driver_email": session["driver_email"]})
-                .sort("uploaded_at", -1)
-            )
-        
-        return render_template(
-            "driver_documents.html",
-            documents=documents
-        )
-    
-    @app.route("/upload-document", methods=["POST"])
-    @driver_login_required
-    def upload_document():
-        try:
-            doc_type = request.form.get("document_type")
-            doc_file = request.files.get("document")
-
-            allowed_types = {"driving_license", "aadhaar", "vehicle_rc"}
-            if not doc_file or not doc_file.filename or doc_type not in allowed_types:
-                flash("Please select a valid document to upload", "warning")
-                return redirect(url_for("driver_profile"))
-
-            ext = os.path.splitext(doc_file.filename)[1].lower()
-            if ext not in {".png", ".jpg", ".jpeg", ".webp", ".pdf"}:
-                flash("Please upload a PNG, JPG, WEBP, or PDF file", "warning")
-                return redirect(url_for("driver_profile"))
-
-            if _documents_collection is not None:
-                os.makedirs("static/uploads/driver_documents", exist_ok=True)
-                filename = f"{secure_filename(session['driver_email'])}_{doc_type}_{int(datetime.now().timestamp())}{ext}"
-                file_path = f"static/uploads/driver_documents/{filename}"
-                doc_file.save(file_path)
-                if ext != ".pdf":
-                    compress_image_file(file_path)  # safe no-op on failure
-
-                # One current record per document type - a re-upload replaces
-                # the old one and resets it to Pending Review.
-                _documents_collection.update_one(
-                    {"driver_email": session["driver_email"], "document_type": doc_type},
-                    {"$set": {
-                        "driver_email": session["driver_email"],
-                        "document_type": doc_type,
-                        "file_path": file_path,
-                        "status": "Pending Review",
-                        "uploaded_at": datetime.now()
-                    }},
-                    upsert=True
-                )
-
-            flash("Document uploaded successfully - pending review", "success")
-
-        except Exception as e:
-            logger.error(f"Document upload error: {str(e)}")
-            flash("Error uploading document", "danger")
-        
-        return redirect(url_for("driver_profile"))
-    
-    # =====================================================
-    # DRIVER LOGOUT
-    # =====================================================
-    
-    @app.route("/driver-logout")
-    def driver_logout_route():
-        if "driver_email" in session:
-            # Set offline status
-            _drivers_collection.update_one(
-                {"email": session["driver_email"]},
-                {"$set": {"online_status": "Offline", "last_logout": datetime.now()}}
-            )
-            session.clear()
-            flash("You have been logged out", "info")
-        
-        return redirect(url_for("driver_login"))
     
     # =====================================================
     # API ENDPOINTS FOR AJAX UPDATES

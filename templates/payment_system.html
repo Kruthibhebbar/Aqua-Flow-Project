@@ -335,6 +335,11 @@
             opacity: 0.6;
         }
 
+        .fin-nav-bar { position: sticky; top: 0; z-index: 50; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; padding: 0 0 1rem; }
+        .fin-nav-bar .dispatch-link { text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 999px; background: rgba(18, 25, 55, 0.85); border: 1px solid rgba(72, 187, 255, 0.3); color: #cfe6ff; font-weight: 600; font-size: 0.85rem; backdrop-filter: blur(8px); }
+        .fin-nav-bar .dispatch-link:hover { background: rgba(59, 130, 246, 0.35); color: #fff; }
+        .fin-nav-bar .dispatch-link.fin-nav-dashboard { background: #26D0C9; border-color: #26D0C9; color: #0A1A22; font-weight: 700; }
+
         @media (max-width: 700px) {
             body { padding: 1rem; }
             .payments-grid { grid-template-columns: 1fr; }
@@ -344,6 +349,10 @@
 <body>
 
 <div class="dashboard-wrapper">
+    <!-- Persistent finance navigation: plain link to the admin dashboard (no history tricks) -->
+    <nav class="fin-nav-bar" aria-label="Finance navigation">
+        {% set finance_nav_current = 'ledger' %}{% set finance_nav_extra = false %}{% include '_finance_nav_links.html' %}
+    </nav>
     <!-- Modern header area -->
     <div class="header-modern">
         <h1><i class="fas fa-bolt"></i> NexusPay <span style="font-size: 1rem; background: none; -webkit-text-fill-color: #94a3b8;">| command center</span></h1>
@@ -580,7 +589,7 @@
 <!-- ================= SINGLE-PATH BACK NAVIGATION FIX ================= -->
 <script>
 (function () {
-    var HOME_URL = "/dashboard";
+    var HOME_URL = {{ url_for('admin_dashboard')|tojson }};
     if (window.history && window.history.pushState) {
         history.pushState(null, "", location.href);
         window.addEventListener("popstate", function () {

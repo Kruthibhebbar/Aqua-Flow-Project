@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow | Account Information</title>
+
+    <style>
+        /* ==========================================================
+           AquaFlow - Account Information
+           Uses the same design language as Booking History
+           (Booking Suite): Space Grotesk + Inter, navy panel,
+           cobalt actions, soft white cards. Page-scoped styles.
+           ========================================================== */
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+        :root{
+            --navy:#0B1F3A; --navy-700:#12315C;
+            --cobalt:#1D4ED8; --cobalt-600:#1640B8;
+            --aqua:#06AED4; --aqua-100:#E3F7FB;
+
+            --ink-900:#0B1526; --ink-700:#33415A; --ink-500:#64748B; --ink-400:#94A3B8;
+            --line:#E5EAF2; --line-soft:#EEF2F8; --paper:#F5F7FB; --surface:#FFFFFF;
+
+            --amber:#92400E; --amber-bg:#FEF3E2;
+            --sky:#075985;   --sky-bg:#E0F4FB;
+            --blue:#1E40AF;  --blue-bg:#E3EAFC;
+            --green:#15803D; --green-bg:#E3F7EA;
+            --red:#B91C1C;   --red-bg:#FBE9E9;
+
+            --shadow-xs:0 1px 2px rgba(11,21,38,.05);
+            --shadow-sm:0 2px 8px rgba(11,21,38,.06);
+            --shadow-md:0 8px 24px rgba(11,21,38,.08);
+            --shadow-lg:0 18px 40px rgba(11,21,38,.12);
+
+            --r-sm:10px; --r-md:14px; --r-lg:20px;
+            --control-h:46px;
+        }
+
+        *{ margin:0; padding:0; box-sizing:border-box; }
+        html{ scroll-behavior:smooth; }
+
+        body{
+            background:var(--paper); color:var(--ink-900);
+            font-family:'Inter',system-ui,-apple-system,sans-serif;
+            -webkit-font-smoothing:antialiased;
+            padding:20px 32px 32px;
+            zoom:0.9;
+            overflow-x:hidden;
+        }
+
+        ::-webkit-scrollbar{ width:9px; height:9px; }
+        ::-webkit-scrollbar-track{ background:transparent; }
+        ::-webkit-scrollbar-thumb{ background:#C7D2E3; border-radius:20px; }
+
+        a{ color:inherit; text-decoration:none; }
+        button{ font-family:inherit; }
+        :focus-visible{ outline:2px solid var(--cobalt); outline-offset:2px; border-radius:6px; }
+
+        svg.ic{
+            width:16px; height:16px; flex:none;
+            fill:none; stroke:currentColor; stroke-width:1.8;
+            stroke-linecap:round; stroke-linejoin:round;
+        }
+
+        .container{ max-width:1440px; margin:0 auto; }
+
+        /* ---------- breadcrumb / utility bar ---------- */
+        .util-bar{
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:14px; flex-wrap:wrap; gap:10px;
+        }
+        .crumb{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--ink-500); }
+        .crumb a{ color:var(--ink-500); transition:color .15s; }
+        .crumb a:hover{ color:var(--cobalt); }
+        .crumb .sep{ color:var(--line); }
+        .crumb .current{ color:var(--navy); }
+
+        .util-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .sync-pill{
+            display:inline-flex; align-items:center; gap:7px;
+            font-size:12px; font-weight:600; color:var(--ink-500);
+            background:var(--surface); border:1px solid var(--line);
+            padding:6px 12px; border-radius:100px;
+            font-variant-numeric:tabular-nums;
+        }
+        .sync-dot{ width:7px; height:7px; border-radius:50%; background:#22C55E; box-shadow:0 0 0 3px rgba(34,197,94,.18); }
+
+        .icon-pill{
+            position:relative; width:34px; height:34px; border-radius:50%;
+            display:inline-flex; align-items:center; justify-content:center;
+            background:var(--surface); border:1px solid var(--line); color:var(--ink-700);
+            transition:border-color .15s, color .15s;
+        }
+        .icon-pill:hover{ border-color:var(--cobalt); color:var(--cobalt); }
+        .icon-pill .bell-dot{
+            position:absolute; top:6px; right:7px; width:8px; height:8px;
+            border-radius:50%; background:#EF4444; border:2px solid var(--surface);
+        }
+
+        /* ---------- buttons ---------- */
+        .btn{
+            height:var(--control-h); display:inline-flex; align-items:center; justify-content:center; gap:8px;
+            padding:0 20px; border-radius:var(--r-sm); border:1px solid transparent;
+            font-size:13.5px; font-weight:600; cursor:pointer; transition:all .15s ease; white-space:nowrap;
+        }
+        .btn svg{ width:15px; height:15px; }
+        .btn-primary{ background:var(--cobalt); color:#fff; box-shadow:0 6px 16px rgba(29,78,216,.28); }
+        .btn-primary:hover{ background:var(--cobalt-600); transform:translateY(-1px); box-shadow:0 8px 20px rgba(29,78,216,.34); }
+        .btn-on-dark{ background:rgba(255,255,255,.10); color:#fff; border-color:rgba(255,255,255,.22); }
+        .btn-on-dark:hover{ background:rgba(255,255,255,.18); }
+        .btn-outline{ background:var(--surface); color:var(--cobalt); border-color:var(--line); }
+        .btn-outline:hover{ border-color:var(--cobalt); background:#F3F7FF; }
+        .btn-sm{ height:38px; padding:0 15px; font-size:12.5px; }
+
+        /* ---------- top panel ---------- */
+        .top-panel{
+            background:linear-gradient(135deg,#081A33 0%,#0F2C59 35%,#1B4B91 68%,#0A2044 100%);
+            border-radius:var(--r-lg); padding:30px 34px;
+            box-shadow:0 18px 40px rgba(14,165,233,.28);
+            margin-bottom:16px; position:relative; overflow:hidden;
+        }
+        .top-panel::before{
+            content:""; position:absolute; inset:0;
+            background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 45%);
+            pointer-events:none;
+        }
+        .top-panel::after{
+            content:""; position:absolute; right:-60px; bottom:-90px; width:280px; height:280px;
+            border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.14), transparent 70%);
+            pointer-events:none;
+        }
+        .header-flex{
+            position:relative; z-index:1;
+            display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;
+        }
+        .title-box{ display:flex; gap:22px; align-items:center; min-width:0; }
+
+        .eyebrow{ font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:rgba(255,255,255,.6); }
+        .title-box h1{
+            font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:#fff;
+            letter-spacing:-0.3px; line-height:1.2; margin-top:2px; overflow-wrap:anywhere;
+        }
+        .meta-line{ display:flex; flex-wrap:wrap; gap:6px 20px; margin-top:8px; color:rgba(255,255,255,.72); font-size:14px; font-weight:500; }
+        .meta-line span{ display:inline-flex; align-items:center; gap:8px; overflow-wrap:anywhere; min-width:0; }
+        .meta-line svg{ color:#8FE8FB; }
+
+        .header-actions{ position:relative; z-index:1; display:flex; gap:10px; flex-wrap:wrap; }
+
+        /* ---------- entity cards ---------- */
+        .entity-card{
+            background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
+            position:relative; overflow:hidden; box-shadow:var(--shadow-xs); min-width:0;
+        }
+        .card-rail{ position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--cobalt); }
+        .card-rail.pending{ background:#D97706; }
+        .card-rail.onway{ background:#0EA5C4; }
+        .card-rail.idle{ background:var(--line); }
+
+        .card-head{ display:flex; align-items:center; gap:12px; padding:18px 20px 14px 24px; }
+        .tile-ico{
+            width:40px; height:40px; border-radius:11px; flex:none;
+            background:var(--blue-bg); color:var(--cobalt);
+            display:flex; align-items:center; justify-content:center;
+        }
+        .tile-ico svg{ width:19px; height:19px; }
+        .card-title{ font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:700; color:var(--navy); line-height:1.3; }
+        .card-sub{ font-size:12.5px; font-weight:500; color:var(--ink-500); }
+        .card-sub a{ color:var(--cobalt); font-weight:600; }
+        .card-sub a:hover{ text-decoration:underline; }
+        .card-head .push{ margin-left:auto; }
+
+        .card-body{ padding:0 20px 14px 24px; }
+
+        .field-row{ display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px dashed var(--line-soft); }
+        .field-row:last-child{ border-bottom:none; }
+        .field-ico{
+            width:26px; height:26px; border-radius:8px; background:var(--paper); color:var(--ink-500);
+            flex:none; display:flex; align-items:center; justify-content:center; margin-top:1px;
+        }
+        .field-ico svg{ width:13px; height:13px; }
+        .field-text{ min-width:0; flex:1; }
+        .field-text h4{ font-size:10px; font-weight:700; color:var(--ink-400); text-transform:uppercase; letter-spacing:.5px; margin-bottom:2px; }
+        .field-text p{ font-size:13.5px; font-weight:600; color:var(--ink-900); overflow-wrap:anywhere; line-height:1.35; }
+        .field-text p.none{ color:var(--ink-400); font-weight:500; }
+        .tick{
+            display:inline-flex; vertical-align:middle; margin-left:6px; width:16px; height:16px; border-radius:50%;
+            background:var(--green); color:#fff; align-items:center; justify-content:center;
+        }
+        .tick svg{ width:10px; height:10px; stroke-width:3; }
+
+        .cols .card-body .field-row{ padding:14px 0; }
+        .sub-label{
+            display:flex; align-items:center; gap:8px;
+            font-size:11px; font-weight:700; color:var(--ink-500); text-transform:uppercase; letter-spacing:.6px;
+            margin:10px 0 2px; padding-top:14px; border-top:1px solid var(--line);
+        }
+        .sub-label svg{ width:14px; height:14px; color:var(--cobalt); }
+
+        /* two-column section */
+        .cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; }
+
+        .entity-card.fill{ display:flex; flex-direction:column; }
+        .prefs{ display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:2px 20px 0 24px; }
+        .pref{
+            position:relative; overflow:hidden; min-width:0;
+            display:flex; flex-direction:column; gap:7px;
+            padding:13px 14px 15px;
+            background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
+            box-shadow:var(--shadow-xs); transition:box-shadow .15s, border-color .15s;
+        }
+        .pref:hover{ box-shadow:var(--shadow-sm); border-color:#D8E0EE; }
+        .pref::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--cobalt); }
+        .pref.water::after{ background:var(--aqua); }
+        .pref-top{ display:flex; align-items:center; gap:10px; min-width:0; }
+        .pref-ico{
+            width:30px; height:30px; border-radius:9px; flex:none;
+            display:flex; align-items:center; justify-content:center;
+            background:var(--blue-bg); color:var(--cobalt);
+        }
+        .pref.water .pref-ico{ background:var(--aqua-100); color:var(--aqua); }
+        .pref-ico svg{ width:15px; height:15px; }
+        .pref h4{ font-size:10.5px; font-weight:700; color:var(--ink-500); text-transform:uppercase; letter-spacing:.6px; }
+        .pref-val{
+            font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; color:var(--navy);
+            letter-spacing:-0.3px; line-height:1.2; overflow-wrap:anywhere;
+        }
+        .pref-val.none{ font-family:'Inter',sans-serif; font-size:13px; font-weight:500; color:var(--ink-400); letter-spacing:0; }
+        .pref-note{ font-size:11.5px; font-weight:500; color:var(--ink-500); line-height:1.4; margin-top:-2px; }
+
+        .prefill{ margin:16px 20px 0 24px; padding:14px 16px; border:1px dashed var(--line); border-radius:var(--r-sm); display:flex; align-items:flex-start; gap:12px; }
+        .prefill .field-ico{ margin-top:0; width:28px; height:28px; background:var(--blue-bg); color:var(--cobalt); }
+        .prefill h4{ font-size:10px; font-weight:700; color:var(--ink-400); text-transform:uppercase; letter-spacing:.5px; margin-bottom:2px; }
+        .prefill p{ font-size:13.5px; font-weight:600; color:var(--ink-900); line-height:1.45; overflow-wrap:anywhere; }
+        .prefill p.none{ color:var(--ink-400); font-weight:500; }
+        .prefill a{ margin-left:auto; flex:none; font-size:12.5px; font-weight:600; color:var(--cobalt); }
+        .prefill a:hover{ text-decoration:underline; }
+
+        .qa-wrap{ padding:0 20px 22px 24px; flex:1; display:flex; flex-direction:column; }
+        .qa-wrap .sub-label{ margin-top:20px; }
+        .qa{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:14px; flex:1; align-content:start; }
+        .qa a{
+            display:flex; align-items:center; gap:14px; padding:14px 16px; min-height:68px; min-width:0;
+            background:#F7FAFF; border:1px solid var(--line); border-radius:var(--r-sm); transition:.15s;
+        }
+        .qa a:hover{ border-color:var(--cobalt); box-shadow:var(--shadow-sm); transform:translateY(-1px); }
+        .qa .field-ico{ margin:0; width:36px; height:36px; border-radius:10px; background:var(--blue-bg); color:var(--cobalt); }
+        .qa .field-ico svg{ width:16px; height:16px; }
+        .qa strong{ display:block; font-size:14px; font-weight:700; color:var(--navy); line-height:1.25; }
+        .qa small{ display:block; font-size:12.5px; color:var(--ink-500); font-weight:500; line-height:1.35; margin-top:2px; }
+        .qa .chev{ margin-left:auto; width:14px; height:14px; color:var(--ink-400); }
+        .qa a:hover .chev{ color:var(--cobalt); }
+
+        .page-footer{
+            margin-top:34px; text-align:center; color:var(--ink-400); font-size:12px; font-weight:600;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        .page-footer .dot{ width:4px; height:4px; border-radius:50%; background:var(--ink-400); }
+
+        /* header badge + light button used on this page */
+        .hdr-ico{
+            width:64px; height:64px; border-radius:50%; flex:none;
+            display:flex; align-items:center; justify-content:center;
+            background:rgba(255,255,255,.10); border:2px solid rgba(255,255,255,.3); color:#8FE8FB;
+            box-shadow:0 8px 24px rgba(0,0,0,.25);
+        }
+        .hdr-ico svg{ width:28px; height:28px; }
+        .btn-light{ background:#fff; color:var(--navy); box-shadow:0 6px 16px rgba(0,0,0,.18); }
+        .btn-light:hover{ background:#EEF4FF; transform:translateY(-1px); }
+        .lead{ margin-top:6px; color:rgba(255,255,255,.72); font-size:14px; font-weight:500; }
+
+        /* ---------- responsive ---------- */
+        @media (max-width:1100px){
+            .cols{ grid-template-columns:1fr; }
+        }
+        @media (max-width:760px){
+            body{ padding:16px; zoom:1; }
+            .top-panel{ padding:22px 20px; }
+            .title-box{ flex-direction:column; align-items:flex-start; gap:16px; }
+            .title-box h1{ font-size:24px; }
+            .header-actions{ width:100%; }
+            .header-actions .btn{ flex:1; }
+            .card-head{ flex-wrap:wrap; }
+            .prefs{ grid-template-columns:1fr; }
+            .util-right .sync-pill{ display:none; }
+            .btn, .icon-pill{ min-height:44px; }
+            .icon-pill{ min-width:44px; }
+        }
+        @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ================= BREADCRUMB / UTILITY BAR ================= -->
+    <div class="util-bar">
+        <div class="crumb">
+            <a href="/dashboard">Dashboard</a>
+            <span class="sep">/</span>
+            <a href="{{ url_for('profile') }}">My Profile</a>
+            <span class="sep">/</span>
+            <span class="current" aria-current="page">Account Information</span>
+        </div>
+
+        <div class="util-right">
+            <a class="icon-pill" href="/notification" aria-label="Notifications{% if unread_notifications %} ({{ unread_notifications }} unread){% endif %}">
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15L6 16.5ZM10 21h4"/></svg>
+                {% if unread_notifications %}<span class="bell-dot"></span>{% endif %}
+            </a>
+            <span class="sync-pill"><span class="sync-dot"></span><span id="timeNow"></span></span>
+            <a class="btn btn-outline btn-sm" href="/logout">
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/></svg>
+                Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- ================= HEADER ================= -->
+    <section class="top-panel" aria-label="Account information">
+        <div class="header-flex">
+            <div class="title-box">
+                <span class="hdr-ico" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.3"/><path d="M5.8 16c.5-1.9 1.8-2.8 3.2-2.8s2.7.9 3.2 2.8M14.5 10h4M14.5 13.5h3"/></svg></span>
+                <div style="min-width:0;">
+                    <div class="eyebrow">My Account</div>
+                    <h1>Account Information</h1>
+                    <p class="lead">{{ user.name }} &middot; your personal details and water booking preferences</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <a class="btn btn-light" href="{{ url_for('profile') }}">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg>
+                    Back to My Profile
+                </a>
+                <a class="btn btn-on-dark" href="{{ url_for('edit_profile') }}">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4ZM13 7l4 4"/></svg>
+                    Edit Profile
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= PERSONAL INFO + PREFERENCES ================= -->
+    <section class="cols">
+
+        <div class="entity-card" aria-label="Personal information">
+            <span class="card-rail"></span>
+            <div class="card-head">
+                <span class="tile-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></span>
+                <div>
+                    <div class="card-title">Personal Information</div>
+                    <div class="card-sub">Your account and contact details</div>
+                </div>
+                <a class="btn btn-outline btn-sm push" href="{{ url_for('edit_profile') }}">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16v4ZM13 7l4 4"/></svg>
+                    Edit Profile
+                </a>
+            </div>
+
+            <div class="card-body">
+                <div class="field-row">
+                    <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15 15 0 0 1 4.5 6a2 2 0 0 1 2-2Z"/></svg></span>
+                    <div class="field-text"><h4>Phone</h4>{% if user.phone %}<p>{{ user.phone }}</p>{% else %}<p class="none">Not Added</p>{% endif %}</div>
+                </div>
+                <div class="field-row">
+                    <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></span>
+                    <div class="field-text"><h4>Gender</h4>{% if user.gender %}<p>{{ user.gender }}</p>{% else %}<p class="none">Not Added</p>{% endif %}</div>
+                </div>
+                <div class="field-row">
+                    <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="1.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg></span>
+                    <div class="field-text"><h4>Date of Birth</h4>{% if user.dob %}<p>{{ user.dob }}</p>{% else %}<p class="none">Not Added</p>{% endif %}</div>
+                </div>
+                <div class="field-row">
+                    <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 0 0-13 0c0 5.4 6.5 11 6.5 11Z"/><circle cx="12" cy="10" r="2.2"/></svg></span>
+                    <div class="field-text"><h4>Address</h4>{% if user.address %}<p>{{ user.address }}</p>{% else %}<p class="none">Not Added</p>{% endif %}</div>
+                </div>
+
+                <div class="sub-label">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 5 6.2v5.3c0 4.2 2.8 7.4 7 9 4.2-1.6 7-4.8 7-9V6.2l-7-2.7Z"/><path d="m9 12 2.2 2.2L15 10.5"/></svg>
+                    Account Details
+                </div>
+                <div class="field-row">
+                    <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4.5"/><path d="m9 13-1.5 7 4.5-2 4.5 2L15 13"/></svg></span>
+                    <div class="field-text"><h4>Verification</h4>
+                        <p>{% if user.is_verified %}Verified<span class="tick"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg></span>{% else %}Not Verified{% endif %}</p>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="1.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg></span>
+                    <div class="field-text"><h4>Created</h4>{% if user.created_at %}<p>{{ user.created_at.strftime('%d %b %Y') }}</p>{% else %}<p class="none">N/A</p>{% endif %}</div>
+                </div>
+                <div class="field-row">
+                    <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
+                    <div class="field-text"><h4>Last Login</h4>{% if user.last_login %}<p>{{ user.last_login.strftime('%d %b %Y %I:%M %p') }}</p>{% else %}<p class="none">N/A</p>{% endif %}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="entity-card fill" aria-label="Water booking preferences">
+            <span class="card-rail"></span>
+            <div class="card-head">
+                <span class="tile-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c3 3.8 5.5 6.8 5.5 10a5.5 5.5 0 0 1-11 0c0-3.2 2.5-6.2 5.5-10Z"/></svg></span>
+                <div>
+                    <div class="card-title">Water Booking Preferences</div>
+                    <div class="card-sub">Set these preferences from <a href="{{ url_for('edit_profile') }}">Edit Profile</a> &mdash; they'll prefill your next booking.</div>
+                </div>
+            </div>
+
+            <div class="prefs">
+                <div class="pref">
+                    <div class="pref-top">
+                        <span class="pref-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></span>
+                        <h4>Favorite Tanker</h4>
+                    </div>
+                    {% if user.favorite_tanker %}<div class="pref-val">{{ user.favorite_tanker }}</div>{% else %}<div class="pref-val none">Not Selected</div>{% endif %}
+                    <div class="pref-note">Tanker size used for your next booking</div>
+                </div>
+                <div class="pref water">
+                    <div class="pref-top">
+                        <span class="pref-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c3 3.8 5.5 6.8 5.5 10a5.5 5.5 0 0 1-11 0c0-3.2 2.5-6.2 5.5-10Z"/></svg></span>
+                        <h4>Preferred Water</h4>
+                    </div>
+                    {% if user.preferred_water %}<div class="pref-val">{{ user.preferred_water }}</div>{% else %}<div class="pref-val none">Not Selected</div>{% endif %}
+                    <div class="pref-note">Water type used for your next booking</div>
+                </div>
+            </div>
+
+            <div class="prefill">
+                <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 0 0-13 0c0 5.4 6.5 11 6.5 11Z"/><circle cx="12" cy="10" r="2.2"/></svg></span>
+                <div style="min-width:0;">
+                    <h4>Default delivery address</h4>
+                    {% if user.address %}<p>{{ user.address }}</p>{% else %}<p class="none">Not Added</p>{% endif %}
+                </div>
+                <a href="{{ url_for('edit_profile') }}">Update</a>
+            </div>
+
+            <div class="qa-wrap">
+                <div class="sub-label">
+                    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z"/></svg>
+                    Quick Actions
+                </div>
+                <div class="qa">
+                    <a href="/history">
+                        <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01" stroke-width="2.2"/></svg></span>
+                        <span><strong>Booking History</strong><small>View all your tanker bookings</small></span>
+                        <svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                    </a>
+                    <a href="/booking">
+                        <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="1.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg></span>
+                        <span><strong>Book Water Tanker</strong><small>Book fresh water instantly</small></span>
+                        <svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                    </a>
+                    <a href="/my-payments">
+                        <span class="field-ico"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12.5" rx="2"/><path d="M3 10.5h18M7 15h3"/></svg></span>
+                        <span><strong>My Payments</strong><small>View your payment history</small></span>
+                        <svg class="ic chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <div class="page-footer"><span>AquaFlow</span><span class="dot"></span><span>Account Information</span></div>
+</div>
+
+<script>
+    function updateTime(){
+        document.getElementById("timeNow").textContent = new Date().toLocaleString();
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
+</script>
+
+<!-- ================= SINGLE-PATH BACK NAVIGATION FIX =================
+     Same pattern as the other customer pages; the "home" of this page is My Profile. -->
+<script>
+(function () {
+    var HOME_URL = {{ url_for('profile')|tojson }};
+    if (window.history && window.history.pushState) {
+        history.pushState(null, "", location.href);
+        window.addEventListener("popstate", function () {
+            history.pushState(null, "", location.href);
+            window.location.href = HOME_URL;
+        });
+    }
+})();
+</script>
+
+</body>
+</html>

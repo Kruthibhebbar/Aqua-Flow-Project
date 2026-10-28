@@ -78,6 +78,16 @@ def init_payment_ledger(db):
         partialFilterExpression={"razorpay_payment_id": {"$exists": True}, "status": "Paid"}
     )
 
+    # One ledger row per idempotency_key (e.g. one row per COD submission
+    # attempt). Partial so rows without a key are unaffected. This is what
+    # makes a repeated submit/approve unable to create a second row even
+    # if two requests race past the application-level checks.
+    collection.create_index(
+        "idempotency_key",
+        unique=True,
+        partialFilterExpression={"idempotency_key": {"$exists": True}}
+    )
+
     return collection
 
 
@@ -87,7 +97,7 @@ def log_transaction(payment_transactions_collection, type, status, amount,
                      razorpay_order_id=None, razorpay_payment_id=None,
                      razorpay_signature=None, receipt=None,
                      payment_screenshot=None,
-                     admin_remarks=None, notes=None):
+                     admin_remarks=None, notes=None, idempotency_key=None):
     """
     Record one payment event. Called AFTER the real work (signature
     verification, admin approval, etc.) already happened elsewhere -
@@ -101,6 +111,13 @@ def log_transaction(payment_transactions_collection, type, status, amount,
     """
     if payment_transactions_collection is None:
         return None
+
+    # Idempotency: the same logical event (same key) is only ever recorded
+    # once; a repeat returns the existing row's id instead of adding another.
+    if idempotency_key:
+        existing = payment_transactions_collection.find_one({"idempotency_key": idempotency_key})
+        if existing:
+            return existing["transaction_id"]
 
     now = datetime.now()
     net_amount = None
@@ -131,6 +148,8 @@ def log_transaction(payment_transactions_collection, type, status, amount,
         "created_at": now,
         "updated_at": now,
     }
+    if idempotency_key:
+        doc["idempotency_key"] = idempotency_key
 
     try:
         payment_transactions_collection.insert_one(doc)
@@ -142,6 +161,10 @@ def log_transaction(payment_transactions_collection, type, status, amount,
         # further to do.
         if "duplicate key" not in str(exc).lower():
             raise
+        if idempotency_key:
+            raced = payment_transactions_collection.find_one({"idempotency_key": idempotency_key})
+            if raced:
+                return raced["transaction_id"]
         existing = payment_transactions_collection.find_one(
             {"razorpay_payment_id": doc.get("razorpay_payment_id"), "status": "Paid"}
         )
@@ -166,3 +189,129 @@ def update_transaction_status(payment_transactions_collection, transaction_id,
         {"transaction_id": transaction_id},
         {"$set": fields}
     )
+
+
+# =====================================================================
+# CASH-ON-DELIVERY DEPOSITS (type "cod_collection")
+# =====================================================================
+# ONE ledger row represents ONE driver cash-deposit submission for its whole
+# life: it is created when the driver submits ("Waiting Admin Approval") and
+# is then UPDATED IN PLACE when the admin decides ("Settled" / "Rejected").
+# Its `status` is the single authoritative status. Never insert a second row
+# for the admin's decision - that is what used to show the same deposit twice
+# (one stale "Waiting Admin Approval" next to one "Verified").
+
+COD_PENDING = "Waiting Admin Approval"
+COD_VERIFIED = "Settled"
+COD_REJECTED = "Rejected"
+COD_SUPERSEDED = "Superseded"   # stale duplicate kept for audit, excluded from activity/totals
+
+# What the admin screens call each stored status.
+_COD_LABELS = {COD_PENDING: "Pending", COD_VERIFIED: "Verified", COD_REJECTED: "Rejected",
+               COD_SUPERSEDED: "Superseded"}
+
+
+def cod_status_label(status):
+    return _COD_LABELS.get(status, status)
+
+
+def cod_idempotency_key(booking_id, attempt):
+    """A booking can be submitted again only after a rejection, so
+    booking + attempt number identifies exactly one submission."""
+    return f"cod:{booking_id}:{int(attempt or 1)}"
+
+
+def record_cod_submission(coll, booking_id, attempt, **fields):
+    """Create (once) the ledger row for a driver's cash-deposit submission."""
+    return log_transaction(
+        coll, type="cod_collection", status=COD_PENDING, booking_id=booking_id,
+        gateway="cash", idempotency_key=cod_idempotency_key(booking_id, attempt), **fields
+    )
+
+
+def resolve_cod_collection(coll, booking_id, attempt, new_status, **fields):
+    """Move the submission's EXISTING ledger row to Settled/Rejected.
+
+    Returns (transaction_id, changed). `changed` is False when the row was
+    already in `new_status` (a repeated approval) - nothing is modified then.
+    Falls back to a legacy row (created before idempotency keys existed), and
+    only if there is no row at all creates exactly one, under the same key.
+    """
+    if coll is None:
+        return None, False
+    key = cod_idempotency_key(booking_id, attempt)
+    row = coll.find_one({"idempotency_key": key})
+    if row is None:   # legacy pending row written before keys existed
+        row = coll.find_one(
+            {"type": "cod_collection", "booking_id": str(booking_id), "status": COD_PENDING,
+             "idempotency_key": {"$exists": False}},
+            sort=[("created_at", -1)])
+    if row is None:
+        txn = log_transaction(coll, type="cod_collection", status=new_status, booking_id=booking_id,
+                              gateway="cash", idempotency_key=key, **fields)
+        return txn, True
+
+    if row.get("status") == new_status:
+        return row["transaction_id"], False
+
+    # Only a still-pending row may be decided; atomic so two admins can't both win.
+    update = {"status": new_status, "updated_at": datetime.now(), "idempotency_key": key}
+    for name in ("admin_remarks", "payment_screenshot"):
+        if fields.get(name) is not None:
+            update[name] = fields[name]
+    result = coll.update_one(
+        {"transaction_id": row["transaction_id"], "status": COD_PENDING}, {"$set": update})
+    return row["transaction_id"], result.matched_count == 1
+
+
+def find_duplicate_cod_rows(coll):
+    """Pairs of cod_collection rows created by the old double-insert bug.
+
+    Within ONE booking, each decided row (Settled/Rejected) is paired with the
+    nearest earlier still-"Waiting Admin Approval" row from the SAME driver for
+    the SAME amount, because one submission produced both. Same amount on a
+    different booking, or a different driver/amount, is never paired, and a
+    pending row with no later decision is a real pending deposit and is left
+    alone. Returns [{"stale": row, "kept": row}].
+    """
+    rows = list(coll.find({"type": "cod_collection", "booking_id": {"$ne": None}}).sort("created_at", 1))
+    by_booking = {}
+    for r in rows:
+        by_booking.setdefault(r["booking_id"], []).append(r)
+
+    pairs = []
+    for booking_rows in by_booking.values():
+        waiting = [r for r in booking_rows if r.get("status") == COD_PENDING and "idempotency_key" not in r]
+        for decided in (r for r in booking_rows if r.get("status") in (COD_VERIFIED, COD_REJECTED)
+                        and "idempotency_key" not in r):
+            candidates = [w for w in waiting
+                          if w["created_at"] <= decided["created_at"]
+                          and w.get("driver_email") == decided.get("driver_email")
+                          and w.get("amount") == decided.get("amount")]
+            if candidates:
+                stale = candidates[-1]
+                waiting.remove(stale)
+                pairs.append({"stale": stale, "kept": decided})
+    return pairs
+
+
+def supersede_duplicate_cod_rows(coll, pairs):
+    """Retire stale duplicates WITHOUT deleting anything: the stale row is
+    marked "Superseded" (pointing at the row that was kept) and the submission
+    reference it carried is copied onto the kept row. Safe to re-run."""
+    done = 0
+    for pair in pairs:
+        stale, kept = pair["stale"], pair["kept"]
+        res = coll.update_one(
+            {"transaction_id": stale["transaction_id"], "status": COD_PENDING},
+            {"$set": {"status": COD_SUPERSEDED, "superseded_by": kept["transaction_id"],
+                      "superseded_at": datetime.now()}})
+        if res.matched_count:
+            carry = {"submission_transaction_id": stale["transaction_id"]}
+            if stale.get("notes") and not kept.get("notes"):
+                carry["notes"] = stale["notes"]
+            if stale.get("payment_screenshot") and not kept.get("payment_screenshot"):
+                carry["payment_screenshot"] = stale["payment_screenshot"]
+            coll.update_one({"transaction_id": kept["transaction_id"]}, {"$set": carry})
+            done += 1
+    return done

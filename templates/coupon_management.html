@@ -2,261 +2,972 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#EEF3F4">
 <title>AquaFlow Console | Coupon Management</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
 <style>
+    /* Same design tokens as Booking Management (templates/booking_management.html) */
     :root {
         --ink: #0A1A22; --ink-2: #123039; --ink-soft: #55707A; --ink-faint: #93A8AF;
         --teal-900: #073239; --teal-700: #0E6672; --teal-600: #0E7C86; --teal-500: #17A6B4;
-        --teal-050: #EAF4F5; --teal-100: #DCEEEF;
+        --cyan-glow: #26D0C9; --teal-050: #EAF4F5; --teal-100: #DCEEEF;
         --amber-600: #A5690C; --amber-100: #FBF0DC;
         --green-600: #157A50; --green-100: #E1F5EA;
         --red-600: #B23B30; --red-100: #FBEAE8;
         --blue-600: #2C5F9E; --blue-100: #E8EFFA;
+        --violet-600: #5B4AA8; --violet-100: #ECE9F9;
         --bg: #EEF3F4; --surface: #FFFFFF; --border: #DCE6E8; --border-soft: #E7EEEF;
-        --r-lg: 18px; --r-pill: 999px;
-        --shadow-xs: 0 2px 8px rgba(10,26,34,0.05);
-        --shadow-lg: 0 20px 44px rgba(10,26,34,0.16);
+        --r-lg: 16px; --r-md: 10px; --r-sm: 7px; --r-pill: 999px;
+        --shadow-xs: 0 1px 2px rgba(10,26,34,.05);
+        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
+        --shadow-md: 0 16px 40px -18px rgba(10,26,34,.28);
+        --shadow-lg: 0 30px 70px -20px rgba(10,26,34,.35);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-        font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink);
-        padding: 32px 4%;
-    }
-    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-    .page-head h1 {
-        font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; color: var(--teal-900);
-        display: flex; align-items: center; gap: 10px;
-    }
-    .back-link {
-        text-decoration: none; color: var(--ink-soft); font-weight: 600; font-size: 13.5px;
-        display: inline-flex; align-items: center; gap: 6px;
-    }
-    .back-link:hover { color: var(--teal-700); }
+    html { -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); font-family: 'Inter', system-ui, sans-serif; color: var(--ink); min-height: 100vh; }
+    a { color: inherit; }
+    button, input, select { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-thumb { background: #C3D3D6; border-radius: 20px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--teal-600); }
+    :focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
 
-    .flash-msg {
-        padding: 12px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; margin-bottom: 18px;
-    }
-    .flash-success { background: var(--green-100); color: var(--green-600); }
-    .flash-danger { background: var(--red-100); color: var(--red-600); }
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
-    .layout { display: grid; grid-template-columns: 340px 1fr; gap: 22px; align-items: start; }
-    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
-
-    .card { background: var(--surface); border-radius: var(--r-lg); padding: 24px; box-shadow: var(--shadow-xs); }
-    .card h2 {
-        font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--teal-700); margin-bottom: 18px;
+    /* ===== TOP BAR ===== */
+    .topbar {
+        background: var(--ink);
+        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
+        padding: 10px 32px; min-height: 72px; display: flex; align-items: center; justify-content: space-between;
+        gap: 12px 16px; flex-wrap: wrap; flex-shrink: 0; position: relative; z-index: 30;
+        border-top: 4px solid var(--cyan-glow);
     }
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .brand-mark { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(155deg, var(--teal-500), var(--teal-700)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; }
+    .brand-mark i { font-size: 17px; color: #fff; }
+    .brand-text h1 { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 9px; line-height: 1.1; flex-wrap: wrap; }
+    .brand-text .tag { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; font-weight: 600; color: var(--cyan-glow); background: rgba(38,208,201,.12); border: 1px solid rgba(38,208,201,.25); padding: 2.5px 8px; border-radius: var(--r-pill); letter-spacing: .6px; text-transform: uppercase; }
+    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .dispatch-link { text-decoration: none; display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: var(--r-pill); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #C7D6DB; font-weight: 600; font-size: 11.5px; transition: background .15s, color .15s; white-space: nowrap; }
+    .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .back-dashboard { background: var(--cyan-glow); border-color: var(--cyan-glow); color: var(--ink); font-weight: 700; padding: 8px 16px; font-size: 12px; }
+    .back-dashboard:hover { background: #4fe0da; color: var(--ink); }
+    .sync-chip { background: rgba(38,208,201,.10); border: 1px solid rgba(38,208,201,.22); padding: 7px 14px 7px 11px; border-radius: var(--r-pill); display: flex; align-items: center; gap: 8px; color: #7FE8DF; font-weight: 600; font-size: 11.5px; }
+    .pulse-dot { width: 6px; height: 6px; background: var(--cyan-glow); border-radius: 50%; animation: pulseDot 1.8s infinite; }
+    @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(38,208,201,.55); } 70% { box-shadow: 0 0 0 7px rgba(38,208,201,0); } 100% { box-shadow: 0 0 0 0 rgba(38,208,201,0); } }
+    .admin-chip { display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 5px; border-radius: var(--r-pill); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); }
+    .admin-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(155deg,#3A5A63,#1B343C); display: flex; align-items: center; justify-content: center; color: #DCEBEE; font-size: 10.5px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+    .admin-chip span { font-size: 11.5px; font-weight: 600; color: #D6E4E7; }
+    .flow-line { height: 3px; width: 100%; flex-shrink: 0; overflow: hidden; background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900)); background-size: 200% 100%; animation: flowMove 5s linear infinite; }
+    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { .flow-line, .pulse-dot, .spin-ic { animation: none; } }
 
-    .field { margin-bottom: 16px; }
-    .field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
-    .field input, .field select {
-        width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-        font-size: 13.5px; font-family: 'Inter', sans-serif; color: var(--ink); outline: none;
-    }
-    .field input:focus, .field select:focus { border-color: var(--teal-500); }
-    .create-btn {
-        width: 100%; border: none; background: var(--teal-700); color: #fff; padding: 12px;
-        border-radius: var(--r-pill); font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: 'Inter', sans-serif;
-    }
-    .create-btn:hover { background: var(--teal-900); }
+    /* ===== INSTRUMENT STRIP ===== */
+    .instrument-strip { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: stretch; flex-wrap: wrap; }
+    .instrument { display: flex; align-items: center; gap: 11px; padding: 13px 18px 13px 0; margin-right: 18px; border-right: 1px solid var(--border-soft); }
+    .instrument:last-of-type { border-right: none; margin-right: 0; }
+    .instrument-icon { width: 30px; height: 30px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 12.5px; flex-shrink: 0; }
+    .ic-blue { background: var(--blue-100); color: var(--blue-600); }
+    .ic-green { background: var(--green-100); color: var(--green-600); }
+    .ic-amber { background: var(--amber-100); color: var(--amber-600); }
+    .ic-red { background: var(--red-100); color: var(--red-600); }
+    .ic-grey { background: #EEF1F2; color: var(--ink-soft); }
+    .ic-violet { background: var(--violet-100); color: var(--violet-600); }
+    .ic-teal { background: var(--teal-050); color: var(--teal-700); }
+    .instrument-copy h4 { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .55px; color: var(--ink-faint); margin-bottom: 3px; white-space: nowrap; }
+    .instrument-copy .val { font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 600; line-height: 1; }
+    .instrument-spacer { flex: 1; }
+    .instrument-time { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-faint); padding: 13px 0; }
+    .instrument-time i { color: var(--teal-600); }
 
-    table { width: 100%; border-collapse: collapse; }
-    thead th {
-        text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
-        color: var(--ink-faint); padding: 10px 12px; border-bottom: 1px solid var(--border-soft);
-    }
-    tbody td { padding: 14px 12px; font-size: 13.5px; border-bottom: 1px solid var(--border-soft); }
-    .code-chip {
-        font-family: 'IBM Plex Mono', monospace; font-weight: 600; background: var(--teal-050);
-        color: var(--teal-700); padding: 4px 10px; border-radius: 8px; font-size: 12.5px;
-    }
-    .status-pill { padding: 4px 10px; border-radius: var(--r-pill); font-size: 11.5px; font-weight: 700; }
-    .status-active { background: var(--green-100); color: var(--green-600); }
-    .status-inactive { background: var(--red-100); color: var(--red-600); }
+    /* ===== MAIN ===== */
+    .main-content { flex: 1; padding: 22px 32px 48px; width: 100%; max-width: 1680px; margin: 0 auto; }
+    .page-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+    .page-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn .count-chip { background: rgba(255,255,255,.18); border-radius: var(--r-pill); padding: 1px 9px; font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+    .page-title { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .page-title .ph-ic { width: 46px; height: 46px; border-radius: 13px; background: linear-gradient(155deg, var(--teal-500), var(--teal-700)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+    .page-title h2 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.15; }
+    .page-title p { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
 
-    .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
-    .row-actions form { display: inline; }
-    .action-btn {
-        border: none; padding: 6px 12px; border-radius: var(--r-pill); font-weight: 700; font-size: 11.5px;
-        cursor: pointer; font-family: 'Inter', sans-serif;
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 20px 22px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .card-head h3 { font-family: 'Space Grotesk', sans-serif; font-size: 15.5px; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+    .card-head h3 i { color: var(--teal-600); font-size: 14px; }
+
+    /* ===== FORM ===== */
+    .create-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+    .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 16px; }
+    .field { min-width: 0; }
+    .field.span2 { grid-column: span 2; }
+    .field.span4 { grid-column: 1 / -1; }
+    .field label { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; letter-spacing: .1px; }
+    .field label .opt { font-weight: 500; color: var(--ink-faint); }
+    .input, .select {
+        width: 100%; height: 40px; padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--border);
+        background: var(--surface); font-size: 13.5px; color: var(--ink); outline: none; transition: border-color .15s, box-shadow .15s;
     }
-    .btn-toggle { background: var(--blue-100); color: var(--blue-600); }
-    .btn-toggle:hover { background: #D6E4FB; }
-    .btn-delete { background: var(--red-100); color: var(--red-600); }
-    .btn-delete:hover { background: #F7D9D5; }
+    .input::placeholder { color: var(--ink-faint); }
+    .input:hover, .select:hover { border-color: #C4D4D7; }
+    .input:focus, .select:focus { border-color: var(--teal-500); box-shadow: 0 0 0 3px rgba(23,166,180,.15); }
+    .input.invalid { border-color: var(--red-600); box-shadow: 0 0 0 3px rgba(178,59,48,.10); }
+    .select { appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%230E6672' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; }
+    .input-affix { position: relative; }
+    .input-affix .affix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); font-weight: 700; font-size: 13px; pointer-events: none; }
+    .input-affix .input { padding-left: 28px; }
+    input[type="datetime-local"].input { font-family: 'Inter', sans-serif; }
+    .mono-input { font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
+    .hint { font-size: 11px; color: var(--ink-faint); margin-top: 5px; line-height: 1.4; }
+    .err-msg { font-size: 11.5px; color: var(--red-600); font-weight: 600; margin-top: 5px; display: none; }
+    .err-msg.show { display: block; }
+    .check-row { display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; border: 1px solid var(--border); background: var(--bg); border-radius: var(--r-md); cursor: pointer; }
+    .check-row input { width: 17px; height: 17px; accent-color: var(--teal-600); margin-top: 1px; flex-shrink: 0; }
+    .check-row b { font-size: 12.5px; display: block; }
+    .check-row span { font-size: 11px; color: var(--ink-soft); }
+    .form-actions { display: flex; gap: 10px; align-items: center; margin-top: 18px; flex-wrap: wrap; }
 
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--ink-faint); }
-    .empty-state i { font-size: 28px; margin-bottom: 10px; display: block; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); padding: 10px 18px; border-radius: var(--r-pill); font-weight: 700; font-size: 12.5px; cursor: pointer; transition: background .15s, filter .15s, transform .1s; white-space: nowrap; text-decoration: none; }
+    .btn:hover:not(:disabled) { background: var(--teal-050); }
+    .btn:active:not(:disabled) { transform: scale(.97); }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--teal-900); }
+    .btn-danger { background: var(--red-600); border-color: var(--red-600); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: #96302A; }
+    .spin-ic { display: inline-block; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .status-pill.status-expired { background: #F1F3F4; color: var(--ink-faint); }
-    .expiry-cell { font-size: 12px; color: var(--ink-soft); }
-    .expiry-cell .exp-none { color: var(--ink-faint); font-style: italic; }
-    .expiry-cell .exp-past { color: var(--red-600); font-weight: 700; }
-    .field .hint { font-size: 11px; color: var(--ink-faint); margin-top: 5px; }
+    /* ===== PREVIEW ===== */
+    .preview { background: linear-gradient(160deg, var(--teal-050), #fff 70%); border: 1px dashed #B9D7DA; border-radius: var(--r-lg); padding: 16px; }
+    .preview .pv-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--teal-700); background: #fff; border: 1px solid var(--teal-100); border-radius: var(--r-pill); padding: 3px 10px; }
+    .preview .pv-code { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; color: var(--teal-900); margin: 12px 0 2px; word-break: break-all; }
+    .preview .pv-offer { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+    .preview .pv-rules { list-style: none; margin: 10px 0; display: grid; gap: 4px; font-size: 11.5px; color: var(--ink-soft); }
+    .preview .pv-rules li i { width: 15px; color: var(--teal-600); }
+    .pv-calc { border-top: 1px dashed #B9D7DA; padding-top: 12px; margin-top: 12px; font-size: 12.5px; }
+    .pv-calc .row { display: flex; justify-content: space-between; padding: 3px 0; }
+    .pv-calc .row.total { font-weight: 700; font-size: 14px; color: var(--teal-700); border-top: 1px solid var(--border-soft); margin-top: 4px; padding-top: 7px; }
+    .pv-calc .row.disc { color: var(--green-600); font-weight: 600; }
+    .pv-amount { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-soft); margin-bottom: 8px; }
+    .pv-amount .input { height: 32px; width: 110px; padding-left: 26px; font-size: 12.5px; }
+    .pv-warn { font-size: 11.5px; color: var(--amber-600); font-weight: 600; margin-top: 6px; }
+    .pv-note { font-size: 10.5px; color: var(--ink-faint); margin-top: 8px; }
+
+    /* ===== CONTROL BAR ===== */
+    .control-bar { background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: var(--r-lg) var(--r-lg) 0 0; padding: 13px 18px; display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; justify-content: space-between; }
+    .filter-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .seg-filters { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-pill); padding: 3px; gap: 2px; flex-wrap: wrap; }
+    .pill-filter { background: transparent; border: none; padding: 6px 13px; border-radius: var(--r-pill); font-weight: 600; font-size: 12px; color: var(--ink-soft); cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .pill-filter.active { background: var(--ink); color: #fff; box-shadow: var(--shadow-xs); }
+    .pill-filter:hover:not(.active) { color: var(--teal-700); }
+    .search-box { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-pill); padding: 0 15px 0 14px; height: 36px; }
+    .search-box:focus-within { border-color: var(--teal-500); box-shadow: 0 0 0 3px rgba(23,166,180,.15); }
+    .search-box i { color: var(--ink-faint); font-size: 12px; }
+    .search-box input { border: none; background: transparent; outline: none; font-size: 12.5px; width: 170px; color: var(--ink); }
+    .mini-select { height: 36px; border-radius: var(--r-pill); background-color: var(--bg); font-size: 12px; font-weight: 600; padding: 0 30px 0 14px; width: auto; color: var(--ink-soft); }
+    .date-range { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-faint); }
+    .date-range .input { height: 36px; width: 138px; border-radius: var(--r-pill); font-size: 12px; background: var(--bg); padding: 0 10px; }
+    .btn-export { border: 1.5px solid; border-radius: var(--r-pill); padding: 7px 14px 7px 10px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; background: var(--surface); text-decoration: none; transition: all .15s; }
+    .btn-export .chip-ic { width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10.5px; color: #fff; }
+    .btn-export.excel { border-color: #BFE3CE; color: #157A50; }
+    .btn-export.excel .chip-ic { background: #1D9A5C; }
+    .btn-export.excel:hover { background: var(--green-100); border-color: #157A50; }
+    .btn-export.alt { border-color: #C9D7F0; color: var(--blue-600); }
+    .btn-export.alt .chip-ic { background: var(--blue-600); }
+    .btn-export.alt:hover { background: var(--blue-100); }
+    .export-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ===== TABLE ===== */
+    .section-count { background: var(--teal-050); border: 1px solid var(--teal-100); border-radius: var(--r-pill); padding: 2px 11px; font-size: 11.5px; font-weight: 700; color: var(--teal-700); font-family: 'IBM Plex Mono', monospace; }
+    .ledger-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 0 0 var(--r-lg) var(--r-lg); box-shadow: var(--shadow-sm); overflow-x: auto; position: relative; }
+    .ledger-wrap.loading::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.55); }
+    table.ledger { width: 100%; border-collapse: collapse; min-width: 980px; }
+    .ledger thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-faint); background: #FBFDFD; padding: 12px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .ledger tbody tr { border-bottom: 1px solid var(--border-soft); transition: background .12s; }
+    .ledger tbody tr:last-child { border-bottom: none; }
+    .ledger tbody tr:hover { background: #FAFCFC; }
+    .ledger td { padding: 13px 14px; vertical-align: middle; font-size: 13px; }
+    .ledger .rail-cell { width: 4px; padding: 0 !important; }
+    .rail { width: 4px; height: 100%; min-height: 52px; border-radius: 3px; }
+    .rail.active { background: var(--green-600); } .rail.scheduled { background: var(--blue-600); }
+    .rail.expired { background: var(--ink-faint); } .rail.disabled { background: var(--red-600); } .rail.exhausted { background: var(--amber-600); }
+    .code-chip { font-family: 'IBM Plex Mono', monospace; font-weight: 600; background: var(--teal-050); color: var(--teal-700); padding: 4px 10px; border-radius: 8px; font-size: 12.5px; display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
+    .cell-primary { font-weight: 600; font-size: 13.3px; }
+    .cell-secondary { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+    .tiny-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; color: var(--amber-600); margin-top: 5px; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .status-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 12px; border-radius: var(--r-pill); font-weight: 700; font-size: 11px; width: 104px; }
+    .status-pill i { font-size: 7px; }
+    .st-active { background: var(--green-100); color: var(--green-600); }
+    .st-scheduled { background: var(--blue-100); color: var(--blue-600); }
+    .st-expired { background: #EEF1F2; color: var(--ink-soft); }
+    .st-disabled { background: var(--red-100); color: var(--red-600); }
+    .st-exhausted { background: var(--amber-100); color: var(--amber-600); }
+    .usage-bar { height: 5px; background: var(--border-soft); border-radius: 99px; margin-top: 6px; overflow: hidden; width: 90px; }
+    .usage-bar span { display: block; height: 100%; background: var(--teal-500); border-radius: 99px; }
+    .usage-bar span.full { background: var(--amber-600); }
+    .date-col { white-space: nowrap; }
+    .date-col .past { color: var(--red-600); font-weight: 700; }
+    .actions-cell { text-align: right; white-space: nowrap; }
+    .action-stack { display: inline-flex; gap: 6px; flex-wrap: nowrap; }
+    .action-btn { border: none; padding: 7px 13px; border-radius: var(--r-pill); font-weight: 700; font-size: 11px; cursor: pointer; transition: filter .15s, transform .1s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .action-btn:active:not(:disabled) { transform: scale(.96); }
+    .action-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-details { background: var(--violet-100); color: var(--violet-600); } .btn-details:hover { background: #DFD9F3; }
+    .btn-edit { background: var(--blue-100); color: var(--blue-600); } .btn-edit:hover:not(:disabled) { background: #D6E4FB; }
+    .btn-disable { background: var(--amber-100); color: var(--amber-600); } .btn-disable:hover { background: #F6E4C3; }
+    .btn-enable { background: var(--green-100); color: var(--green-600); } .btn-enable:hover { background: #CFEEDD; }
+    .btn-del { background: var(--red-100); color: var(--red-600); } .btn-del:hover:not(:disabled) { background: #F7D9D5; }
+
+    .state-box { text-align: center; padding: 64px 20px; color: var(--ink-faint); }
+    .state-box i.big { font-size: 40px; opacity: .4; color: var(--teal-600); }
+    .state-box h3 { margin-top: 14px; font-family: 'Space Grotesk', sans-serif; color: var(--ink-soft); font-size: 15.5px; }
+    .state-box p { margin-top: 5px; font-size: 12.5px; }
+    .state-box .btn { margin-top: 16px; }
+    .state-box.error i.big { color: var(--red-600); }
+    .footnote { font-size: 11px; color: var(--ink-faint); margin-top: 12px; line-height: 1.5; }
+
+    /* ===== MODALS ===== */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(10,26,34,.55); backdrop-filter: blur(2px); display: none; align-items: center; justify-content: center; padding: 18px; z-index: 100; }
+    .modal-backdrop.show { display: flex; }
+    .modal { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-lg); width: 100%; max-width: 560px; max-height: calc(100vh - 36px); display: flex; flex-direction: column; overflow: hidden; }
+    .modal.wide { max-width: 860px; }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 18px 22px; border-bottom: 1px solid var(--border-soft); }
+    .modal-head h3 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+    .modal-x { background: var(--bg); border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; color: var(--ink-soft); font-size: 13px; flex-shrink: 0; }
+    .modal-x:hover { background: var(--teal-100); }
+    .modal-body { padding: 18px 22px; overflow-y: auto; }
+    .modal-foot { padding: 14px 22px; border-top: 1px solid var(--border-soft); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; background: #FBFDFD; }
+    .kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
+    .kv .k { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-faint); margin-bottom: 3px; }
+    .kv .v { font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere; }
+    .sub-title { font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 700; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+    .mini-table-wrap { border: 1px solid var(--border); border-radius: var(--r-md); overflow-x: auto; }
+    table.mini { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 560px; }
+    table.mini th { text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-faint); background: #FBFDFD; padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.mini td { padding: 9px 12px; border-bottom: 1px solid var(--border-soft); }
+    table.mini tr:last-child td { border-bottom: none; }
+    .pill-sm { display: inline-block; padding: 2px 9px; border-radius: var(--r-pill); font-size: 10.5px; font-weight: 700; }
+    .note-box { background: var(--amber-100); color: var(--amber-600); border-radius: var(--r-md); padding: 10px 12px; font-size: 12px; font-weight: 600; margin-bottom: 14px; display: flex; gap: 8px; }
+    .info-box { background: var(--blue-100); color: var(--blue-600); border-radius: var(--r-md); padding: 10px 12px; font-size: 11.5px; font-weight: 600; margin-bottom: 14px; display: flex; gap: 8px; }
+    .ro-field { background: var(--bg); }
+
+    /* ===== TOASTS ===== */
+    .toast-area { position: fixed; top: 86px; right: 20px; z-index: 200; display: grid; gap: 10px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+    .toast { pointer-events: auto; display: flex; gap: 10px; align-items: flex-start; border-radius: var(--r-md); padding: 12px 14px; font-size: 13px; font-weight: 600; border: 1px solid; box-shadow: var(--shadow-md); background: #fff; animation: toastIn .2s ease-out; }
+    @keyframes toastIn { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .toast.success { border-color: #BFE3CE; color: var(--green-600); background: #F4FBF7; }
+    .toast.error { border-color: #F2C4BC; color: var(--red-600); background: #FEF6F5; }
+    .toast.warning { border-color: #EBD4A5; color: var(--amber-600); background: #FFFAF0; }
+    .toast span { flex: 1; color: var(--ink); font-weight: 500; }
+    .toast button { background: none; border: none; cursor: pointer; font-size: 16px; line-height: 1; color: var(--ink-faint); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1180px) { .create-grid { grid-template-columns: 1fr; } .form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .preview { max-width: 520px; } }
+    @media (max-width: 860px) {
+        .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .control-bar { position: static; }
+    }
+    @media (max-width: 720px) {
+        .topbar, .instrument-strip, .main-content { padding-left: 16px; padding-right: 16px; }
+        .instrument { padding-right: 14px; margin-right: 14px; }
+        .instrument-time { width: 100%; padding-top: 2px; } .instrument-spacer { display: none; }
+        .admin-chip, .sync-chip { display: none; }
+        .card { padding: 16px; }
+        /* ledger turns into stacked cards on phones - no horizontal scrolling */
+        table.ledger { min-width: 0; }
+        .ledger thead { display: none; }
+        .ledger, .ledger tbody, .ledger tr, .ledger td { display: block; width: 100%; }
+        .ledger tbody tr { padding: 12px 14px; position: relative; }
+        .ledger td { padding: 5px 0 5px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: right; }
+        .ledger td[data-label]::before { content: attr(data-label); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-faint); text-align: left; flex-shrink: 0; }
+        .ledger td.rail-cell { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; padding: 0; display: block; }
+        .rail { min-height: 100%; }
+        .ledger td.actions-cell { justify-content: flex-end; padding-top: 10px; }
+        .action-stack { flex-wrap: wrap; justify-content: flex-end; }
+        .search-box input { width: 100%; } .search-box { flex: 1 1 100%; }
+        .date-range { flex: 1 1 100%; } .date-range .input { flex: 1; width: auto; }
+    }
+    @media (max-width: 520px) {
+        .form-grid { grid-template-columns: 1fr; } .field.span2 { grid-column: auto; }
+        .kv { grid-template-columns: 1fr; }
+        .page-actions { width: 100%; } .page-actions .btn { flex: 1 1 auto; }
+        .topbar-right { width: 100%; } .topbar-right .back-dashboard { flex: 1 1 100%; justify-content: center; }
+        .modal-foot .btn { flex: 1; }
+        .toast-area { top: 12px; right: 12px; }
+    }
 </style>
 </head>
 <body>
+<div class="app-shell">
 
-    <div class="page-head">
-        <h1><i class="fas fa-tags"></i> Coupon Management</h1>
-        <a href="/admin-dashboard" class="back-link"><i class="fas fa-arrow-left"></i> Back to Admin Dashboard</a>
-    </div>
+    <!-- ================= TOP BAR ================= -->
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark"><i class="fas fa-droplet"></i></div>
+            <div class="brand-text">
+                <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+                <p>Promotions &amp; coupon operations</p>
+            </div>
+        </div>
+        <nav class="topbar-right" aria-label="Coupon management navigation">
+            <a href="{{ url_for('booking_management') }}" class="dispatch-link"><i class="fas fa-table-list"></i>Booking Management</a>
+            <div class="sync-chip"><div class="pulse-dot"></div><span>Live data</span></div>
+            <div class="admin-chip"><div class="admin-avatar">A</div><span>{{ admin_name }}</span></div>
+            {# Plain link to the real admin dashboard endpoint - no history.back()/referrer. #}
+            <a href="{{ url_for('admin_dashboard') }}" class="dispatch-link back-dashboard" data-testid="back-to-admin-dashboard"><i class="fas fa-arrow-left"></i>Back to Admin Dashboard</a>
+        </nav>
+    </header>
+    <div class="flow-line"></div>
 
-    <div id="flashArea">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash-msg flash-{{ category }}">{{ message }}</div>
-            {% endfor %}
+    <!-- ================= STATS ================= -->
+    <section class="instrument-strip" aria-label="Coupon statistics">
+        <div class="instrument" title="All coupons. Total = Active + Upcoming + Expired + Disabled + Limit reached - each coupon is counted in exactly one status.">
+            <div class="instrument-icon ic-blue"><i class="fas fa-tags"></i></div>
+            <div class="instrument-copy"><h4>Total coupons</h4><div class="val" id="stTotal">–</div></div>
+        </div>
+        <div class="instrument" title="Redeemable by customers right now.">
+            <div class="instrument-icon ic-green"><i class="fas fa-circle-check"></i></div>
+            <div class="instrument-copy"><h4>Active</h4><div class="val" id="stActive">–</div></div>
+        </div>
+        <div class="instrument" title="Enabled, but the start date is still in the future.">
+            <div class="instrument-icon ic-blue"><i class="fas fa-calendar-day"></i></div>
+            <div class="instrument-copy"><h4>Upcoming</h4><div class="val" id="stScheduled">–</div></div>
+        </div>
+        <div class="instrument" title="Enabled coupons whose expiry time has passed.">
+            <div class="instrument-icon ic-grey"><i class="fas fa-hourglass-end"></i></div>
+            <div class="instrument-copy"><h4>Expired</h4><div class="val" id="stExpired">–</div></div>
+        </div>
+        <div class="instrument" title="Switched off by an administrator (wins over every other status).">
+            <div class="instrument-icon ic-red"><i class="fas fa-ban"></i></div>
+            <div class="instrument-copy"><h4>Disabled</h4><div class="val" id="stDisabled">–</div></div>
+        </div>
+        <div class="instrument" title="Not expired or disabled, but the total usage limit has been reached.">
+            <div class="instrument-icon ic-amber"><i class="fas fa-gauge-high"></i></div>
+            <div class="instrument-copy"><h4>Limit reached</h4><div class="val" id="stExhausted">–</div></div>
+        </div>
+        <div class="instrument" title="Redemptions on bookings that were not cancelled or rejected.">
+            <div class="instrument-icon ic-violet"><i class="fas fa-ticket"></i></div>
+            <div class="instrument-copy"><h4>Redemptions</h4><div class="val" id="stRedemptions">–</div></div>
+        </div>
+        <div class="instrument" title="Sum of the discounts recorded on counted redemptions. Redemptions with no recorded amount (or whose booking no longer exists) are not included, so this is never an estimate.">
+            <div class="instrument-icon ic-teal"><i class="fas fa-indian-rupee-sign"></i></div>
+            <div class="instrument-copy"><h4>Discount given</h4><div class="val" id="stDiscount">–</div></div>
+        </div>
+        <div class="instrument-spacer"></div>
+        <div class="instrument-time"><i class="far fa-clock"></i> Server time <span id="serverTime">{{ server_now }}</span></div>
+    </section>
+
+    <main class="main-content">
+
+        {% if page == 'list' %}
+        <div class="page-head">
+            <div class="page-title">
+                <div class="ph-ic"><i class="fas fa-list"></i></div>
+                <div>
+                    <h2>All Coupons</h2>
+                    <p>Search, filter, edit and track every promotional coupon in one place.</p>
+                </div>
+            </div>
+            <div class="page-actions">
+                <a href="{{ url_for('coupon_management') }}" class="btn" data-testid="back-to-coupon-management"><i class="fas fa-arrow-left"></i> Back to Coupon Management</a>
+                <a href="{{ url_for('coupon_management') }}#createCard" class="btn btn-primary"><i class="fas fa-plus"></i> Create Coupon</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="page-head">
+            <div class="page-title">
+                <div class="ph-ic"><i class="fas fa-ticket"></i></div>
+                <div>
+                    <h2>Coupon Management</h2>
+                    <p>Create, manage and track promotional offers for AquaFlow customers.</p>
+                </div>
+            </div>
+            <div class="page-actions">
+                <a href="{{ url_for('coupon_list') }}" class="btn btn-primary" data-testid="view-all-coupons"><i class="fas fa-list"></i> View All Coupons <span class="count-chip">{{ initial.stats.total }}</span></a>
+            </div>
+        </div>
         {% endif %}
-    {% endwith %}
-    </div>
 
-    <div class="layout">
-        <div class="card">
-            <h2>Create New Coupon</h2>
-            <form method="POST" action="/create-coupon" class="ajax-coupon-form" id="createCouponForm">
-                <div class="field">
-                    <label>Coupon Code</label>
-                    <input type="text" name="code" placeholder="e.g. WELCOME100" required maxlength="20" style="text-transform:uppercase;">
-                </div>
-                <div class="field">
-                    <label>Discount Type</label>
-                    <select name="discount_type">
-                        <option value="flat">Flat amount (₹)</option>
-                        <option value="percent">Percentage (%)</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Discount Value</label>
-                    <input type="number" name="value" min="1" step="0.01" placeholder="e.g. 100" required>
-                </div>
-                <div class="field">
-                    <label>Coupon Expiry Date &amp; Time <span style="font-weight:500; color:var(--ink-faint);">(optional)</span></label>
-                    <input type="datetime-local" name="expiry_at">
-                    <div class="hint"><i class="fas fa-circle-info"></i> Leave blank for a coupon that never expires. Customers see this expiry on the booking page.</div>
-                </div>
-                <div class="field" style="display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" name="one_time_per_user" id="oneTimeCheckbox" style="width:auto;">
-                    <label for="oneTimeCheckbox" style="margin:0; font-weight:600; cursor:pointer;">
-                        Limit to 1 use per customer, ever (e.g. new-user welcome offer)
-                    </label>
-                </div>
-                <button type="submit" class="create-btn"><i class="fas fa-plus"></i> Create Coupon</button>
-            </form>
+        {% if page == 'create' %}
+        <!-- ================= CREATE ================= -->
+        <section class="card" id="createCard" aria-labelledby="createTitle">
+            <div class="card-head"><h3 id="createTitle"><i class="fas fa-plus-circle"></i> Create New Coupon</h3></div>
+            <div class="create-grid">
+                <form method="POST" action="{{ url_for('create_coupon') }}" id="createForm" novalidate>
+                    <div class="form-grid">
+                        <div class="field span2">
+                            <label for="cCode">Coupon code</label>
+                            <input class="input mono-input" id="cCode" name="code" maxlength="20" placeholder="e.g. WELCOME100" autocomplete="off" required>
+                            <div class="hint">3-20 characters: letters, numbers, - or _. Codes are not case-sensitive.</div>
+                            <div class="err-msg" data-err="code"></div>
+                        </div>
+                        <div class="field">
+                            <label for="cType">Discount type</label>
+                            <select class="select" id="cType" name="discount_type">
+                                <option value="flat">Flat amount (₹)</option>
+                                <option value="percent">Percentage (%)</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="cValue">Discount value</label>
+                            <div class="input-affix"><span class="affix" id="cValueAffix">₹</span>
+                                <input class="input" id="cValue" name="value" type="number" min="0.01" step="0.01" placeholder="e.g. 100" required inputmode="decimal"></div>
+                            <div class="err-msg" data-err="value"></div>
+                        </div>
+
+                        <div class="field span2">
+                            <label for="cExpiry">Expiry date &amp; time <span class="opt">(optional)</span></label>
+                            <input class="input" id="cExpiry" name="expiry_at" type="datetime-local">
+                            <div class="hint">Leave blank for a coupon that never expires. Server time zone applies.</div>
+                            <div class="err-msg" data-err="expiry_at"></div>
+                        </div>
+                        <div class="field span2">
+                            <label for="cStart">Start date &amp; time <span class="opt">(optional - schedule in advance)</span></label>
+                            <input class="input" id="cStart" name="starts_at" type="datetime-local">
+                            <div class="hint">Before this time the coupon cannot be redeemed.</div>
+                            <div class="err-msg" data-err="starts_at"></div>
+                        </div>
+
+                        <div class="field">
+                            <label for="cLimit">Total usage limit <span class="opt">(optional)</span></label>
+                            <input class="input" id="cLimit" name="usage_limit" type="number" min="1" step="1" placeholder="Unlimited" inputmode="numeric">
+                            <div class="err-msg" data-err="usage_limit"></div>
+                        </div>
+                        <div class="field">
+                            <label for="cMin">Minimum booking <span class="opt">(optional)</span></label>
+                            <div class="input-affix"><span class="affix">₹</span><input class="input" id="cMin" name="min_amount" type="number" min="0" step="0.01" placeholder="None" inputmode="decimal"></div>
+                            <div class="err-msg" data-err="min_amount"></div>
+                        </div>
+                        <div class="field" id="cMaxWrap" style="display:none;">
+                            <label for="cMax">Maximum discount <span class="opt">(optional)</span></label>
+                            <div class="input-affix"><span class="affix">₹</span><input class="input" id="cMax" name="max_discount" type="number" min="0.01" step="0.01" placeholder="No cap" inputmode="decimal"></div>
+                            <div class="err-msg" data-err="max_discount"></div>
+                        </div>
+                        <div class="field span2" id="cOneWrap">
+                            <label class="check-row" for="cOne">
+                                <input type="checkbox" id="cOne" name="one_time_per_user">
+                                <div><b>Limit to 1 use per customer</b><span>Ever - for new-customer offers like WELCOME100.</span></div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="createBtn"><i class="fas fa-plus"></i> Create Coupon</button>
+                        <button type="reset" class="btn" id="resetBtn">Clear form</button>
+                    </div>
+                </form>
+
+                <aside class="preview" aria-live="polite" aria-label="Coupon preview">
+                    <span class="pv-tag"><i class="fas fa-eye"></i> Preview - not a real transaction</span>
+                    <div class="pv-code" id="pvCode">CODE</div>
+                    <div class="pv-offer" id="pvOffer">Enter a discount value</div>
+                    <ul class="pv-rules" id="pvRules"></ul>
+                    <div class="pv-calc">
+                        <div class="pv-amount">Example booking amount
+                            <div class="input-affix"><span class="affix" style="left:9px;font-size:12px;">₹</span><input class="input" id="pvAmount" type="number" min="1" step="1" value="1000" aria-label="Example booking amount"></div>
+                        </div>
+                        <div class="row"><span>Booking amount</span><span id="pvBase">₹1,000</span></div>
+                        <div class="row disc"><span>Coupon discount</span><span id="pvDisc">–</span></div>
+                        <div class="row total"><span>Customer pays</span><span id="pvPay">–</span></div>
+                        <div class="pv-warn" id="pvWarn" style="display:none;"></div>
+                    </div>
+                    <div class="pv-note">Illustration only: uses the example amount above, not a real booking.</div>
+                </aside>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if page == 'list' %}
+        <!-- ================= LIST ================= -->
+        <div class="card-head" style="margin-bottom:12px;">
+            <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16.5px;display:flex;align-items:center;gap:9px;"><i class="fas fa-list" style="color:var(--teal-600);font-size:15px;"></i> Coupon list <span class="section-count" id="listCount">0</span></h3>
         </div>
 
-        <div class="card">
-            <h2>All Coupons</h2>
-            {% if coupons %}
-            <table>
+        <div class="control-bar" role="search">
+            <div class="filter-group">
+                <div class="search-box"><i class="fas fa-magnifying-glass"></i>
+                    <input type="search" id="fQ" placeholder="Search coupon code…" aria-label="Search by coupon code" autocomplete="off"></div>
+                <div class="seg-filters" id="statusSeg" role="group" aria-label="Filter by status">
+                    <button class="pill-filter active" data-status="">All</button>
+                    <button class="pill-filter" data-status="active">Active</button>
+                    <button class="pill-filter" data-status="scheduled">Scheduled</button>
+                    <button class="pill-filter" data-status="expired">Expired</button>
+                    <button class="pill-filter" data-status="disabled">Disabled</button>
+                    <button class="pill-filter" data-status="exhausted">Limit reached</button>
+                </div>
+                <select class="select mini-select" id="fType" aria-label="Filter by discount type">
+                    <option value="">All types</option><option value="flat">Flat (₹)</option><option value="percent">Percentage (%)</option>
+                </select>
+                <div class="date-range" title="Show coupons whose expiry falls in this range">
+                    <span>Expires</span>
+                    <input class="input" type="date" id="fFrom" aria-label="Expiry from"><span>to</span><input class="input" type="date" id="fTo" aria-label="Expiry to">
+                </div>
+                <select class="select mini-select" id="fSort" aria-label="Sort coupons">
+                    <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
+                    <option value="discount_high">Highest discount</option><option value="discount_low">Lowest discount</option>
+                    <option value="expiry_soon">Expiring soonest</option><option value="expiry_late">Expiring latest</option>
+                </select>
+                <button type="button" class="btn" id="fReset" style="padding:8px 14px;"><i class="fas fa-rotate-left"></i> Reset filters</button>
+            </div>
+            <div class="export-actions">
+                <a class="btn-export excel" id="exCoupons" href="#" title="Download the coupons currently shown (respects filters)"><span class="chip-ic"><i class="fas fa-file-csv"></i></span>Export coupons</a>
+                <a class="btn-export alt" id="exRedemptions" href="#" title="Download redemption history for the coupons currently shown"><span class="chip-ic"><i class="fas fa-clock-rotate-left"></i></span>Export redemptions</a>
+            </div>
+        </div>
+
+        <div class="ledger-wrap" id="ledgerWrap">
+            <table class="ledger" id="ledger">
                 <thead>
                     <tr>
-                        <th>Code</th>
-                        <th>Discount</th>
-                        <th>Status</th>
-                        <th>Expiry</th>
-                        <th>Created</th>
-                        <th style="text-align:right;">Actions</th>
+                        <th class="rail-cell"></th>
+                        <th>Coupon code</th><th>Discount</th><th>Status</th><th>Usage</th>
+                        <th>Discount given</th><th>Created</th><th>Starts / Expires</th>
+                        <th style="text-align:right;padding-right:16px;">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for c in coupons %}
-                    {% set is_expired = c.get('expiry_at') and c.expiry_at < now %}
-                    <tr>
-                        <td><span class="code-chip">{{ c.code }}</span></td>
-                        <td>
-                            {% if c.discount_type == 'percent' %}
-                                {{ c.value | int }}% off
-                            {% else %}
-                                ₹{{ "{:,.0f}".format(c.value) }} off
-                            {% endif %}
-                            {% if c.get('one_time_per_user') %}
-                            <br><span style="font-size:10.5px; color:var(--amber-600); font-weight:700;"><i class="fas fa-user-clock"></i> 1 use / customer</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if is_expired %}
-                                <span class="status-pill status-expired"><i class="fas fa-circle"></i> Expired</span>
-                            {% elif c.get('active', True) %}
-                                <span class="status-pill status-active"><i class="fas fa-circle"></i> Active</span>
-                            {% else %}
-                                <span class="status-pill status-inactive"><i class="fas fa-circle"></i> Inactive</span>
-                            {% endif %}
-                        </td>
-                        <td class="expiry-cell">
-                            {% if c.get('expiry_at') %}
-                                <span class="{{ 'exp-past' if is_expired else '' }}">{{ c.expiry_at.strftime('%d %b %Y, %I:%M %p') }}</span>
-                            {% else %}
-                                <span class="exp-none">No expiry</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ c.created_at.strftime('%d %b %Y') if c.get('created_at') else '—' }}</td>
-                        <td>
-                            <div class="row-actions">
-                                <form method="POST" action="/toggle-coupon/{{ c._id }}" class="ajax-coupon-form">
-                                    <button type="submit" class="action-btn btn-toggle">
-                                        {% if c.get('active', True) %}Deactivate{% else %}Activate{% endif %}
-                                    </button>
-                                </form>
-                                <form method="POST" action="/delete-coupon/{{ c._id }}" class="ajax-coupon-form" data-confirm="Delete this coupon? This cannot be undone.">
-                                    <button type="submit" class="action-btn btn-delete">Delete</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tbody id="ledgerBody"></tbody>
             </table>
-            {% else %}
-            <div class="empty-state">
-                <i class="fas fa-tags"></i>
-                No coupons created yet. Create your first one on the left.
-            </div>
-            {% endif %}
+            <div id="ledgerState"></div>
         </div>
+        <p class="footnote">
+            <b>Status rules</b> (evaluated on the server): <b>Disabled</b> overrides everything · <b>Expired</b> = expiry time passed ·
+            <b>Limit reached</b> = total usage limit used up (cancelled/rejected bookings don't count) · <b>Scheduled</b> = start time in the future · otherwise <b>Active</b>.
+            Customer e-mails in redemption history are masked.
+        </p>
+        {% endif %}
+    </main>
+</div>
+
+{% if page == 'list' %}
+<!-- ================= DETAILS MODAL ================= -->
+<div class="modal-backdrop" id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
+    <div class="modal wide">
+        <div class="modal-head"><h3 id="detailsTitle">Coupon details</h3><button class="modal-x" data-close aria-label="Close"><i class="fas fa-xmark"></i></button></div>
+        <div class="modal-body" id="detailsBody"></div>
+        <div class="modal-foot"><button class="btn" data-close>Close</button></div>
     </div>
+</div>
 
-    <script>
-        // ================================================================
-        // AJAX form handling (Problem 3 fix): create/toggle/delete run via
-        // fetch() instead of a full page navigation, so no extra browser
-        // history entries are pushed. A single Back button click from this
-        // page always returns straight to wherever the admin came from
-        // (normally the Admin Dashboard) instead of stepping back through
-        // each action. Flask routes/logic are untouched - we still POST to
-        // the exact same endpoints and let flash messages do their job.
-        // ================================================================
-        document.querySelectorAll('.ajax-coupon-form').forEach(function (form) {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                const confirmMsg = form.getAttribute('data-confirm');
-                if (confirmMsg && !window.confirm(confirmMsg)) return;
+<!-- ================= EDIT MODAL ================= -->
+<div class="modal-backdrop" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="modal">
+        <form id="editForm" novalidate>
+            <div class="modal-head"><h3 id="editTitle">Edit coupon</h3><button type="button" class="modal-x" data-close aria-label="Close"><i class="fas fa-xmark"></i></button></div>
+            <div class="modal-body">
+                <div class="info-box"><i class="fas fa-circle-info"></i><div>Changes apply to <b>future</b> redemptions only. Discounts already given stay exactly as recorded. Code, type and the one-use rule can't be changed - create a new coupon instead.</div></div>
+                <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+                    <div class="field"><label>Coupon code</label><input class="input ro-field mono-input" id="eCode" disabled></div>
+                    <div class="field"><label>Type</label><input class="input ro-field" id="eType" disabled></div>
+                    <div class="field"><label for="eValue">Discount value</label>
+                        <div class="input-affix"><span class="affix" id="eAffix">₹</span><input class="input" id="eValue" type="number" step="0.01" min="0.01" inputmode="decimal"></div>
+                        <div class="err-msg" data-err="value"></div></div>
+                    <div class="field"><label for="eLimit">Total usage limit</label><input class="input" id="eLimit" type="number" step="1" min="1" placeholder="Unlimited" inputmode="numeric">
+                        <div class="hint" id="eLimitHint"></div><div class="err-msg" data-err="usage_limit"></div></div>
+                    <div class="field"><label for="eExpiry">Expiry date &amp; time</label><input class="input" id="eExpiry" type="datetime-local"><div class="hint">Clear it for no expiry.</div><div class="err-msg" data-err="expiry_at"></div></div>
+                    <div class="field"><label for="eStart">Start date &amp; time</label><input class="input" id="eStart" type="datetime-local"><div class="err-msg" data-err="starts_at"></div></div>
+                    <div class="field"><label for="eMin">Minimum booking (₹)</label><input class="input" id="eMin" type="number" step="0.01" min="0" placeholder="None" inputmode="decimal"><div class="err-msg" data-err="min_amount"></div></div>
+                    <div class="field" id="eMaxWrap"><label for="eMax">Maximum discount (₹)</label><input class="input" id="eMax" type="number" step="0.01" min="0.01" placeholder="No cap" inputmode="decimal"><div class="err-msg" data-err="max_discount"></div></div>
+                </div>
+                <div class="hint" style="margin-top:12px;">To switch a coupon on or off use the Disable / Enable button in the list.</div>
+            </div>
+            <div class="modal-foot"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn btn-primary" id="editSave"><i class="fas fa-floppy-disk"></i> Save changes</button></div>
+        </form>
+    </div>
+</div>
 
-                const submitBtn = form.querySelector('button[type="submit"]');
-                const originalHtml = submitBtn ? submitBtn.innerHTML : null;
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Please wait...';
-                }
+<!-- ================= CONFIRM MODAL ================= -->
+<div class="modal-backdrop" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+    <div class="modal" style="max-width:460px;">
+        <div class="modal-head"><h3 id="confirmTitle">Confirm</h3><button class="modal-x" data-close aria-label="Close"><i class="fas fa-xmark"></i></button></div>
+        <div class="modal-body"><p id="confirmText" style="font-size:13.5px;line-height:1.55;color:var(--ink-soft);"></p></div>
+        <div class="modal-foot"><button class="btn" data-close>Cancel</button><button class="btn btn-danger" id="confirmOk">Confirm</button></div>
+    </div>
+</div>
 
-                fetch(form.action, {
-                    method: 'POST',
-                    body: new FormData(form),
-                    redirect: 'manual' // don't let the browser follow/consume the server redirect
-                }).finally(function () {
-                    // Reload the CURRENT history entry (doesn't push a new one),
-                    // so the flash message set by the route above shows up here.
-                    window.location.reload();
-                });
-            });
+{% endif %}
+
+<div class="toast-area" id="toasts" aria-live="polite"></div>
+
+<script>
+(function () {
+    'use strict';
+    const INITIAL = {{ initial | tojson }};
+    const FLASHES = {{ get_flashed_messages(with_categories=true) | tojson }};
+    const URLS = {
+        list: {{ url_for('api_admin_coupons') | tojson }},
+        detail: {{ url_for('api_admin_coupon_details', coupon_id='__ID__') | tojson }},
+        create: {{ url_for('create_coupon') | tojson }},
+        update: {{ url_for('update_coupon', coupon_id='__ID__') | tojson }},
+        toggle: {{ url_for('toggle_coupon', coupon_id='__ID__') | tojson }},
+        del: {{ url_for('delete_coupon', coupon_id='__ID__') | tojson }},
+        exportCsv: {{ url_for('export_coupons') | tojson }},
+        login: {{ url_for('admin_login') | tojson }},
+        listPage: {{ url_for('coupon_list') | tojson }},
+        createPage: {{ url_for('coupon_management') | tojson }}
+    };
+    const $ = id => document.getElementById(id);
+    const IS_LIST = !!$('ledger');          // list page
+    const IS_CREATE = !!$('createForm');    // create page
+    const u = (tpl, id) => tpl.replace('__ID__', encodeURIComponent(id));
+    const esc = v => v == null ? '' : String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const inr = n => '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    const STATUS_LABEL = { active: 'Active', scheduled: 'Scheduled', expired: 'Expired', disabled: 'Disabled', exhausted: 'Limit reached' };
+
+    let coupons = INITIAL.coupons || [];
+    let loadSeq = 0, debounce = null;
+
+    // ---------------- toasts ----------------
+    function toast(kind, msg, linkHtml) {
+        const el = document.createElement('div');
+        el.className = 'toast ' + kind;
+        const ic = kind === 'success' ? 'fa-circle-check' : kind === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-exclamation';
+        el.innerHTML = `<i class="fas ${ic}" style="margin-top:2px;"></i><span>${esc(msg)} ${linkHtml || ''}</span><button aria-label="Dismiss">&times;</button>`;
+        el.querySelector('button').onclick = () => el.remove();
+        $('toasts').appendChild(el);
+        setTimeout(() => el.remove(), kind === 'error' ? 9000 : 5000);
+    }
+    FLASHES.forEach(([cat, msg]) => toast(cat === 'danger' ? 'error' : cat === 'success' ? 'success' : 'warning', msg));
+
+    // ---------------- network ----------------
+    async function api(url, opts) {
+        opts = opts || {};
+        opts.credentials = 'same-origin';
+        opts.cache = 'no-store';
+        opts.headers = Object.assign({ 'X-Requested-With': 'fetch', 'Accept': 'application/json' }, opts.headers || {});
+        let res;
+        try { res = await fetch(url, opts); }
+        catch (e) { throw new Error('Could not reach the AquaFlow server. Make sure the app is running and you are online, then try again.'); }
+        if (res.status === 401 || (res.redirected && /admin-login/.test(res.url))) { const err = new Error('Your admin session has expired.'); err.auth = true; throw err; }
+        let data = null;
+        try { data = await res.json(); } catch (e) { /* non-JSON */ }
+        if (!data) {
+            if (res.status >= 500) throw new Error('The server hit an error (HTTP ' + res.status + ') while handling this request. Check the server log for details.');
+            if (res.status === 404) throw new Error('This action is not available on the server (HTTP 404).');
+            throw new Error('Unexpected server response (HTTP ' + res.status + ').');
+        }
+        data._status = res.status;
+        return data;
+    }
+    function fail(e) {
+        if (e.auth) toast('error', e.message, `<a href="${URLS.login}">Sign in again</a>`);
+        else toast('error', e.message || 'Something went wrong.');
+    }
+
+    // ---------------- stats ----------------
+    function renderStats(s) {
+        if (!s) return;
+        $('stTotal').textContent = s.total; $('stActive').textContent = s.active;
+        $('stScheduled').textContent = s.scheduled; $('stExpired').textContent = s.expired;
+        $('stDisabled').textContent = s.disabled; $('stExhausted').textContent = s.exhausted;
+        $('stRedemptions').textContent = s.redemptions; $('stDiscount').textContent = inr(s.discount_given);
+    }
+
+    // ---------------- shared form helpers (used by create + edit) ----------------
+    function clearErrs(scope) { scope.querySelectorAll('.err-msg').forEach(e => { e.classList.remove('show'); e.textContent = ''; }); scope.querySelectorAll('.invalid').forEach(i => i.classList.remove('invalid')); }
+    function showErr(scope, field, msg, inputId) {
+        const el = scope.querySelector(`[data-err="${field}"]`); if (el) { el.textContent = msg; el.classList.add('show'); }
+        const inp = inputId && $(inputId); if (inp) inp.classList.add('invalid');
+    }
+
+    if (IS_LIST) {
+    // ---------------- list ----------------
+    function filters() {
+        return {
+            q: $('fQ').value.trim(), status: document.querySelector('#statusSeg .pill-filter.active').dataset.status,
+            type: $('fType').value, expiry_from: $('fFrom').value, expiry_to: $('fTo').value, sort: $('fSort').value
+        };
+    }
+    function hasFilters() { const f = filters(); return !!(f.q || f.status || f.type || f.expiry_from || f.expiry_to); }
+    function qs(f) { return Object.entries(f).filter(([, v]) => v).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); }
+    function updateExportLinks() {
+        const f = filters();
+        $('exCoupons').href = URLS.exportCsv + '?' + qs(Object.assign({}, f, { kind: 'coupons' }));
+        $('exRedemptions').href = URLS.exportCsv + '?' + qs(Object.assign({}, f, { kind: 'redemptions' }));
+    }
+
+    function usageCell(c) {
+        if (c.usage_limit) {
+            const pct = Math.min(100, Math.round(c.redemptions * 100 / c.usage_limit));
+            return `<div class="cell-primary mono">${c.redemptions} / ${c.usage_limit}</div><div class="usage-bar"><span class="${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></span></div>`;
+        }
+        return `<div class="cell-primary mono">${c.redemptions}</div><div class="cell-secondary">No limit</div>`;
+    }
+    function rowHtml(c) {
+        const extras = [];
+        if (c.min_amount) extras.push('Min ' + inr(c.min_amount));
+        if (c.max_discount) extras.push('Max ' + inr(c.max_discount));
+        const expPast = c.status === 'expired';
+        const dates = `${c.starts_label ? `<div class="cell-secondary">From ${esc(c.starts_label)}</div>` : ''}
+            <div class="cell-primary ${expPast ? 'past' : ''}" style="font-size:12.5px;">${c.expiry_label ? 'Until ' + esc(c.expiry_label) : '<span style="color:var(--ink-faint);font-weight:500;font-style:italic;">No expiry</span>'}</div>`;
+        const canDelete = c.redemptions === 0;
+        return `<tr data-id="${esc(c.id)}">
+            <td class="rail-cell"><div class="rail ${esc(c.status)}"></div></td>
+            <td data-label="Code"><div><span class="code-chip">${esc(c.code)}</span>${c.one_time_per_user ? '<div class="tiny-tag"><i class="fas fa-user-clock"></i> 1 use / customer</div>' : ''}</div></td>
+            <td data-label="Discount"><div><div class="cell-primary">${esc(c.discount_label)}</div>${extras.length ? `<div class="cell-secondary">${esc(extras.join(' · '))}</div>` : ''}</div></td>
+            <td data-label="Status"><span class="status-pill st-${esc(c.status)}"><i class="fas fa-circle"></i>${esc(c.status_label)}</span></td>
+            <td data-label="Usage"><div>${usageCell(c)}</div></td>
+            <td data-label="Discount given"><div class="cell-primary mono">${c.redemptions ? inr(c.discount_given) : '–'}</div></td>
+            <td data-label="Created" class="date-col"><div class="cell-secondary" style="margin:0;">${esc(c.created_label || '—')}</div></td>
+            <td data-label="Starts / Expires" class="date-col"><div>${dates}</div></td>
+            <td class="actions-cell"><div class="action-stack">
+                <button class="action-btn btn-details" data-act="details"><i class="fas fa-eye"></i>Details</button>
+                <button class="action-btn btn-edit" data-act="edit"><i class="fas fa-pen"></i>Edit</button>
+                ${c.active ? '<button class="action-btn btn-disable" data-act="disable"><i class="fas fa-ban"></i>Disable</button>'
+                           : '<button class="action-btn btn-enable" data-act="enable"><i class="fas fa-circle-play"></i>Enable</button>'}
+                <button class="action-btn btn-del" data-act="delete" ${canDelete ? '' : 'disabled title="Has redemption history - disable it instead (history is kept)"'}><i class="fas fa-trash"></i>Delete</button>
+            </div></td>
+        </tr>`;
+    }
+    function renderList() {
+        $('listCount').textContent = coupons.length;
+        const body = $('ledgerBody'), state = $('ledgerState'), table = $('ledger');
+        if (!coupons.length) {
+            table.style.display = 'none';
+            state.innerHTML = hasFilters()
+                ? `<div class="state-box"><i class="fas fa-filter-circle-xmark big"></i><h3>No coupons match these filters</h3><p>Try a different search or reset the filters.</p><button class="btn" id="stateReset"><i class="fas fa-rotate-left"></i> Reset filters</button></div>`
+                : `<div class="state-box"><i class="fas fa-tags big"></i><h3>No coupons yet</h3><p>Create your first promotional offer - customers will see active coupons on the booking page.</p><button class="btn btn-primary" id="stateCreate"><i class="fas fa-plus"></i> Create Coupon</button></div>`;
+            const r = $('stateReset'); if (r) r.onclick = resetFilters;
+            const c = $('stateCreate'); if (c) c.onclick = () => { window.location.href = URLS.createPage; };
+            return;
+        }
+        state.innerHTML = ''; table.style.display = ''; body.innerHTML = coupons.map(rowHtml).join('');
+    }
+    async function load(opts) {
+        opts = opts || {};
+        const seq = ++loadSeq; updateExportLinks();
+        $('ledgerWrap').classList.add('loading');
+        try {
+            const d = await api(URLS.list + '?' + qs(filters()));
+            if (seq !== loadSeq) return;                      // a newer request superseded this one
+            if (!d.success) throw new Error(d.message || 'Could not load coupons.');
+            coupons = d.coupons; renderStats(d.stats); renderList();
+        } catch (e) {
+            if (seq !== loadSeq) return;
+            $('ledger').style.display = 'none';
+            $('ledgerState').innerHTML = `<div class="state-box error"><i class="fas fa-triangle-exclamation big"></i><h3>Couldn't load coupons</h3><p>${esc(e.message)}</p><button class="btn" id="retryBtn"><i class="fas fa-rotate"></i> Try again</button></div>`;
+            $('retryBtn').onclick = () => load();
+            if (!opts.silent) fail(e);
+        } finally { if (seq === loadSeq) $('ledgerWrap').classList.remove('loading'); }
+    }
+    function queueLoad() { clearTimeout(debounce); debounce = setTimeout(load, 250); }
+    function resetFilters() {
+        $('fQ').value = ''; $('fType').value = ''; $('fFrom').value = ''; $('fTo').value = ''; $('fSort').value = 'newest';
+        document.querySelectorAll('#statusSeg .pill-filter').forEach(b => b.classList.toggle('active', b.dataset.status === ''));
+        load();
+    }
+    $('fQ').addEventListener('input', queueLoad);
+    ['fType', 'fFrom', 'fTo', 'fSort'].forEach(id => $(id).addEventListener('change', load));
+    $('statusSeg').addEventListener('click', e => {
+        const b = e.target.closest('.pill-filter'); if (!b) return;
+        document.querySelectorAll('#statusSeg .pill-filter').forEach(x => x.classList.toggle('active', x === b)); load();
+    });
+    $('fReset').addEventListener('click', resetFilters);
+
+    // ---------------- modals ----------------
+    let lastFocus = null;
+    function openModal(id) { lastFocus = document.activeElement; const m = $(id); m.classList.add('show'); const f = m.querySelector('input:not([disabled]),button:not([data-close]):not(.modal-x)') || m.querySelector('button'); if (f) setTimeout(() => f.focus(), 30); }
+    function closeModal(m) { m.classList.remove('show'); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) closeModal(m); });
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.show').forEach(closeModal); });
+
+    function confirmDialog(title, text, okLabel, danger) {
+        return new Promise(resolve => {
+            $('confirmTitle').textContent = title; $('confirmText').textContent = text;
+            const ok = $('confirmOk'); ok.textContent = okLabel; ok.className = 'btn ' + (danger ? 'btn-danger' : 'btn-primary');
+            const m = $('confirmModal'); let done = false;
+            const finish = v => { if (done) return; done = true; m.removeEventListener('click', onBg); ok.onclick = null; closeModal(m); resolve(v); };
+            const onBg = e => { if (e.target === m || e.target.closest('[data-close]')) finish(false); };
+            m.addEventListener('click', onBg); ok.onclick = () => finish(true);
+            openModal('confirmModal');
         });
-    </script>
+    }
 
+    // ---------------- row actions ----------------
+    const byId = id => coupons.find(c => c.id === id);
+    $('ledgerBody').addEventListener('click', async e => {
+        const btn = e.target.closest('[data-act]'); if (!btn || btn.disabled) return;
+        const id = btn.closest('tr').dataset.id, c = byId(id); if (!c) return;
+        const act = btn.dataset.act;
+        if (act === 'details') return showDetails(c);
+        if (act === 'edit') return showEdit(c);
+        if (act === 'disable') {
+            const ok = await confirmDialog('Disable ' + c.code + '?', 'Customers will no longer be able to redeem this coupon. Existing redemptions and history are kept, and you can enable it again at any time.', 'Disable coupon', true);
+            if (!ok) return;
+        }
+        if (act === 'delete') {
+            const ok = await confirmDialog('Delete ' + c.code + '?', 'This permanently removes the coupon. This cannot be undone. (Only possible because it has never been redeemed.)', 'Delete coupon', true);
+            if (!ok) return;
+        }
+        const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner spin-ic"></i>';
+        try {
+            let d;
+            if (act === 'delete') d = await api(u(URLS.del, id), { method: 'POST' });
+            else d = await api(u(URLS.toggle, id), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: act === 'enable' }) });
+            toast(d.success ? 'success' : 'error', d.message || (d.success ? 'Done.' : 'Action failed.'));
+            await load({ silent: true });
+        } catch (err) { fail(err); btn.disabled = false; btn.innerHTML = orig; }
+    });
+
+    // ---------------- details ----------------
+    async function showDetails(c) {
+        $('detailsTitle').innerHTML = `<span class="code-chip">${esc(c.code)}</span> <span class="status-pill st-${esc(c.status)}"><i class="fas fa-circle"></i>${esc(c.status_label)}</span>`;
+        $('detailsBody').innerHTML = '<div class="state-box" style="padding:40px;"><i class="fas fa-spinner spin-ic big"></i><p>Loading details…</p></div>';
+        openModal('detailsModal');
+        try {
+            const d = await api(u(URLS.detail, c.id));
+            if (!d.success) throw new Error(d.message || 'Could not load details.');
+            const x = d.coupon, rows = d.redemptions;
+            const kv = (k, v) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`;
+            $('detailsBody').innerHTML = `
+                <div class="kv">
+                    ${kv('Discount', esc(x.discount_label))}
+                    ${kv('Type', x.discount_type === 'percent' ? 'Percentage' : 'Flat amount')}
+                    ${kv('Per customer', x.one_time_per_user ? '1 use, ever' : 'No per-customer limit')}
+                    ${kv('Created', esc(x.created_label || '—'))}
+                    ${kv('Starts', esc(x.starts_label || 'Immediately'))}
+                    ${kv('Expires', esc(x.expiry_label || 'Never'))}
+                    ${kv('Usage limit', x.usage_limit ? x.usage_limit + ' redemptions' : 'Unlimited')}
+                    ${kv('Minimum booking', x.min_amount ? inr(x.min_amount) : 'None')}
+                    ${kv('Maximum discount', x.max_discount ? inr(x.max_discount) : (x.discount_type === 'percent' ? 'No cap' : 'n/a'))}
+                    ${kv('Redemptions', x.redemptions + (x.usage_limit ? ' of ' + x.usage_limit : ''))}
+                    ${kv('Discount given', x.redemptions ? inr(x.discount_given) : '–')}
+                    ${kv('Last redeemed', esc(x.last_redeemed || 'Never'))}
+                </div>
+                <div class="sub-title"><i class="fas fa-clock-rotate-left" style="color:var(--teal-600)"></i> Redemption history <span class="section-count">${rows.length}</span></div>
+                ${rows.length ? `<div class="mini-table-wrap"><table class="mini"><thead><tr><th>Booking</th><th>Booking status</th><th>Customer</th><th>Redeemed</th><th style="text-align:right;">Discount</th><th>Counts to limit</th></tr></thead><tbody>
+                    ${rows.map(r => `<tr><td class="mono">#${esc(r.booking_ref)}</td><td>${esc(r.booking_status)}</td><td class="mono" style="font-size:12px;">${esc(r.customer)}</td><td>${esc(r.redeemed_at || '—')}</td><td style="text-align:right;" class="mono">${r.discount == null ? '<span title="Amount was not recorded">n/a</span>' : inr(r.discount)}</td><td>${r.counted ? '<span class="pill-sm st-active">Yes</span>' : '<span class="pill-sm st-expired">No</span>'}</td></tr>`).join('')}
+                    </tbody></table></div>`
+                    : '<div class="state-box" style="padding:26px;"><i class="fas fa-ticket big" style="font-size:28px;"></i><p>This coupon hasn\'t been redeemed yet.</p></div>'}
+                <p class="footnote">Real redemption records only. Customer e-mails are masked. Redemptions on cancelled/rejected bookings are listed but don't count toward the usage limit or the totals.</p>`;
+        } catch (err) {
+            $('detailsBody').innerHTML = `<div class="state-box error" style="padding:30px;"><i class="fas fa-triangle-exclamation big" style="font-size:28px;"></i><p>${esc(err.message)}</p></div>`;
+            if (err.auth) fail(err);
+        }
+    }
+
+    // ---------------- edit ----------------
+    let editing = null, editOrig = null;
+    function showEdit(c) {
+        editing = c; clearErrs($('editForm'));
+        $('editTitle').textContent = 'Edit ' + c.code;
+        $('eCode').value = c.code; $('eType').value = c.discount_type === 'percent' ? 'Percentage (%)' : 'Flat amount (₹)';
+        $('eAffix').textContent = c.discount_type === 'percent' ? '%' : '₹';
+        editOrig = {
+            value: String(c.value), usage_limit: c.usage_limit ? String(c.usage_limit) : '', expiry_at: c.expiry_input || '',
+            starts_at: c.starts_input || '', min_amount: c.min_amount ? String(c.min_amount) : '', max_discount: c.max_discount ? String(c.max_discount) : ''
+        };
+        $('eValue').value = editOrig.value; $('eLimit').value = editOrig.usage_limit; $('eExpiry').value = editOrig.expiry_at;
+        $('eStart').value = editOrig.starts_at; $('eMin').value = editOrig.min_amount; $('eMax').value = editOrig.max_discount;
+        $('eMaxWrap').style.display = c.discount_type === 'percent' ? '' : 'none';
+        $('eLimitHint').textContent = c.redemptions ? `Can't be lower than the ${c.redemptions} redemption(s) already made.` : '';
+        openModal('editModal');
+    }
+    $('editForm').addEventListener('submit', async e => {
+        e.preventDefault(); clearErrs($('editForm'));
+        const now = { value: $('eValue').value.trim(), usage_limit: $('eLimit').value.trim(), expiry_at: $('eExpiry').value, starts_at: $('eStart').value, min_amount: $('eMin').value.trim(), max_discount: $('eMax').value.trim() };
+        const changed = {}; Object.keys(now).forEach(k => { if (now[k] !== editOrig[k]) changed[k] = now[k]; });
+        if (editing.discount_type !== 'percent') delete changed.max_discount;
+        if (!Object.keys(changed).length) { toast('warning', 'Nothing was changed.'); return; }
+        const btn = $('editSave'), orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner spin-ic"></i> Saving…';
+        try {
+            const d = await api(u(URLS.update, editing.id), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) });
+            if (d.success) { closeModal($('editModal')); toast('success', d.message); await load({ silent: true }); }
+            else {
+                const map = [['value', 'value', 'eValue'], ['usage', 'usage_limit', 'eLimit'], ['expiry', 'expiry_at', 'eExpiry'], ['start', 'starts_at', 'eStart'], ['minimum', 'min_amount', 'eMin'], ['maximum', 'max_discount', 'eMax']];
+                const hit = map.find(([w]) => d.message.toLowerCase().includes(w));
+                if (hit) showErr($('editForm'), hit[1], d.message, hit[2]); else toast('error', d.message);
+            }
+        } catch (err) { fail(err); } finally { btn.disabled = false; btn.innerHTML = orig; }
+    });
+
+    renderList(); updateExportLinks();
+    }   // end IS_LIST
+
+    if (IS_CREATE) {
+    // ---------------- create + preview ----------------
+    const cf = $('createForm');
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function nowLocal() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+    $('cExpiry').min = nowLocal();
+
+    function formVals() {
+        return { code: $('cCode').value.trim().toUpperCase(), type: $('cType').value, value: parseFloat($('cValue').value), max: parseFloat($('cMax').value), min: parseFloat($('cMin').value),
+                 limit: parseInt($('cLimit').value, 10), one: $('cOne').checked, expiry: $('cExpiry').value, start: $('cStart').value };
+    }
+    function renderPreview() {
+        const v = formVals(), pct = v.type === 'percent';
+        $('cValueAffix').textContent = pct ? '%' : '₹'; $('cMaxWrap').style.display = pct ? '' : 'none';
+        $('pvCode').textContent = v.code || 'CODE';
+        const valid = isFinite(v.value) && v.value > 0 && (!pct || v.value <= 100);
+        $('pvOffer').textContent = valid ? (pct ? v.value + '% off' : inr(v.value) + ' off') + (pct && isFinite(v.max) && v.max > 0 ? ` (up to ${inr(v.max)})` : '') : 'Enter a valid discount value';
+        const rules = [];
+        rules.push(['fa-calendar-check', v.start ? 'Starts ' + v.start.replace('T', ' ') : 'Starts immediately']);
+        rules.push(['fa-hourglass-half', v.expiry ? 'Expires ' + v.expiry.replace('T', ' ') : 'Never expires']);
+        if (isFinite(v.min) && v.min > 0) rules.push(['fa-arrow-up-wide-short', 'Min booking ' + inr(v.min)]);
+        if (isFinite(v.limit) && v.limit > 0) rules.push(['fa-gauge-high', v.limit + ' redemptions in total']);
+        if (v.one) rules.push(['fa-user-clock', '1 use per customer']);
+        $('pvRules').innerHTML = rules.map(([i, t]) => `<li><i class="fas ${i}"></i>${esc(t)}</li>`).join('');
+        const base = parseFloat($('pvAmount').value);
+        const ok = isFinite(base) && base > 0;
+        $('pvBase').textContent = ok ? inr(base) : '–';
+        const warn = $('pvWarn'); warn.style.display = 'none';
+        if (!valid || !ok) { $('pvDisc').textContent = '–'; $('pvPay').textContent = '–'; return; }
+        if (isFinite(v.min) && v.min > 0 && base < v.min) { warn.textContent = `Not eligible at this amount - minimum booking is ${inr(v.min)}.`; warn.style.display = 'block'; $('pvDisc').textContent = '–'; $('pvPay').textContent = inr(base); return; }
+        let d = pct ? Math.round(base * v.value) / 100 : v.value;
+        if (pct && isFinite(v.max) && v.max > 0) d = Math.min(d, v.max);
+        d = Math.max(0, Math.min(d, base));
+        $('pvDisc').textContent = '− ' + inr(d); $('pvPay').textContent = inr(base - d);
+    }
+    ['cCode', 'cType', 'cValue', 'cMax', 'cMin', 'cLimit', 'cOne', 'cExpiry', 'cStart', 'pvAmount'].forEach(id => { $(id).addEventListener('input', renderPreview); $(id).addEventListener('change', renderPreview); });
+    $('resetBtn').addEventListener('click', () => setTimeout(() => { clearErrs(cf); renderPreview(); }, 0));
+
+    function validateCreate() {
+        clearErrs(cf); const v = formVals(); let ok = true;
+        const bad = (f, m, id) => { showErr(cf, f, m, id); ok = false; };
+        if (!/^[A-Z0-9][A-Z0-9_-]{2,19}$/.test(v.code)) bad('code', 'Use 3-20 characters: letters, numbers, - or _ (e.g. WELCOME100).', 'cCode');
+        if (!isFinite(v.value) || v.value <= 0) bad('value', 'Enter a discount greater than 0.', 'cValue');
+        else if (v.type === 'percent' && v.value > 100) bad('value', 'A percentage discount cannot exceed 100%.', 'cValue');
+        if (v.expiry && new Date(v.expiry) <= new Date()) bad('expiry_at', 'Expiry must be a future date and time.', 'cExpiry');
+        if (v.start && v.expiry && v.start >= v.expiry) bad('starts_at', 'Start must be before the expiry.', 'cStart');
+        if ($('cLimit').value.trim() !== '' && (!Number.isInteger(v.limit) || v.limit < 1)) bad('usage_limit', 'Whole number, at least 1.', 'cLimit');
+        if ($('cMin').value.trim() !== '' && (!isFinite(v.min) || v.min < 0)) bad('min_amount', 'Cannot be negative.', 'cMin');
+        if (v.type === 'percent' && $('cMax').value.trim() !== '' && (!isFinite(v.max) || v.max <= 0)) bad('max_discount', 'Must be greater than 0.', 'cMax');
+        return ok;
+    }
+    cf.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!validateCreate()) { toast('error', 'Please fix the highlighted fields.'); const f = cf.querySelector('.invalid'); if (f) f.focus(); return; }
+        const fd = new FormData(cf);
+        fd.set('code', $('cCode').value.trim().toUpperCase());
+        if (fd.get('discount_type') !== 'percent') fd.delete('max_discount');
+        const btn = $('createBtn'), orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner spin-ic"></i> Creating…';
+        try {
+            const d = await api(URLS.create, { method: 'POST', body: fd });
+            if (d.success) {
+                toast('success', d.message, `<a href="${URLS.listPage}">View all coupons</a>`);
+                cf.reset(); clearErrs(cf); renderPreview();
+                api(URLS.list).then(x => { if (x.success) renderStats(x.stats); }).catch(() => {});   // keep the stats bar accurate
+            }
+            else if (d._status === 409) { showErr(cf, 'code', d.message, 'cCode'); toast('error', d.message); $('cCode').focus(); }
+            else toast('error', d.message || 'Could not create the coupon.');
+        } catch (err) { fail(err); } finally { btn.disabled = false; btn.innerHTML = orig; }
+    });
+
+    // ---------------- init ----------------
+    renderPreview();
+    }   // end IS_CREATE
+
+    renderStats(INITIAL.stats);
+})();
+</script>
 </body>
 </html>

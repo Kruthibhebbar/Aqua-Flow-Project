@@ -3,3 +3,5 @@
 __pycache__/
 *.pyc
 venv/
+# Driver compliance documents (licence, Aadhaar, RC...) - private, never commit
+private_uploads/

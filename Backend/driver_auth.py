@@ -7,8 +7,13 @@ from flask import (
     flash
 )
 from flask_mail import Message
+import hashlib
+import hmac
+import logging
 import random
 import traceback
+from datetime import timedelta
+from pymongo import ReturnDocument
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import bcrypt
@@ -22,6 +27,77 @@ def init_driver_auth(
     mail,
     activity_collection=None
 ):
+    logger = logging.getLogger(__name__)
+
+    # =====================================================
+    # LOGIN OTP HELPERS
+    # -----------------------------------------------------
+    # The session cookie is only *signed*, not encrypted - the browser
+    # can read everything in it. So the OTP itself is never stored there;
+    # only an HMAC of it, keyed with the server's SECRET_KEY, which the
+    # client cannot reproduce. The failed-attempt counter and the lock
+    # live on the driver's database record so the client can't reset
+    # them by discarding its cookie.
+    # =====================================================
+
+    OTP_MAX_ATTEMPTS = 5
+    OTP_LOCK_MINUTES = 15
+    OTP_VALID_SECONDS = 600
+
+    def _otp_signature(email, otp, issued_at):
+        message = f"{email}|{otp}|{issued_at}".encode("utf-8")
+        key = str(app.secret_key or "").encode("utf-8")
+        return hmac.new(key, message, hashlib.sha256).hexdigest()
+
+    def _start_otp_challenge(email):
+        otp_str = str(random.randint(100000, 999999)).zfill(6)
+        issued_at = datetime.now().timestamp()
+        session["driver_otp_sig"] = _otp_signature(email, otp_str, issued_at)
+        session["otp_generated_at"] = issued_at
+        return otp_str
+
+    def _send_otp_email(email, otp_str, resend=False):
+        try:
+            msg = Message(
+                "AquaFlow Driver Verification OTP" + (" - Resend" if resend else ""),
+                recipients=[email]
+            )
+            msg.body = f"""
+Welcome To AquaFlow Driver Portal.
+
+Your {"NEW " if resend else ""}Login OTP Is: {otp_str}
+
+Do not share this OTP with anyone.
+
+This OTP is valid for 10 minutes.
+"""
+            sent = send_mail_capped(app, mail, msg, timeout_seconds=6)
+            logger.info("Driver login OTP email %s for %s",
+                        "sent" if sent else "still sending in background / failed", email)
+            return True
+        except Exception:
+            logger.error("Driver login OTP email failed for %s\n%s", email, traceback.format_exc())
+            return False
+
+    def _register_failed_otp(email):
+        """Count a wrong code against the driver record. Returns True when
+        this failure triggered the lockout."""
+        updated = drivers_collection.find_one_and_update(
+            {"email": email},
+            {"$inc": {"otp_failed_attempts": 1}},
+            return_document=ReturnDocument.AFTER
+        )
+        failures = (updated or {}).get("otp_failed_attempts", 0)
+        if failures >= OTP_MAX_ATTEMPTS:
+            drivers_collection.update_one(
+                {"email": email},
+                {"$set": {
+                    "otp_failed_attempts": 0,
+                    "otp_locked_until": datetime.now() + timedelta(minutes=OTP_LOCK_MINUTES)
+                }}
+            )
+            return True
+        return False
     # =====================================================
     # DRIVER REGISTER
     # =====================================================
@@ -147,52 +223,24 @@ def init_driver_auth(
             if driver.get("approval_status") != "Approved":
                 return "Waiting For Admin Approval"
 
-            # Generate OTP
-            otp = random.randint(100000, 999999)
-            otp_str = str(otp).zfill(6)
-            
-            # Store in session
-            session.clear()
-            session["driver_otp"] = otp_str
-            session["driver_email"] = email
-            session["driver_name"] = driver["name"]
-            session["driver_id"] = str(driver["_id"])
-            session["otp_generated_at"] = datetime.now().timestamp()
-            
-            print("========== OTP GENERATED ==========")
-            print(f"Email: {email}")
-            print(f"OTP: {otp_str}")
-            print(f"Session data: {dict(session)}")
-            print("===================================")
-
-            # Send email
-            try:
-                msg = Message(
-                    "AquaFlow Driver Verification OTP",
-                    recipients=[email]
+            # Brute-force lock that the client cannot reset.
+            locked_until = driver.get("otp_locked_until")
+            if isinstance(locked_until, datetime) and locked_until > datetime.now():
+                minutes = int((locked_until - datetime.now()).total_seconds() // 60) + 1
+                return (
+                    f"Too many incorrect verification codes. "
+                    f"Please try again in {minutes} minute(s).",
+                    429
                 )
-                msg.body = f"""
-Welcome To AquaFlow Driver Portal.
 
-Your Login OTP Is: {otp_str}
-
-Do not share this OTP with anyone.
-
-This OTP is valid for 10 minutes.
-"""
-                sent = send_mail_capped(app, mail, msg, timeout_seconds=6)
-                print(f"OTP email {'sent' if sent else 'still sending in background / failed'} for {email}")
-            except Exception as e:
-                print(f"Email sending failed: {e}")
-                print(traceback.format_exc())
-
-            drivers_collection.update_one(
-                {"email": email},
-                {"$set": {
-                    "online_status": "Online",
-                    "last_login": datetime.now()
-                }}
-            )
+            # The password was correct, but the driver is NOT logged in
+            # yet. Until the emailed OTP is verified the session only
+            # carries a *pending* marker, which no driver-only route
+            # accepts (they all require session["driver_email"]).
+            session.clear()
+            session["pending_driver_email"] = email
+            otp_str = _start_otp_challenge(email)
+            _send_otp_email(email, otp_str, resend=False)
 
             return redirect(url_for("verify_driver_otp"))
 
@@ -204,90 +252,97 @@ This OTP is valid for 10 minutes.
 
     @app.route("/verify-driver-otp", methods=["GET", "POST"])
     def verify_driver_otp():
-        # Check if already logged in
-        if session.get("driver_logged_in"):
-           return redirect(url_for("home"))
+        # Already fully logged in
+        if session.get("driver_logged_in") and session.get("driver_email"):
+            return redirect(url_for("driver_dashboard"))
 
-        # Check if driver email exists in session
-        if "driver_email" not in session:
+        pending_email = session.get("pending_driver_email")
+        if not pending_email:
             flash("Please login first.", "error")
             return redirect(url_for("driver_login"))
 
-        # Get error parameter from URL (for toast messages)
+        # Error parameter from URL (for toast messages)
         error_param = request.args.get("error")
         message_param = request.args.get("message")
 
         if request.method == "POST":
             entered_otp = request.form.get("otp", "").strip()
-            
-            print("\n========== VERIFICATION ATTEMPT ==========")
-            print(f"Full session data: {dict(session)}")
-            print(f"Entered OTP: '{entered_otp}'")
-            
-            stored_otp = session.get("driver_otp")
-            print(f"Stored OTP from session: '{stored_otp}'")
-            
-            if not stored_otp:
-                print("ERROR: No OTP found in session!")
-                # Use URL parameter instead of flash
+            signature = session.get("driver_otp_sig")
+            issued_at = session.get("otp_generated_at")
+
+            if not signature or not issued_at:
                 return redirect(url_for("verify_driver_otp", error="invalid_otp"))
-            
-            # Check OTP expiry
-            otp_time = session.get("otp_generated_at")
-            if otp_time:
-                current_time = datetime.now().timestamp()
-                time_diff = current_time - otp_time
-                print(f"OTP age: {time_diff:.2f} seconds")
-                if time_diff > 600:  # 10 minutes
-                    print("OTP EXPIRED!")
-                    session.pop("driver_otp", None)
-                    session.pop("otp_generated_at", None)
-                    return redirect(url_for("verify_driver_otp", error="expired"))
-            
-            otp_match = (entered_otp == stored_otp)
-            print(f"OTP Match: {otp_match}")
-            print("==========================================\n")
-            
-            if otp_match:
-                session["driver_logged_in"] = True
-                session.permanent = True
-                session.pop("driver_otp", None)
+
+            if datetime.now().timestamp() - issued_at > OTP_VALID_SECONDS:
+                session.pop("driver_otp_sig", None)
                 session.pop("otp_generated_at", None)
-                print("OTP VERIFIED SUCCESSFULLY!")
+                return redirect(url_for("verify_driver_otp", error="expired"))
 
-                # Save the real GPS fix captured on the OTP page (if the
-                # driver allowed location access) as their starting position -
-                # this is what lets the live map / admin ETA calculation
-                # start from the driver's actual location instead of a
-                # random/stale one.
-                driver_lat = request.form.get("driver_lat")
-                driver_lng = request.form.get("driver_lng")
-                if driver_lat and driver_lng:
-                    try:
-                        drivers_collection.update_one(
-                            {"email": session["driver_email"]},
-                            {"$set": {
-                                "current_lat": float(driver_lat),
-                                "current_lng": float(driver_lng),
-                                "location_updated_at": datetime.now()
-                            }}
-                        )
-                    except (TypeError, ValueError):
-                        pass
-
-                if activity_collection is not None:
-                    activity_collection.insert_one({
-                        "driver_email": session["driver_email"],
-                        "type": "Login",
-                        "detail": "Logged in",
-                        "at": datetime.now()
-                    })
-
-                return redirect(url_for("driver_dashboard"))
-            else:
-                print("OTP VERIFICATION FAILED!")
-                # Use URL parameter instead of flash for toast display
+            expected = _otp_signature(pending_email, entered_otp, issued_at)
+            if not hmac.compare_digest(str(signature), expected):
+                if _register_failed_otp(pending_email):
+                    session.clear()
+                    return (
+                        f"Too many incorrect verification codes. "
+                        f"Please try again in {OTP_LOCK_MINUTES} minute(s).",
+                        429
+                    )
                 return redirect(url_for("verify_driver_otp", error="invalid_otp"))
+
+            # ---- OTP verified: only now does the session become a login ----
+            driver = drivers_collection.find_one({"email": pending_email})
+            if not driver or driver.get("approval_status") != "Approved":
+                session.clear()
+                return redirect(url_for("driver_login"))
+
+            session.pop("driver_otp_sig", None)
+            session.pop("otp_generated_at", None)
+            session.pop("pending_driver_email", None)
+            session["driver_email"] = pending_email
+            session["driver_name"] = driver.get("name")
+            session["driver_id"] = str(driver["_id"])
+            session["driver_logged_in"] = True
+            session.permanent = True
+
+            drivers_collection.update_one(
+                {"email": pending_email},
+                {"$set": {
+                    "online_status": "Online",
+                    "last_login": datetime.now(),
+                    "otp_failed_attempts": 0,
+                    "otp_locked_until": None
+                }}
+            )
+
+            # Save the real GPS fix captured on the OTP page (if the
+            # driver allowed location access) as their starting position -
+            # this is what lets the live map / admin ETA calculation
+            # start from the driver's actual location instead of a
+            # random/stale one.
+            driver_lat = request.form.get("driver_lat")
+            driver_lng = request.form.get("driver_lng")
+            if driver_lat and driver_lng:
+                try:
+                    drivers_collection.update_one(
+                        {"email": pending_email},
+                        {"$set": {
+                            "current_lat": float(driver_lat),
+                            "current_lng": float(driver_lng),
+                            "location_updated_at": datetime.now()
+                        }}
+                    )
+                except (TypeError, ValueError):
+                    pass
+
+            if activity_collection is not None:
+                activity_collection.insert_one({
+                    "driver_email": pending_email,
+                    "type": "Login",
+                    "detail": "Logged in",
+                    "at": datetime.now()
+                })
+
+            return redirect(url_for("driver_dashboard"))
 
         # GET request - render template with error/message parameters
         return render_template(
@@ -295,58 +350,30 @@ This OTP is valid for 10 minutes.
             error=error_param,
             message=message_param
         )
-    
+
     # =====================================================
     # RESEND DRIVER OTP - UPDATED to match HTML action
     # =====================================================
 
     @app.route("/resend-otp", methods=["GET", "POST"])
     def resend_otp():
-        
-        email = session.get("driver_email")
-        
+
+        email = session.get("pending_driver_email")
+
         if not email:
             return redirect(url_for("verify_driver_otp", error="session_expired"))
-        
-        # Generate new OTP
-        otp = random.randint(100000, 999999)
-        otp_str = str(otp).zfill(6)
-        
-        # Update session with new OTP
-        session["driver_otp"] = otp_str
-        session["otp_generated_at"] = datetime.now().timestamp()
-        
-        print("========== OTP RESENT ==========")
-        print(f"Email: {email}")
-        print(f"New OTP: {otp_str}")
-        print(f"Session data: {dict(session)}")
-        print("================================")
-        
-        # Send email with new OTP
-        try:
-            msg = Message(
-                "AquaFlow Driver Verification OTP - Resend",
-                recipients=[email]
-            )
-            msg.body = f"""
-Welcome To AquaFlow Driver Portal.
 
-Your NEW Login OTP Is: {otp_str}
+        # A resend issues a fresh code but does NOT reset the failed-attempt
+        # counter (that lives on the driver record), so resending can't be
+        # used to get unlimited guesses.
+        otp_str = _start_otp_challenge(email)
 
-Do not share this OTP with anyone.
-
-This OTP is valid for 10 minutes.
-"""
-            sent = send_mail_capped(app, mail, msg, timeout_seconds=6)
-            print(f"Resent OTP email {'sent' if sent else 'still sending in background / failed'} for {email}")
-            # Redirect with success message parameter regardless - the OTP
-            # is already valid in the session even if the email is slow;
-            # the driver can also use "resend" again if it never arrives.
+        if _send_otp_email(email, otp_str, resend=True):
+            # Redirect with success message regardless - the OTP is already
+            # valid in the session even if the email is slow; the driver can
+            # also use "resend" again if it never arrives.
             return redirect(url_for("verify_driver_otp", message="otp_resent"))
-        except Exception as e:
-            print(f"Email sending failed: {e}")
-            print(traceback.format_exc())
-            return redirect(url_for("verify_driver_otp", error="resend_failed"))
+        return redirect(url_for("verify_driver_otp", error="resend_failed"))
 
     # =====================================================
     # DRIVER LOGOUT
@@ -360,6 +387,6 @@ This OTP is valid for 10 minutes.
                 {"email": session["driver_email"]},
                 {"$set": {"online_status": "Offline"}}
             )
-            session.clear()
+        session.clear()
 
         return redirect(url_for("driver_login"))

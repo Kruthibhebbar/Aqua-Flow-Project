@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#073239">
+<title>AquaFlow Console | Driver Support</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --ink:#0A1A22; --ink-2:#123039; --ink-soft:#55707A; --ink-faint:#93A8AF;
+        --teal-900:#073239; --teal-700:#0E6672; --teal-600:#0E7C86; --teal-500:#17A6B4; --teal-050:#EAF4F5; --teal-100:#DCEEEF;
+        --amber-600:#A5690C; --amber-100:#FBF0DC; --green-600:#157A50; --green-100:#E1F5EA;
+        --red-600:#B23B30; --red-100:#FBEAE8; --blue-600:#2C5F9E; --blue-100:#E8EFFA;
+        --bg:#EEF3F4; --surface:#fff; --border:#DCE6E8; --border-soft:#E7EEEF;
+        --shadow-sm:0 2px 10px -4px rgba(10,26,34,.10); --shadow-md:0 16px 40px -18px rgba(10,26,34,.28);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,sans-serif; font-size:14px; -webkit-font-smoothing:antialiased; }
+    a { color:inherit; }
+
+    .topbar { background:linear-gradient(135deg,#061E24,var(--teal-900)); color:#fff; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .brand { display:flex; align-items:center; gap:14px; }
+    .brand-mark { width:44px; height:44px; border-radius:12px; background:rgba(38,208,201,.15); border:1px solid rgba(38,208,201,.3); display:grid; place-items:center; font-size:19px; color:#7FE8DF; }
+    .brand h1 { font:700 20px 'Space Grotesk',sans-serif; letter-spacing:-.01em; }
+    .brand p { font-size:12.5px; color:#9FB9C0; margin-top:2px; }
+    .back { text-decoration:none; display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:999px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16); color:#D5E3E7; font-weight:600; font-size:12.5px; }
+    .back:hover { background:rgba(255,255,255,.14); color:#fff; }
+
+    .wrap { max-width:1040px; margin:0 auto; padding:26px 24px 60px; }
+
+    .kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:20px; }
+    .kpi { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow-sm); }
+    .kpi span { display:block; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
+    .kpi b { display:block; font:700 26px 'Space Grotesk',sans-serif; margin-top:4px; }
+    .kpi.alert b { color:var(--red-600); }
+
+    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+    .tabs { display:flex; gap:6px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); padding:5px; border-radius:12px; }
+    .tabs a { text-decoration:none; font-weight:600; font-size:13px; color:var(--ink-soft); padding:7px 14px; border-radius:8px; display:inline-flex; gap:8px; align-items:center; }
+    .tabs a:hover { background:var(--teal-050); }
+    .tabs a.on { background:var(--teal-700); color:#fff; }
+    .tabs .n { font-size:11.5px; font-weight:700; padding:1px 7px; border-radius:99px; background:rgba(10,26,34,.08); }
+    .tabs a.on .n { background:rgba(255,255,255,.22); }
+    .tabs a.hot .n { background:#E5384F; color:#fff; }
+    .chip { display:inline-flex; align-items:center; gap:8px; background:var(--teal-050); border:1px solid var(--teal-100); color:var(--teal-700); font-weight:600; font-size:12.5px; padding:6px 8px 6px 12px; border-radius:99px; }
+    .chip a { text-decoration:none; width:20px; height:20px; border-radius:50%; display:grid; place-items:center; background:rgba(14,102,114,.12); }
+
+    .req { background:var(--surface); border:1px solid var(--border); border-radius:16px; margin-top:16px; box-shadow:var(--shadow-sm); overflow:hidden; border-left:4px solid var(--teal-500); }
+    .req.s-Open { border-left-color:#E5A11C; }
+    .req.s-Answered { border-left-color:var(--blue-600); }
+    .req.s-Resolved { border-left-color:var(--green-600); }
+    .req.emergency { border-color:#EFB3AD; border-left-color:#E5384F; }
+    .req-head { padding:16px 20px 12px; display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+    .req-head h2 { font:700 17px 'Space Grotesk',sans-serif; letter-spacing:-.01em; }
+    .tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+    .tag { font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:99px; background:#EEF2F3; color:var(--ink-soft); display:inline-flex; gap:6px; align-items:center; }
+    .tag.cat { background:var(--teal-050); color:var(--teal-700); }
+    .tag.emerg { background:var(--red-100); color:var(--red-600); }
+    .tag.st-Open { background:var(--amber-100); color:var(--amber-600); }
+    .tag.st-Answered { background:var(--blue-100); color:var(--blue-600); }
+    .tag.st-Resolved { background:var(--green-100); color:var(--green-600); }
+    .ticket { font:600 12px 'Inter',monospace; color:var(--ink-soft); background:#F3F6F7; border:1px solid var(--border); padding:3px 9px; border-radius:7px; align-self:flex-start; }
+
+    .meta { padding:0 20px 14px; display:flex; flex-wrap:wrap; gap:6px 18px; color:var(--ink-soft); font-size:12.5px; }
+    .meta span { display:inline-flex; gap:7px; align-items:center; }
+    .meta i { color:var(--teal-600); width:13px; text-align:center; }
+    .meta a { text-decoration:none; color:var(--teal-700); font-weight:600; }
+
+    .thread { padding:16px 20px; background:#F8FBFB; border-top:1px solid var(--border-soft); border-bottom:1px solid var(--border-soft); display:flex; flex-direction:column; gap:12px; }
+    .bub { max-width:78%; padding:11px 14px; border-radius:14px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; }
+    .bub small { display:block; font-size:11px; font-weight:700; letter-spacing:.02em; margin-bottom:4px; opacity:.75; white-space:normal; }
+    .bub.drv { background:#fff; border:1px solid var(--border); align-self:flex-start; border-bottom-left-radius:4px; }
+    .bub.adm { background:var(--teal-700); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+    .loc { font-size:12.5px; color:var(--red-600); font-weight:600; }
+    .loc a { color:inherit; }
+
+    .composer { padding:14px 20px 18px; }
+    .composer textarea { width:100%; min-height:84px; resize:vertical; border:1px solid var(--border); border-radius:11px; padding:11px 13px; font:inherit; background:#fff; color:var(--ink); }
+    .composer textarea:focus { outline:2px solid var(--teal-500); outline-offset:1px; border-color:transparent; }
+    .quick { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:9px; }
+    .quick button { font:600 11.5px 'Inter',sans-serif; background:#fff; border:1px dashed var(--border); color:var(--ink-soft); padding:5px 10px; border-radius:99px; cursor:pointer; }
+    .quick button:hover { border-color:var(--teal-500); color:var(--teal-700); background:var(--teal-050); }
+    .actions { display:flex; gap:10px; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; }
+    .actions .right { display:flex; gap:10px; flex-wrap:wrap; }
+    .count { font-size:12px; color:var(--ink-faint); }
+    .btn { font:700 13px 'Inter',sans-serif; border-radius:10px; padding:9px 16px; border:1px solid var(--border); background:#fff; color:var(--ink); cursor:pointer; display:inline-flex; gap:8px; align-items:center; }
+    .btn:hover { background:var(--teal-050); }
+    .btn.primary { background:var(--teal-700); border-color:var(--teal-700); color:#fff; }
+    .btn.primary:hover { background:var(--teal-600); }
+    .btn.green { background:var(--green-600); border-color:var(--green-600); color:#fff; }
+    .btn.green:hover { filter:brightness(1.08); }
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .closed { padding:14px 20px 18px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--green-600); font-weight:600; flex-wrap:wrap; }
+
+    .empty { text-align:center; padding:60px 20px; background:var(--surface); border:1px dashed var(--border); border-radius:16px; margin-top:16px; color:var(--ink-soft); }
+    .empty i { font-size:34px; color:var(--ink-faint); margin-bottom:12px; }
+    .empty h3 { color:var(--ink); font:700 17px 'Space Grotesk',sans-serif; margin-bottom:4px; }
+
+    .toast { position:fixed; right:24px; bottom:24px; background:var(--ink); color:#fff; padding:12px 18px; border-radius:12px; box-shadow:var(--shadow-md); font-weight:600; z-index:99; opacity:0; transform:translateY(10px); transition:.2s; pointer-events:none; max-width:340px; }
+    .toast.show { opacity:1; transform:none; }
+    .toast.err { background:var(--red-600); }
+
+    @media (max-width: 720px) {
+        .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .wrap { padding:18px 14px 50px; } .topbar { padding:14px 16px; }
+        .bub { max-width:94%; }
+    }
+</style>
+</head>
+<body>
+<div class="topbar">
+    <div class="brand">
+        <div class="brand-mark"><i class="fas fa-headset"></i></div>
+        <div><h1>Driver Support</h1><p>Requests and emergency alerts raised by drivers</p></div>
+    </div>
+    <a class="back" href="{{ url_for('driver_management') }}"><i class="fas fa-arrow-left"></i>Driver Management</a>
+</div>
+
+<div class="wrap">
+    <div class="kpis">
+        <div class="kpi {{ 'alert' if counts.Open }}"><span>Needs reply</span><b>{{ counts.Open }}</b></div>
+        <div class="kpi"><span>Answered</span><b>{{ counts.Answered }}</b></div>
+        <div class="kpi"><span>Resolved</span><b>{{ counts.Resolved }}</b></div>
+        <div class="kpi"><span>Total</span><b>{{ counts.all }}</b></div>
+    </div>
+
+    <div class="toolbar">
+        <nav class="tabs" aria-label="Filter requests">
+            {% for key, label in [('Open','Needs reply'), ('Answered','Answered'), ('Resolved','Resolved'), ('all','All')] %}
+            <a class="{{ 'on' if selected == key }} {{ 'hot' if key == 'Open' and counts.Open }}" href="{{ url_for('admin_driver_support', status=key, driver=driver_filter or None) }}">{{ label }}<span class="n">{{ counts[key] }}</span></a>
+            {% endfor %}
+        </nav>
+        {% if driver_filter %}
+        <span class="chip"><i class="fas fa-user"></i>{{ driver_name }}<a href="{{ url_for('admin_driver_support', status=selected) }}" title="Show all drivers" aria-label="Clear driver filter"><i class="fas fa-xmark"></i></a></span>
+        {% endif %}
+    </div>
+
+    {% for r in items %}
+    <article class="req s-{{ r.status }} {{ 'emergency' if r.emergency }}" data-id="{{ r.id }}">
+        <div class="req-head">
+            <div>
+                <h2>{{ r.subject }}</h2>
+                <div class="tags">
+                    <span class="tag {{ 'emerg' if r.emergency else 'cat' }}">{% if r.emergency %}<i class="fas fa-triangle-exclamation"></i>{% endif %}{{ r.category_label }}</span>
+                    <span class="tag st-{{ r.status }}" data-status-tag>{{ 'Needs reply' if r.status == 'Open' else r.status }}</span>
+                </div>
+            </div>
+            <span class="ticket">{{ r.ticket }}</span>
+        </div>
+        <div class="meta">
+            <span><i class="fas fa-user"></i>{{ r.driver_name }}</span>
+            {% if r.driver_phone %}<span><i class="fas fa-phone"></i><a href="tel:{{ r.driver_phone }}">{{ r.driver_phone }}</a></span>{% endif %}
+            <span><i class="fas fa-envelope"></i>{{ r.driver_email }}</span>
+            {% if r.booking %}<span><i class="fas fa-box"></i>Booking {{ r.booking }}</span>{% endif %}
+            <span><i class="fas fa-clock"></i>{{ r.when }}</span>
+        </div>
+
+        <div class="thread" data-thread>
+            <div class="bub drv"><small>{{ r.driver_name }} &middot; {{ r.when }}</small>{{ r.message }}</div>
+            {% for m in r.replies %}
+            <div class="bub {{ 'adm' if m.by == 'admin' else 'drv' }}"><small>{{ m.name }} &middot; {{ m.when }}</small>{{ m.text }}</div>
+            {% endfor %}
+            {% if r.location %}<div class="loc"><i class="fas fa-location-dot"></i> Last known location:
+                <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps?q={{ r.location.lat }},{{ r.location.lng }}">{{ r.location.lat }}, {{ r.location.lng }}</a></div>{% endif %}
+        </div>
+
+        {% if r.status == 'Resolved' %}
+        <div class="closed" data-closed><span><i class="fas fa-circle-check"></i> Resolved &mdash; the driver has been notified.</span>
+            <button type="button" class="btn" data-act="reopen"><i class="fas fa-rotate-left"></i>Reopen</button></div>
+        {% else %}
+        <div class="composer" data-composer>
+            <div class="quick" aria-label="Quick replies">
+                <button type="button" data-q="Thanks for reaching out. We're looking into this and will update you shortly.">Looking into it</button>
+                <button type="button" data-q="Could you share the booking reference and a photo or more detail so we can check this quickly?">Ask for details</button>
+                <button type="button" data-q="This has been fixed on our side. Please refresh the app and let us know if you still see the problem.">Fixed</button>
+            </div>
+            <textarea maxlength="2000" placeholder="Write a reply to {{ r.driver_name }}..." aria-label="Reply to {{ r.driver_name }}"></textarea>
+            <div class="actions">
+                <span class="count" data-count>0 / 2000</span>
+                <div class="right">
+                    {% if r.status == 'Open' %}<button type="button" class="btn" data-act="resolve"><i class="fas fa-check"></i>Resolve without reply</button>{% endif %}
+                    <button type="button" class="btn green" data-send="resolve"><i class="fas fa-circle-check"></i>Send &amp; resolve</button>
+                    <button type="button" class="btn primary" data-send="reply"><i class="fas fa-paper-plane"></i>Send reply</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </article>
+    {% else %}
+    <div class="empty">
+        <i class="fas fa-inbox"></i>
+        <h3>{{ 'Nothing needs a reply' if selected == 'Open' else 'No requests here' }}</h3>
+        <p>New driver requests will show up here, and as a red badge on Driver Management.</p>
+    </div>
+    {% endfor %}
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+    var toastEl = document.getElementById('toast'), tt;
+    function toast(msg, err) {
+        toastEl.textContent = msg; toastEl.className = 'toast show' + (err ? ' err' : '');
+        clearTimeout(tt); tt = setTimeout(function () { toastEl.className = 'toast'; }, 3200);
+    }
+    function post(url, body) {
+        return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' }, body: JSON.stringify(body || {}) })
+            .then(function (r) { return r.json().catch(function () { return { ok: false, message: 'Unexpected response.' }; }); })
+            .catch(function () { return { ok: false, message: 'Could not reach the server.' }; });
+    }
+
+    document.addEventListener('input', function (e) {
+        var ta = e.target.closest('.composer textarea'); if (!ta) return;
+        ta.closest('.composer').querySelector('[data-count]').textContent = ta.value.length + ' / 2000';
+    });
+
+    document.addEventListener('click', function (e) {
+        var card = e.target.closest('.req'); if (!card) return;
+        var id = card.getAttribute('data-id');
+
+        var q = e.target.closest('[data-q]');
+        if (q) { var ta = card.querySelector('textarea'); ta.value = q.getAttribute('data-q'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); return; }
+
+        var send = e.target.closest('[data-send]');
+        if (send) {
+            var box = card.querySelector('textarea'), text = box.value.trim();
+            if (text.length < 2) { toast('Write a reply first.', true); box.focus(); return; }
+            var btns = card.querySelectorAll('button'); btns.forEach(function (b) { b.disabled = true; });
+            post('/admin/driver-support/' + id + '/reply', { message: text, resolve: send.getAttribute('data-send') === 'resolve' }).then(function (d) {
+                if (!d.ok) { btns.forEach(function (b) { b.disabled = false; }); return toast(d.message || 'Could not send.', true); }
+                toast(d.message); setTimeout(function () { location.reload(); }, 700);
+            });
+            return;
+        }
+
+        var act = e.target.closest('[data-act]');
+        if (act) {
+            act.disabled = true;
+            post('/admin/driver-support/' + id + '/' + act.getAttribute('data-act')).then(function (d) {
+                if (d.ok) { toast(d.message); setTimeout(function () { location.reload(); }, 500); }
+                else { toast(d.message || 'Could not update.', true); act.disabled = false; }
+            });
+        }
+    });
+})();
+</script>
+</body>
+</html>

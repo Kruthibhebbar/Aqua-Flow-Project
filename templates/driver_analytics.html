@@ -1,0 +1,75 @@
+{% extends "driver_base.html" %}
+
+{% block content %}
+<div class="an-page">
+
+<section class="panel an-toolbar" aria-label="Analytics filters">
+    <form class="an-filters" id="an-form" novalidate>
+        <div class="field">
+            <label for="an-range">Period</label>
+            <select class="select" id="an-range" name="range">
+                <option value="7d">Last 7 days</option>
+                <option value="30d" selected>Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="12m">Last 12 months</option>
+                <option value="custom">Custom dates</option>
+            </select>
+        </div>
+        <div class="field" data-custom hidden><label for="an-from">From</label><input class="input" type="date" id="an-from" name="from" max="{{ today }}"></div>
+        <div class="field" data-custom hidden><label for="an-to">To</label><input class="input" type="date" id="an-to" name="to" max="{{ today }}"></div>
+        <div class="field">
+            <label for="an-bucket">Group by</label>
+            <select class="select" id="an-bucket" name="bucket">
+                <option value="">Automatic</option><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-rotate" aria-hidden="true"></i>Update</button>
+        <div class="an-meta">
+            <span class="an-range-text" id="an-range-text" aria-live="polite"></span>
+            <button class="btn" type="button" id="an-export" hidden><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>Export CSV</button>
+        </div>
+    </form>
+</section>
+
+<div id="an-error" class="alert tone-danger" role="alert" hidden>
+    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><span class="grow" id="an-error-text"></span>
+    <button type="button" class="btn btn-sm" id="an-retry">Try again</button>
+</div>
+
+<section class="an-kpis" aria-label="Period summary" id="an-kpis" aria-busy="true">
+    {% for i in range(6) %}<div class="an-kpi"><div class="skeleton an-sk-label"></div><div class="skeleton an-sk-value"></div></div>{% endfor %}
+</section>
+
+<div id="an-empty" class="panel an-empty" hidden>
+    <div class="empty">
+        <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+        <h3>No delivery data yet</h3>
+        <p>Completed deliveries in the selected period will appear here as charts. Try a longer period, or check your trips.</p>
+        <a class="btn btn-sm" href="{{ url_for('driver_trips') }}"><i class="fa-solid fa-route" aria-hidden="true"></i>View my trips</a>
+    </div>
+</div>
+
+<div id="an-charts" class="an-charts">
+    <section class="panel" aria-labelledby="c1">
+        <div class="panel-head"><h2 id="c1">Deliveries completed</h2><p id="ch-deliveries-sub"></p></div>
+        <div class="panel-body"><div class="chart" id="ch-deliveries"><div class="skeleton" style="height:240px"></div></div></div>
+    </section>
+    <div class="grid-2">
+        <section class="panel" aria-labelledby="c2"><div class="panel-head"><h2 id="c2">Earnings (&#8377;)</h2><p>Your {{ share_pct }}% share</p></div><div class="panel-body"><div class="chart" id="ch-earnings"><div class="skeleton" style="height:200px"></div></div></div></section>
+        <section class="panel" aria-labelledby="c3"><div class="panel-head"><h2 id="c3">Water delivered (litres)</h2></div><div class="panel-body"><div class="chart" id="ch-litres"><div class="skeleton" style="height:200px"></div></div></div></section>
+    </div>
+    <section class="panel" aria-labelledby="c4"><div class="panel-head"><h2 id="c4">Customer rating</h2></div><div class="panel-body"><div class="chart" id="ch-rating"><div class="skeleton" style="height:200px"></div></div></div></section>
+    <section class="panel">
+        <details>
+            <summary class="panel-head" style="cursor:pointer;list-style:none"><h2>View the numbers as a table</h2></summary>
+            <div class="table-wrap"><table class="table" id="an-table"><thead><tr><th>Period</th><th class="num">Deliveries</th><th class="num">Water (L)</th><th class="num">Earnings</th></tr></thead><tbody></tbody></table></div>
+        </details>
+    </section>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ driver_asset('js/driver-analytics.js') }}"></script>
+{% endblock %}

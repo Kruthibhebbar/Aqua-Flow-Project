@@ -1,318 +1,446 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#EEF3F4">
-<title>AquaFlow Console | Live ETA Tracking</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-    :root {
-        --ink: #0A1A22;
-        --ink-soft: #55707A;
-        --ink-faint: #93A8AF;
-        --teal-900: #073239;
-        --teal-700: #0E6672;
-        --teal-600: #0E7C86;
-        --cyan-glow: #26D0C9;
-        --teal-050: #EAF4F5;
-        --teal-100: #DCEEEF;
-        --amber-600: #A5690C; --amber-100: #FBF0DC;
-        --green-600: #157A50; --green-100: #E1F5EA;
-        --red-600: #B23B30; --red-100: #FBEAE8;
-        --blue-600: #2C5F9E; --blue-100: #E8EFFA;
-        --bg: #EEF3F4; --surface: #FFFFFF; --border: #DCE6E8; --border-soft: #E7EEEF;
-        --r-lg: 16px; --r-pill: 999px;
-        --shadow-sm: 0 2px 10px -4px rgba(10,26,34,.10);
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-    body { background: var(--bg); color: var(--ink); min-height: 100vh; }
+{% extends "fleet_base.html" %}
+{% set is_fleet_home = true %}
+{% block title %}Live Fleet Command Center{% endblock %}
 
-    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
-
-    .topbar {
-        background: var(--ink);
-        background-image: radial-gradient(1100px 220px at 15% -60%, rgba(23,166,180,.25), transparent 60%);
-        padding: 0 32px; display: flex; align-items: center; justify-content: space-between;
-        height: 72px; flex-shrink: 0; position: relative; z-index: 30;
-        border-top: 4px solid var(--cyan-glow);
-    }
-    .brand { display: flex; align-items: center; gap: 13px; }
-    .brand-mark {
-        width: 38px; height: 38px; border-radius: 10px;
-        background: linear-gradient(155deg, #17A6B4, var(--teal-700));
-        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .brand-mark i { font-size: 17px; color: #fff; }
-    .brand-text h1 {
-        font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #fff;
-        display: flex; align-items: center; gap: 9px; line-height: 1.1;
-    }
-    .brand-text .tag {
-        font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; font-weight: 600; color: var(--cyan-glow);
-        background: rgba(38,208,201,.12); border: 1px solid rgba(38,208,201,.25);
-        padding: 2.5px 8px; border-radius: var(--r-pill); letter-spacing: .6px; text-transform: uppercase;
-    }
-    .brand-text p { font-size: 11.5px; color: #7E97A0; margin-top: 2px; }
-    .dispatch-link {
-        text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
-        padding: 7px 14px; border-radius: var(--r-pill);
-        background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
-        color: #C7D6DB; font-weight: 600; font-size: 11.5px;
-    }
-    .dispatch-link:hover { background: rgba(255,255,255,.1); color: #fff; }
-
-    .flow-line {
-        height: 3px; width: 100%; flex-shrink: 0; overflow: hidden;
-        background: linear-gradient(90deg, var(--teal-900), var(--teal-600) 40%, var(--cyan-glow) 60%, var(--teal-900));
-        background-size: 200% 100%; animation: flowMove 5s linear infinite;
-    }
-    @keyframes flowMove { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
-
-    .instrument-strip {
-        background: var(--surface); border-bottom: 1px solid var(--border);
-        padding: 0 32px; display: flex; align-items: stretch; flex-wrap: wrap; flex-shrink: 0;
-    }
-    .instrument { display: flex; align-items: center; gap: 11px; padding: 13px 26px 13px 0; margin-right: 26px; border-right: 1px solid var(--border-soft); flex-shrink: 0; }
-    .instrument:last-of-type { border-right: none; margin-right: 0; }
-    .instrument-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; flex-shrink: 0; }
-    .instrument-icon.live { background: var(--green-100); color: var(--green-600); }
-    .instrument-icon.active { background: var(--teal-050); color: var(--teal-700); }
-    .instrument-icon.online { background: var(--blue-100); color: var(--blue-600); }
-    .instrument-copy h4 { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .55px; color: var(--ink-faint); margin-bottom: 3px; }
-    .instrument-copy .val { font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1; }
-    .instrument-spacer { flex: 1; }
-    .instrument-time { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-faint); padding: 13px 0; }
-    .live-dot { width: 7px; height: 7px; background: var(--green-600); border-radius: 50%; box-shadow: 0 0 0 0 rgba(21,122,80,.6); animation: pulseDot 1.8s infinite; }
-    @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(21,122,80,.55); } 70% { box-shadow: 0 0 0 7px rgba(21,122,80,0); } 100% { box-shadow: 0 0 0 0 rgba(21,122,80,0); } }
-
-    .main-content { flex: 1; padding: 22px 32px 40px; }
-    .section-head h2 { font-family: 'Space Grotesk', sans-serif; font-size: 16.5px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
-    .section-head h2 i { color: var(--teal-600); font-size: 15px; }
-
-    .grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
-    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
-
-    #fleetMap { height: 520px; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; max-height: 520px; overflow-y: auto; box-shadow: var(--shadow-sm); }
-    .panel h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-faint); margin-bottom: 12px; }
-
-    .delivery-card { background: var(--bg); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; transition: background .12s; }
-    .delivery-card:hover { background: #E7EFF0; }
-    .delivery-card .row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .delivery-card .cust { font-weight: 700; font-size: 13.5px; color: var(--ink); }
-
-    .status-pill { font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill); }
-    .st-online { background: var(--green-100); color: var(--green-600); }
-    .st-offline { background: var(--red-100); color: var(--red-600); }
-    .st-stopped { background: var(--amber-100); color: var(--amber-600); }
-
-    .meta-row { font-size: 11.5px; color: var(--ink-soft); display: flex; justify-content: space-between; margin-top: 4px; gap: 8px; }
-    .empty { text-align: center; color: var(--ink-faint); padding: 40px 10px; font-size: 13px; }
-    .deviation-tag { color: var(--red-600); font-size: 11px; font-weight: 700; margin-top: 6px; }
-    .refresh-note { text-align: center; color: var(--ink-faint); font-size: 12px; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 7px; }
-
-    /* Leaflet popup restyle to match light theme */
-    .leaflet-popup-content-wrapper { border-radius: 10px; }
-    .leaflet-popup-content { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--ink); }
-
-    @media (max-width: 700px) {
-        .topbar, .instrument-strip, .main-content { padding-left: 16px; padding-right: 16px; }
-        .instrument { padding-right: 16px; margin-right: 16px; }
-    }
-</style>
-</head>
-<body>
-<div class="app-shell">
-
-    <!-- ================= TOP BAR ================= -->
-    <div class="topbar">
-        <div class="brand">
-            <div class="brand-mark"><i class="fas fa-satellite-dish"></i></div>
-            <div class="brand-text">
-                <h1>AquaFlow <span class="tag">Ops Console</span></h1>
-                <p>Live fleet command center</p>
-            </div>
-        </div>
-        <a href="/admin-dashboard" class="dispatch-link"><i class="fas fa-arrow-left"></i>Back to Admin Dashboard</a>
+{% block strip %}
+<section class="instrument-strip" aria-label="Fleet overview">
+    <div class="instrument">
+        <div class="instrument-icon ic-green"><div class="live-dot" id="liveDot"></div></div>
+        <div class="instrument-copy"><h4>Connection</h4><div class="val" style="font-size:13px;" id="connState">Connecting…</div></div>
     </div>
-    <div class="flow-line"></div>
-
-    <!-- ================= INSTRUMENT STRIP ================= -->
-    <div class="instrument-strip">
-        <div class="instrument">
-            <div class="instrument-icon live"><div class="live-dot"></div></div>
-            <div class="instrument-copy"><h4>Status</h4><div class="val" style="font-size:13px;">Live</div></div>
-        </div>
-        <div class="instrument">
-            <div class="instrument-icon active"><i class="fas fa-truck-fast"></i></div>
-            <div class="instrument-copy"><h4>Active Deliveries</h4><div class="val" id="statActive">0</div></div>
-        </div>
-        <div class="instrument">
-            <div class="instrument-icon online"><i class="fas fa-tower-broadcast"></i></div>
-            <div class="instrument-copy"><h4>Drivers Online</h4><div class="val"><span id="statOnline">0</span> / <span id="statTotal">0</span></div></div>
-        </div>
-        <div class="instrument-spacer"></div>
-        <div class="instrument-time"><i class="far fa-clock"></i> Updated <span id="statUpdated">--</span></div>
+    <div class="instrument">
+        <div class="instrument-icon ic-blue"><i class="fas fa-id-card"></i></div>
+        <div class="instrument-copy"><h4>Registered drivers</h4><div class="val" id="statRegistered">–</div></div>
     </div>
-
-    <!-- ================= MAIN CONTENT ================= -->
-    <div class="main-content">
-        <div class="section-head">
-            <h2><i class="fas fa-map-marked-alt"></i> Live Fleet Command Center</h2>
-        </div>
-
-        <div class="grid">
-            <div id="fleetMap"></div>
-            <div class="panel">
-                <h3>Active Deliveries — real GPS, real routing</h3>
-                <div id="deliveryList"><div class="empty">Loading live fleet data…</div></div>
-            </div>
-        </div>
-
-        <p class="refresh-note"><i class="fas fa-rotate"></i> Auto-refreshes from live driver GPS every 5 seconds — no simulated data</p>
+    <div class="instrument">
+        <div class="instrument-icon ic-green"><i class="fas fa-tower-broadcast"></i></div>
+        <div class="instrument-copy"><h4>Online</h4><div class="val"><span id="statOnline">–</span> <span style="font-size:11px;color:var(--ink-faint);font-weight:500;">of <span id="statApproved">–</span> approved</span></div></div>
     </div>
+    <div class="instrument">
+        <div class="instrument-icon ic-red"><i class="fas fa-plug-circle-xmark"></i></div>
+        <div class="instrument-copy"><h4>Offline</h4><div class="val" id="statOffline">–</div></div>
+    </div>
+    <div class="instrument">
+        <div class="instrument-icon ic-teal"><i class="fas fa-truck-fast"></i></div>
+        <div class="instrument-copy"><h4>Active deliveries</h4><div class="val" id="statActive">–</div></div>
+    </div>
+    <div class="instrument">
+        <div class="instrument-icon ic-green"><i class="fas fa-circle-check"></i></div>
+        <div class="instrument-copy"><h4>Completed today</h4><div class="val" id="statCompleted">–</div></div>
+    </div>
+    <div class="instrument">
+        <div class="instrument-icon ic-amber"><i class="fas fa-location-crosshairs"></i></div>
+        <div class="instrument-copy"><h4>Location issues</h4><div class="val" id="statIssues" title="Active deliveries whose driver location is stale or unavailable">–</div></div>
+    </div>
+    <div class="instrument-spacer"></div>
+    <div class="instrument-time"><i class="far fa-clock"></i> Last updated <span id="statUpdated">never</span></div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="section-head">
+    <h2><i class="fas fa-map-marked-alt"></i> Live Fleet Command Center</h2>
 </div>
 
-<script>
-const map = L.map('fleetMap').setView([20.5937, 78.9629], 5);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors'
-}).addTo(map);
+<div class="alert" id="errorAlert" role="alert"></div>
 
-let driverMarkers = {};   // booking_id -> marker
-let customerMarkers = {}; // booking_id -> marker
-let routeLines = {};      // booking_id -> polyline
-let firstFit = true;
-
-function statusColor(status) {
-    if (status === 'Arrived') return '#157A50';
-    if (status === 'On The Way') return '#A5690C';
-    if (status === 'Accepted') return '#2C5F9E';
-    return '#93A8AF';
-}
-
-function truckIcon(color) {
-    return L.divIcon({
-        className: '',
-        html: `<div style="background:${color}; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 4px ${color}33, 0 2px 6px rgba(10,26,34,.25);"><i class="fa-solid fa-truck" style="color:#fff; font-size:12px;"></i></div>`,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13]
-    });
-}
-
-function renderDeliveryCard(d) {
-    let statusClass = 'st-online', statusLabel = d.status;
-    if (d.driver_online === false) { statusClass = 'st-offline'; statusLabel = 'Driver Offline'; }
-    else if (d.moving_status === 'Stopped') { statusClass = 'st-stopped'; statusLabel = 'Stopped'; }
-
-    const distanceLine = d.distance_remaining_km != null
-        ? `${d.distance_remaining_km} km remaining · ETA ~${d.eta_min} min`
-        : (d.driver_online === false ? 'No recent GPS signal' : 'Waiting for driver GPS…');
-
-    return `
-        <div class="delivery-card">
-            <div class="row1">
-                <span class="cust">${escapeHtml(d.customer || 'Customer')}</span>
-                <span class="status-pill ${statusClass}">${escapeHtml(statusLabel)}</span>
+<div class="grid">
+    <div class="stack">
+        <div class="map-box">
+            <div id="fleetMap" class="map" role="application" aria-label="Fleet map"></div>
+            <div class="map-legend" aria-label="Map legend">
+                <span><i style="background:#2C5F9E"></i>Accepted</span>
+                <span><i style="background:#A5690C"></i>On the way</span>
+                <span><i style="background:#157A50"></i>Arrived</span>
+                <span><i style="background:#55707A"></i>Idle driver</span>
+                <span><i style="background:#B23B30"></i>Delivery address</span>
+                <span><i style="background:#93A8AF"></i>Faded = stale / last known</span>
             </div>
-            <div class="meta-row"><span><i class="fa-solid fa-user"></i> ${escapeHtml(d.driver_name || 'Not assigned')}</span><span>${escapeHtml(d.truck_number || '')}</span></div>
-            <div class="meta-row"><span><i class="fa-solid fa-route"></i> ${distanceLine}</span></div>
-            ${d.route_deviated ? '<div class="deviation-tag"><i class="fa-solid fa-triangle-exclamation"></i> Driver deviated from planned route</div>' : ''}
+            <div class="map-banner" id="fleetMapBanner" role="status"></div>
         </div>
-    `;
-}
+        <div class="map-note" id="mapNote">Waiting for fleet data…</div>
+        <div class="card" id="selectedBox" style="display:none;" aria-live="polite"></div>
+    </div>
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
-}
+    <aside class="panel">
+        <h3>Active deliveries</h3>
+        <div class="filters" role="search">
+            <div class="search"><i class="fas fa-magnifying-glass"></i>
+                <input type="search" id="fSearch" placeholder="Driver, phone, vehicle, customer or ref…" aria-label="Search deliveries and drivers" autocomplete="off"></div>
+            <select id="fDriver" aria-label="Filter by driver status">
+                <option value="">All drivers</option><option value="online">Online</option><option value="offline">Offline</option>
+            </select>
+            <select id="fStatus" aria-label="Filter by delivery status">
+                <option value="">All delivery statuses</option>
+                <option>Assigned</option><option>Accepted</option><option>On The Way</option><option>Arrived</option>
+            </select>
+            <select id="fFresh" aria-label="Filter by location freshness">
+                <option value="">Any location signal</option><option value="live">Live</option><option value="stale">Stale</option><option value="unavailable">No location</option>
+            </select>
+            <button type="button" class="btn" id="fReset"><i class="fas fa-rotate-left"></i> Reset filters</button>
+        </div>
+        <div class="list-meta"><span id="listCount"></span><button type="button" class="btn" id="fitBtn" title="Fit map to all visible markers"><i class="fas fa-expand"></i> Fit map</button></div>
+        <div class="list-scroll" id="deliveryList"><div class="state"><i class="fas fa-circle-notch fa-spin"></i>Loading live fleet data…</div></div>
+    </aside>
+</div>
 
-async function refreshFleet() {
-    try {
-        const res = await fetch('/api/gps/admin-fleet?t=' + Date.now());
-        const data = await res.json();
-        if (!data.success) return;
+<p class="refresh-note"><i class="fas fa-rotate"></i>
+    Refreshes from real driver GPS every <span id="pollSec">5</span> s while this tab is visible.
+    Location is <b>Live</b> if the last GPS ping is ≤ <span id="liveSec">30</span> s old, <b>Stale</b> if older (last known position, never shown as live), and <b>No location</b> if the driver app has never sent one.
+</p>
+{% endblock %}
 
-        document.getElementById('statActive').textContent = data.deliveries.length;
-        document.getElementById('statOnline').textContent = data.online_drivers;
-        document.getElementById('statTotal').textContent = data.total_drivers;
-        document.getElementById('statUpdated').textContent = new Date(data.timestamp).toLocaleTimeString();
+{% block scripts %}
+<script>
+(function () {
+    'use strict';
+    const POLL_MS = 5000, SLOW_POLL_MS = 15000, FETCH_TIMEOUT_MS = 10000, ROUTE_REFRESH_MS = 20000;
+    const URL_DRIVER = {{ url_for('fleet_driver_page', driver_id='__ID__') | tojson }};
+    const URL_DELIVERY = {{ url_for('fleet_delivery_page', booking_id='__ID__') | tojson }};
+    const URL_ROUTE_API = {{ url_for('fleet_delivery_api', booking_id='__ID__') | tojson }};
+    const URL_BOOKINGS = {{ url_for('booking_management') | tojson }};
+    const URL_ADMIN_LOGIN = {{ url_for('admin_login') | tojson }};
+    const esc = AquaFleet.esc;
+    const $ = id => document.getElementById(id);
 
-        const listEl = document.getElementById('deliveryList');
-        if (data.deliveries.length === 0) {
-            listEl.innerHTML = '<div class="empty">No active deliveries right now.</div>';
-        } else {
-            listEl.innerHTML = data.deliveries.map(renderDeliveryCard).join('');
-        }
+    const map = AquaFleet.createMap('fleetMap');
+    const driverMarkers = {}, customerMarkers = {}, lines = {};
+    let routeLayer = null, routeFor = null, routeFetchedAt = 0, routeInFlight = false;
+    let data = null, lastOkAt = null, selectedId = null, didFit = false;
+    let inFlight = false, timer = null, failures = 0;
 
-        const seenIds = new Set();
-        const boundsPoints = [];
+    const statusColor = s => s === 'Arrived' ? '#157A50' : s === 'On The Way' ? '#A5690C' : s === 'Accepted' ? '#2C5F9E' : '#93A8AF';
+    const freshColor = (f, s) => f === 'stale' ? '#A5690C' : f === 'unavailable' ? '#93A8AF' : statusColor(s || 'Accepted');
+    const num = v => typeof v === 'number' && isFinite(v);
+    const hasLL = (a, b) => num(a) && num(b);
 
-        data.deliveries.forEach(d => {
-            seenIds.add(d.booking_id);
-            const color = statusColor(d.status);
-
-            if (d.customer_lat != null && d.customer_lng != null) {
-                if (!customerMarkers[d.booking_id]) {
-                    customerMarkers[d.booking_id] = L.circleMarker([d.customer_lat, d.customer_lng], {
-                        radius: 6, color: '#fff', fillColor: '#B23B30', fillOpacity: 1, weight: 2
-                    }).addTo(map).bindPopup(`<strong>📍 ${escapeHtml(d.customer || 'Customer')}</strong>`);
-                } else {
-                    customerMarkers[d.booking_id].setLatLng([d.customer_lat, d.customer_lng]);
-                }
-                boundsPoints.push([d.customer_lat, d.customer_lng]);
-            }
-
-            if (d.driver_lat != null && d.driver_lng != null) {
-                if (!driverMarkers[d.booking_id]) {
-                    driverMarkers[d.booking_id] = L.marker([d.driver_lat, d.driver_lng], { icon: truckIcon(color) }).addTo(map);
-                } else {
-                    driverMarkers[d.booking_id].setLatLng([d.driver_lat, d.driver_lng]);
-                    driverMarkers[d.booking_id].setIcon(truckIcon(color));
-                }
-                driverMarkers[d.booking_id].bindPopup(
-                    `<strong>🚛 ${escapeHtml(d.driver_name || 'Driver')}</strong><br>${escapeHtml(d.customer || '')}` +
-                    (d.eta_min != null ? `<br>ETA: ${d.eta_min} min (${d.distance_remaining_km} km)` : '')
-                );
-                boundsPoints.push([d.driver_lat, d.driver_lng]);
-
-                if (d.customer_lat != null) {
-                    if (routeLines[d.booking_id]) map.removeLayer(routeLines[d.booking_id]);
-                    routeLines[d.booking_id] = L.polyline(
-                        [[d.driver_lat, d.driver_lng], [d.customer_lat, d.customer_lng]],
-                        { color, weight: 3, dashArray: '6,6', opacity: 0.8 }
-                    ).addTo(map);
-                }
-            }
-        });
-
-        // Remove markers for deliveries no longer active (delivered/cancelled)
-        Object.keys(driverMarkers).forEach(id => {
-            if (!seenIds.has(id)) { map.removeLayer(driverMarkers[id]); delete driverMarkers[id]; }
-        });
-        Object.keys(customerMarkers).forEach(id => {
-            if (!seenIds.has(id)) { map.removeLayer(customerMarkers[id]); delete customerMarkers[id]; }
-        });
-        Object.keys(routeLines).forEach(id => {
-            if (!seenIds.has(id)) { map.removeLayer(routeLines[id]); delete routeLines[id]; }
-        });
-
-        if (firstFit && boundsPoints.length > 0) {
-            map.fitBounds(boundsPoints, { padding: [60, 60] });
-            firstFit = false;
-        }
-    } catch (e) {
-        console.log('Fleet refresh failed', e);
+    // ---------------- filters ----------------
+    function filters() {
+        return { q: $('fSearch').value.trim().toLowerCase(), driver: $('fDriver').value, status: $('fStatus').value, fresh: $('fFresh').value };
     }
-}
+    function matchDelivery(d, f) {
+        if (f.status && d.status !== f.status) return false;
+        if (f.driver === 'online' && !d.driver_online) return false;
+        if (f.driver === 'offline' && d.driver_online) return false;
+        if (f.fresh && d.location_freshness !== f.fresh) return false;
+        if (f.q) {
+            const hay = [d.driver_name, d.driver_phone, d.truck_number, d.customer, d.booking_ref].join(' ').toLowerCase();
+            if (!hay.includes(f.q)) return false;
+        }
+        return true;
+    }
+    function matchIdleDriver(dr, f) {
+        if (f.status) return false;              // delivery-status filter is about deliveries only
+        if (f.driver === 'online' && !dr.online) return false;
+        if (f.driver === 'offline' && dr.online) return false;
+        if (f.fresh && dr.location_freshness !== f.fresh) return false;
+        if (f.q && ![dr.name, dr.phone, dr.truck_number].join(' ').toLowerCase().includes(f.q)) return false;
+        return true;
+    }
 
-refreshFleet();
-setInterval(refreshFleet, 5000);
+    // ---------------- rendering ----------------
+    function statusBadge(d) {
+        if (!d.driver_name) return '<span class="badge b-grey">Unassigned</span>';
+        if (!d.driver_online) return '<span class="badge b-red">Driver offline</span>';
+        if (d.moving_status === 'Stopped') return '<span class="badge b-amber">Stopped</span>';
+        return '<span class="badge b-green">Online</span>';
+    }
+    function etaLine(d) {
+        if (d.distance_remaining_km != null) {
+            const est = d.route_source === 'fallback';
+            return `${d.distance_remaining_km} km${est ? ' (straight line)' : ' by road'} · ${est ? 'ETA unavailable' : 'ETA ~' + d.eta_min + ' min'}`;
+        }
+        if (d.location_freshness === 'live') return d.status === 'Assigned' ? 'Waiting for driver to accept' : 'Calculating route…';
+        return 'Route/ETA unavailable without a live location';
+    }
+    function renderCard(d) {
+        const sel = d.booking_id === selectedId ? ' selected' : '';
+        return `<div class="delivery-card${sel}" role="button" tabindex="0" data-id="${esc(d.booking_id)}" style="border-left-color:${statusColor(d.status)}" aria-pressed="${!!sel}">
+            <div class="row1"><span class="cust">${esc(d.customer || 'Customer')}<span class="ref">#${esc(d.booking_ref)}</span></span>${statusBadge(d)}</div>
+            <div class="meta-row"><span><i class="fa-solid fa-circle-dot"></i>${esc(d.status)}</span><span>${AquaFleet.freshBadge(d.location_freshness)}</span></div>
+            <div class="meta-row"><span><i class="fa-solid fa-user"></i>${esc(d.driver_name || 'No driver assigned')}</span><span><i class="fa-solid fa-truck"></i>${esc(d.truck_number || '—')}</span></div>
+            <div class="meta-row"><span><i class="fa-solid fa-location-dot"></i>${esc(d.address || 'No address on file')}</span></div>
+            <div class="meta-row"><span><i class="fa-solid fa-route"></i>${esc(etaLine(d))}</span></div>
+            <div class="meta-row"><span><i class="fa-regular fa-clock"></i>${esc(AquaFleet.freshText(d.location_freshness, d.last_gps_age_s, d.last_gps_label))}</span></div>
+            ${d.route_deviated ? '<div class="deviation-tag"><i class="fa-solid fa-triangle-exclamation"></i> Driver deviated from planned route</div>' : ''}
+            <div class="card-links">
+                <a href="${URL_DELIVERY.replace('__ID__', encodeURIComponent(d.booking_id))}"><i class="fa-solid fa-box"></i> Delivery details</a>
+                ${d.driver_id ? `<a href="${URL_DRIVER.replace('__ID__', encodeURIComponent(d.driver_id))}"><i class="fa-solid fa-id-badge"></i> Driver details</a>` : ''}
+                <a href="${URL_BOOKINGS}"><i class="fa-solid fa-table-list"></i> Bookings</a>
+            </div>
+        </div>`;
+    }
+
+    function popupFor(d) {
+        const drv = d.driver_id ? `<a href="${URL_DRIVER.replace('__ID__', encodeURIComponent(d.driver_id))}">Driver details</a> · ` : '';
+        return `<div class="pp-title">🚛 ${esc(d.driver_name || 'Driver')}</div>
+            <div class="pp-row">Vehicle: <b>${esc(d.truck_number || '—')}</b></div>
+            <div class="pp-row">Status: ${statusBadge(d)} ${AquaFleet.freshBadge(d.location_freshness)}</div>
+            <div class="pp-row">${esc(AquaFleet.freshText(d.location_freshness, d.last_gps_age_s, d.last_gps_label))}</div>
+            <div class="pp-row">Delivery: ${esc(d.customer || '')} · ${esc(d.status)} · #${esc(d.booking_ref)}</div>
+            ${d.distance_remaining_km != null ? `<div class="pp-row">${esc(etaLine(d))}</div>` : ''}
+            <div class="pp-row">${drv}<a href="${URL_DELIVERY.replace('__ID__', encodeURIComponent(d.booking_id))}">Delivery details</a></div>`;
+    }
+    function popupForIdle(dr) {
+        return `<div class="pp-title">🚛 ${esc(dr.name)}</div>
+            <div class="pp-row">Vehicle: <b>${esc(dr.truck_number || '—')}</b></div>
+            <div class="pp-row">Status: ${dr.online ? '<span class="badge b-green">Online</span>' : '<span class="badge b-red">Offline</span>'} ${AquaFleet.freshBadge(dr.location_freshness)}</div>
+            <div class="pp-row">${esc(AquaFleet.freshText(dr.location_freshness, dr.last_gps_age_s, dr.last_gps_label))}</div>
+            <div class="pp-row">No active delivery</div>
+            <div class="pp-row"><a href="${URL_DRIVER.replace('__ID__', encodeURIComponent(dr.id))}">Driver details</a></div>`;
+    }
+
+    function putMarker(store, key, latlng, icon, html) {
+        let m = store[key];
+        if (!m) {
+            m = store[key] = L.marker(latlng, { icon }).addTo(map).bindPopup(html);
+            m.on('click', () => { if (m._deliveryId) select(m._deliveryId, { fromMarker: true }); });
+        } else {
+            m.setLatLng(latlng); m.setIcon(icon); m.setPopupContent(html);
+        }
+        return m;
+    }
+    function prune(store, keep) {
+        Object.keys(store).forEach(k => { if (!keep.has(k)) { map.removeLayer(store[k]); delete store[k]; } });
+    }
+
+    function render() {
+        if (!data) return;
+        const f = filters();
+        const visible = data.deliveries.filter(d => matchDelivery(d, f));
+        const pts = [];
+
+        // ---- list ----
+        const list = $('deliveryList');
+        if (data.deliveries.length === 0) {
+            list.innerHTML = '<div class="state"><i class="fa-solid fa-truck"></i>No active deliveries right now.</div>';
+        } else if (visible.length === 0) {
+            list.innerHTML = '<div class="state"><i class="fa-solid fa-filter-circle-xmark"></i>No deliveries match these filters.</div>';
+        } else {
+            list.innerHTML = visible.map(renderCard).join('');
+        }
+        $('listCount').textContent = `Showing ${visible.length} of ${data.deliveries.length} active`;
+
+        // ---- map: delivery drivers + customer addresses ----
+        const keepDrv = new Set(), keepCust = new Set(), keepLine = new Set();
+        visible.forEach(d => {
+            if (hasLL(d.customer_lat, d.customer_lng)) {
+                const ll = [d.customer_lat, d.customer_lng];
+                const html = `<div class="pp-title">📍 ${esc(d.customer || 'Customer')}</div><div class="pp-row">${esc(d.address || '')}</div><div class="pp-row">#${esc(d.booking_ref)} · ${esc(d.status)}</div>`;
+                if (!customerMarkers[d.booking_id]) {
+                    customerMarkers[d.booking_id] = L.circleMarker(ll, { radius: 6, color: '#fff', fillColor: '#B23B30', fillOpacity: 1, weight: 2 }).addTo(map).bindPopup(html);
+                    customerMarkers[d.booking_id].on('click', () => select(d.booking_id, { fromMarker: true }));
+                } else { customerMarkers[d.booking_id].setLatLng(ll); customerMarkers[d.booking_id].setPopupContent(html); }
+                keepCust.add(d.booking_id); pts.push(ll);
+            }
+            if (hasLL(d.driver_lat, d.driver_lng)) {
+                const ll = [d.driver_lat, d.driver_lng];
+                const key = d.driver_id || ('b' + d.booking_id);
+                const m = putMarker(driverMarkers, key, ll, AquaFleet.truckIcon(freshColor(d.location_freshness, d.status), d.location_freshness !== 'live'), popupFor(d));
+                m._deliveryId = d.booking_id;
+                keepDrv.add(key); pts.push(ll);
+                // straight dashed line only while the position is genuinely live
+                if (d.location_freshness === 'live' && hasLL(d.customer_lat, d.customer_lng) && !(routeLayer && routeFor === d.booking_id)) {
+                    const lls = [ll, [d.customer_lat, d.customer_lng]];
+                    if (lines[d.booking_id]) lines[d.booking_id].setLatLngs(lls);
+                    else lines[d.booking_id] = L.polyline(lls, { color: statusColor(d.status), weight: 3, dashArray: '6,6', opacity: .8 }).addTo(map);
+                    keepLine.add(d.booking_id);
+                }
+            }
+        });
+
+        // ---- map: drivers with no active delivery ----
+        (data.drivers || []).forEach(dr => {
+            if (dr.active_booking_id || !hasLL(dr.lat, dr.lng) || !matchIdleDriver(dr, f)) return;
+            const m = putMarker(driverMarkers, dr.id, [dr.lat, dr.lng], AquaFleet.truckIcon('#55707A', dr.location_freshness !== 'live'), popupForIdle(dr));
+            m._deliveryId = null;
+            keepDrv.add(dr.id); pts.push([dr.lat, dr.lng]);
+        });
+
+        prune(driverMarkers, keepDrv); prune(customerMarkers, keepCust); prune(lines, keepLine);
+
+        // ---- map note (honest about what is / is not on the map) ----
+        const noGps = visible.filter(d => d.location_freshness === 'unavailable').length;
+        const stale = visible.filter(d => d.location_freshness === 'stale').length;
+        let note;
+        if (pts.length === 0) {
+            note = 'No location data to show yet. Drivers appear here once their driver app sends GPS (the driver must be logged in and allow location access in the browser).';
+        } else {
+            note = `${pts.length} marker${pts.length === 1 ? '' : 's'} on the map.`;
+            if (stale) note += ` ${stale} deliver${stale === 1 ? 'y has' : 'ies have'} a stale driver position (shown dimmed as last known).`;
+            if (noGps) note += ` ${noGps} deliver${noGps === 1 ? 'y has' : 'ies have'} no driver GPS — likely the driver app is closed or location permission is off.`;
+        }
+        $('mapNote').textContent = note;
+
+        if (!didFit && pts.length) { map.fitBounds(pts, { padding: [50, 50], maxZoom: 15 }); didFit = true; }
+        lastPts = pts;
+        renderSelected();
+    }
+    let lastPts = [];
+
+    function renderStats() {
+        const s = data.stats;
+        $('statRegistered').textContent = s.registered_drivers;
+        $('statOnline').textContent = s.online_drivers;
+        $('statApproved').textContent = s.approved_drivers;
+        $('statOffline').textContent = s.offline_drivers;
+        $('statActive').textContent = s.active_deliveries;
+        $('statCompleted').textContent = s.completed_today;
+        $('statIssues').textContent = s.location_issues;
+        $('liveSec').textContent = data.freshness_live_seconds;
+    }
+
+    // ---------------- selection + road route ----------------
+    function selectedDelivery() { return data && data.deliveries.find(d => d.booking_id === selectedId); }
+
+    function renderSelected() {
+        const box = $('selectedBox');
+        const d = selectedDelivery();
+        if (!d) { box.style.display = 'none'; return; }
+        box.style.display = '';
+        const r = box.dataset.route ? JSON.parse(box.dataset.route) : null;
+        let routeTxt;
+        if (r && r.id === d.booking_id) {
+            routeTxt = r.available
+                ? `<span class="badge b-green"><i class="fa-solid fa-route"></i>Road route</span> ${r.distance_km} km · ~${r.eta_min} min`
+                : `<span class="badge b-grey">Route unavailable</span> ${esc(r.reason || '')}`;
+        } else { routeTxt = '<span class="badge b-grey">Loading route…</span>'; }
+        box.innerHTML = `<h3>Selected delivery</h3>
+            <dl class="kv">
+                <dt>Booking</dt><dd>#${esc(d.booking_ref)} · ${esc(d.customer || '')} · ${esc(d.status)}</dd>
+                <dt>Driver</dt><dd>${esc(d.driver_name || 'Not assigned')} ${d.truck_number ? '· ' + esc(d.truck_number) : ''}</dd>
+                <dt>Location</dt><dd>${AquaFleet.freshBadge(d.location_freshness)} ${esc(AquaFleet.freshText(d.location_freshness, d.last_gps_age_s, d.last_gps_label))}</dd>
+                <dt>Route</dt><dd>${routeTxt}</dd>
+            </dl>
+            <div class="card-links"><a href="${URL_DELIVERY.replace('__ID__', encodeURIComponent(d.booking_id))}">Delivery details</a>
+            ${d.driver_id ? `<a href="${URL_DRIVER.replace('__ID__', encodeURIComponent(d.driver_id))}">Driver details</a>` : ''}
+            <a href="#" id="clearSel">Clear selection</a></div>`;
+        const c = $('clearSel'); if (c) c.onclick = e => { e.preventDefault(); select(null); };
+    }
+
+    function clearRoute() {
+        if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+        routeFor = null; $('selectedBox').dataset.route = '';
+    }
+
+    async function loadRoute(id, force) {
+        if (routeInFlight) return;
+        if (!force && Date.now() - routeFetchedAt < ROUTE_REFRESH_MS) return;
+        routeInFlight = true;
+        try {
+            const res = await fetch(URL_ROUTE_API.replace('__ID__', encodeURIComponent(id)), { credentials: 'same-origin', cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const j = await res.json();
+            if (id !== selectedId) return;                       // selection changed meanwhile
+            const r = j.delivery.route;
+            $('selectedBox').dataset.route = JSON.stringify({ id, available: r.available, reason: r.reason, distance_km: r.distance_km, eta_min: r.eta_min });
+            if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+            if (r.available && r.geometry && r.geometry.length) {
+                routeLayer = L.polyline(r.geometry, { color: '#0E7C86', weight: 5, opacity: .85 }).addTo(map);
+                routeFor = id;
+                if (lines[id]) { map.removeLayer(lines[id]); delete lines[id]; }
+            } else { routeFor = null; }
+            routeFetchedAt = Date.now();
+            renderSelected();
+        } catch (e) {
+            if (id === selectedId) {
+                $('selectedBox').dataset.route = JSON.stringify({ id, available: false, reason: 'Could not load the route right now.' });
+                renderSelected();
+            }
+        } finally { routeInFlight = false; }
+    }
+
+    function select(id, opts) {
+        opts = opts || {};
+        if (id === selectedId && !opts.fromMarker) id = null;     // clicking the same card again deselects
+        if (id !== selectedId) { clearRoute(); routeFetchedAt = 0; }
+        selectedId = id;
+        render();
+        if (!id) return;
+        const d = selectedDelivery(); if (!d) return;
+        const key = d.driver_id || ('b' + d.booking_id);
+        const m = driverMarkers[key];
+        const card = document.querySelector(`.delivery-card[data-id="${CSS.escape(id)}"]`);
+        if (card && !opts.fromMarker) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        if (m) {
+            const pts = [m.getLatLng()]; if (hasLL(d.customer_lat, d.customer_lng)) pts.push([d.customer_lat, d.customer_lng]);
+            map.fitBounds(pts, { padding: [70, 70], maxZoom: 16 });
+            if (!opts.fromMarker) m.openPopup();
+        } else if (hasLL(d.customer_lat, d.customer_lng)) {
+            map.setView([d.customer_lat, d.customer_lng], 15);
+        }
+        loadRoute(id, true);
+    }
+
+    // card clicks (delegated) – real links inside cards keep working normally
+    $('deliveryList').addEventListener('click', e => {
+        if (e.target.closest('a')) return;
+        const c = e.target.closest('.delivery-card'); if (c) select(c.dataset.id);
+    });
+    $('deliveryList').addEventListener('keydown', e => {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('delivery-card')) { e.preventDefault(); select(e.target.dataset.id); }
+    });
+
+    ['fSearch', 'fDriver', 'fStatus', 'fFresh'].forEach(id => $(id).addEventListener('input', render));
+    $('fReset').addEventListener('click', () => { ['fSearch', 'fDriver', 'fStatus', 'fFresh'].forEach(id => $(id).value = ''); render(); });
+    $('fitBtn').addEventListener('click', () => { if (lastPts.length) map.fitBounds(lastPts, { padding: [50, 50], maxZoom: 15 }); });
+
+    // ---------------- polling (never overlaps; pauses while the tab is hidden) ----------------
+    function setConn(ok, msg) {
+        $('liveDot').classList.toggle('err', !ok);
+        $('connState').textContent = ok ? 'Live' : 'Error';
+        const a = $('errorAlert');
+        if (ok) { a.classList.remove('show'); a.textContent = ''; }
+        else { a.textContent = msg; a.classList.add('show'); }
+    }
+
+    async function refreshFleet() {
+        if (inFlight) return;
+        inFlight = true;
+        clearTimeout(timer);
+        const ctrl = new AbortController();
+        const to = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+        try {
+            const res = await fetch('/api/gps/admin-fleet', { credentials: 'same-origin', cache: 'no-store', signal: ctrl.signal });
+            if (res.status === 401) {
+                setConn(false, 'Your admin session has expired. Sign in again to resume live tracking.');
+                $('errorAlert').innerHTML += ` <a href="${URL_ADMIN_LOGIN}">Admin login</a>`;
+                failures++;
+                return;
+            }
+            if (!res.ok) throw new Error('Server responded with HTTP ' + res.status);
+            const j = await res.json();
+            if (!j.success) throw new Error(j.message || 'Fleet API reported a failure');
+            data = j; failures = 0; lastOkAt = new Date();
+            $('statUpdated').textContent = lastOkAt.toLocaleTimeString();
+            setConn(true);
+            renderStats(); render();
+            if (selectedId) loadRoute(selectedId, false);
+        } catch (e) {
+            failures++;
+            const why = e.name === 'AbortError' ? 'the request timed out' : e.message;
+            const keep = data ? ' Showing the last data received' + (lastOkAt ? ' at ' + lastOkAt.toLocaleTimeString() : '') + '.' : '';
+            setConn(false, 'Could not refresh fleet data (' + why + ').' + keep + ' Retrying automatically.');
+            if (!data) {
+                $('deliveryList').innerHTML = '<div class="state error"><i class="fa-solid fa-triangle-exclamation"></i>Fleet data could not be loaded.<br><button type="button" class="btn btn-primary" id="retryBtn" style="margin-top:10px;">Retry now</button></div>';
+                const r = $('retryBtn'); if (r) r.onclick = refreshFleet;
+                $('mapNote').textContent = 'Fleet data unavailable.';
+            }
+        } finally {
+            clearTimeout(to);
+            inFlight = false;
+            schedule();
+        }
+    }
+    function schedule() {
+        clearTimeout(timer);
+        if (document.hidden) return;                                   // resumes via visibilitychange
+        timer = setTimeout(refreshFleet, failures >= 3 ? SLOW_POLL_MS : POLL_MS);
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && !inFlight) refreshFleet(); });
+    $('pollSec').textContent = POLL_MS / 1000;
+
+    refreshFleet();
+})();
 </script>
-</body>
-</html>
+{% endblock %}

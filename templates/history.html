@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Booking History | AquaFlow</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/booking-suite.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/booking-suite.css') }}?v=hist-fold2">
 </head>
-<body>
+<body class="history-page">
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
@@ -289,6 +289,59 @@
     document.getElementById('barUpcoming').style.width = Math.round((upcoming/base)*100) + '%';
   }
 
+  // ---- Make the first row of cards end exactly at the bottom of the first screen ----
+  // Cards from the next row stay below the fold and only appear after scrolling.
+  // Measured against the real window height, so it adapts to any screen size.
+  const FOLD_GAP = 10;      // px (as seen on screen) kept free under the first row
+  const MAX_STRETCH = 260;  // never stretch a card more than this on very tall screens
+  let fitQueued = false;
+
+  function zoomScale(){
+    // The page uses CSS zoom; measure how many on-screen px one CSS px really is.
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:100px;visibility:hidden;pointer-events:none;';
+    document.body.appendChild(probe);
+    const scale = probe.getBoundingClientRect().height / 100;
+    probe.remove();
+    return scale > 0 ? scale : 1;
+  }
+
+  function fitFirstRow(){
+    allCards.forEach(c => { c.style.minHeight = ''; });
+    const visible = allCards.filter(c => c.style.display !== 'none');
+    if (!visible.length) return;
+
+    const firstTop = visible[0].offsetTop;
+    const row = visible.filter(c => Math.abs(c.offsetTop - firstTop) < 2);
+    const scale = zoomScale();
+    const heightOfRow = () => Math.max.apply(null, row.map(c => c.getBoundingClientRect().height));
+
+    const gridTop = grid.getBoundingClientRect().top + window.scrollY;
+    const natural = heightOfRow();
+    let room = window.innerHeight - FOLD_GAP - gridTop - natural;
+    if (room <= 1) return;                       // already fills (or overflows) the first screen
+    room = Math.min(room, MAX_STRETCH);
+
+    const setHeight = h => row.forEach(c => { c.style.minHeight = (h / scale) + 'px'; });
+    setHeight(natural + room);
+
+    // one correction pass in case the browser rounded differently
+    const err = (natural + room) - heightOfRow();
+    if (Math.abs(err) > 1.5) setHeight(natural + room + err);
+  }
+
+  function scheduleFit(){
+    if (fitQueued) return;
+    fitQueued = true;
+    requestAnimationFrame(() => { fitQueued = false; fitFirstRow(); });
+  }
+  window.addEventListener('resize', scheduleFit);
+  window.addEventListener('load', scheduleFit);
+  if (document.fonts){
+    if (document.fonts.ready) document.fonts.ready.then(scheduleFit);
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', scheduleFit);
+  }
+
   function filterCards(){
     const search = document.getElementById('searchInput').value.toLowerCase();
     const status = document.getElementById('statusFilter').value;
@@ -315,6 +368,7 @@
       return sortValue === 'newest' ? dateB - dateA : dateA - dateB;
     });
     cards.forEach(card => grid.appendChild(card));
+    scheduleFit();
   }
 
   document.getElementById('searchInput').addEventListener('input', filterCards);

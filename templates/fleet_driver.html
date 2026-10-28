@@ -1,0 +1,66 @@
+{% extends "fleet_base.html" %}
+{% block title %}Driver {{ drv.name }}{% endblock %}
+{% block crumbs %}
+<nav class="crumbs" aria-label="Breadcrumb">
+    <a href="{{ url_for('admin_live_tracking') }}">Fleet Map</a><span class="sep">›</span>
+    <span>Driver {{ drv.name }}</span>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-head"><h2><i class="fas fa-id-badge"></i> Driver details</h2></div>
+<div class="grid grid-even">
+    <div class="card">
+        <h3>Profile</h3>
+        <dl class="kv">
+            <dt>Name</dt><dd>{{ drv.name }}</dd>
+            <dt>Phone</dt><dd>{{ drv.phone or '—' }}</dd>
+            <dt>Vehicle</dt><dd>{{ drv.truck_number or '—' }}</dd>
+            <dt>Approval</dt><dd>{{ drv.approval_status or '—' }}</dd>
+            <dt>Status</dt><dd><span class="badge {{ 'b-green' if drv.online_status == 'Online' else 'b-red' }}">{{ drv.online_status }}</span></dd>
+            <dt>Location signal</dt><dd id="fresh"></dd>
+            {% if drv.accuracy is not none %}<dt>GPS accuracy</dt><dd>{{ drv.accuracy | round(1) }} m</dd>{% endif %}
+            {% if drv.battery_level is not none %}<dt>Device battery</dt><dd>{{ drv.battery_level }}%</dd>{% endif %}
+        </dl>
+        <div class="card-links" style="margin-top:14px;">
+            <a href="{{ url_for('fleet_trail_page', driver_id=drv.id) }}"><i class="fa-solid fa-route"></i> GPS tracking details</a>
+        </div>
+        <h3 style="margin-top:20px;">Recent deliveries</h3>
+        {% if deliveries %}
+        <div class="table-wrap"><table class="data">
+            <thead><tr><th>Ref</th><th>Customer</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            {% for b in deliveries %}
+            <tr><td><span class="ref">#{{ b.booking_ref }}</span></td><td>{{ b.customer or '—' }}</td>
+                <td><span class="badge {{ 'b-blue' if b.active else 'b-grey' }}">{{ b.status }}</span></td>
+                <td><a href="{{ url_for('fleet_delivery_page', booking_id=b.booking_id) }}">Details</a></td></tr>
+            {% endfor %}
+            </tbody></table></div>
+        {% else %}
+        <div class="state">No deliveries assigned to this driver yet.</div>
+        {% endif %}
+    </div>
+    <div class="stack">
+        <div class="map-box"><div id="map" class="map map-sm"></div><div class="map-banner" id="mapBanner"></div></div>
+        <div class="map-note" id="mapNote"></div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    const D = {{ drv | tojson }};
+    const num = v => typeof v === 'number' && isFinite(v);
+    document.getElementById('fresh').innerHTML = AquaFleet.freshBadge(D.location_freshness) + ' ' + AquaFleet.esc(AquaFleet.freshText(D.location_freshness, D.last_gps_age_s, D.last_gps_label));
+    const map = AquaFleet.createMap('map', { bannerId: 'mapBanner' });
+    const note = document.getElementById('mapNote');
+    if (num(D.lat) && num(D.lng)) {
+        L.marker([D.lat, D.lng], { icon: AquaFleet.truckIcon(D.location_freshness === 'live' ? '#157A50' : '#A5690C', D.location_freshness !== 'live') }).addTo(map)
+            .bindPopup('<div class="pp-title">🚛 ' + AquaFleet.esc(D.name) + '</div><div class="pp-row">' + AquaFleet.esc(AquaFleet.freshText(D.location_freshness, D.last_gps_age_s, D.last_gps_label)) + '</div>').openPopup();
+        map.setView([D.lat, D.lng], 15);
+        note.textContent = D.location_freshness === 'live' ? 'Showing the live GPS position.' : 'Showing the LAST KNOWN position — this driver is not currently sending live GPS.';
+    } else {
+        note.textContent = 'No GPS location has ever been received from this driver. Live tracking needs the driver to be logged in to the driver app with browser location permission allowed.';
+    }
+})();
+</script>
+{% endblock %}

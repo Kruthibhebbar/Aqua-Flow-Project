@@ -63,6 +63,9 @@ def clean_database():
         "coupon_redemptions_collection", "wallet_transactions_collection",
         "wallet_topups_collection", "earnings_collection",
         "payment_transactions_collection",
+        # finance tests create settlement requests and company bank details
+        "transactions_collection", "settings_collection",
+        "water_quality_readings_collection",
     ]
 
     def _wipe():

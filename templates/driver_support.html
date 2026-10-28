@@ -1,0 +1,101 @@
+{% extends "driver_base.html" %}
+{% from "_driver_macros.html" import tag, empty %}
+
+{% block content %}
+<div class="sp-grid">
+    <section class="panel sos sp-card" aria-labelledby="sos-h">
+        <div class="panel-head"><h2 id="sos-h"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)" aria-hidden="true"></i> Urgent help</h2></div>
+        <div class="panel-body sp-fill">
+            <p class="small">If you are in danger or someone is hurt, <b>call your local emergency number first</b> (112 in India).</p>
+            <p class="small muted" style="margin:8px 0 0">The alert below goes to the AquaFlow team with your name, phone and last known location. It does not contact emergency services.</p>
+            <ol class="sp-steps">
+                <li><span>1</span>Press the button and add a short note if you can.</li>
+                <li><span>2</span>The team sees it straight away, marked high priority.</li>
+                <li><span>3</span>You can follow it under Your recent requests.</li>
+            </ol>
+            <div class="sp-push"><button type="button" class="btn btn-solid-danger" data-dialog-open="sp-sos-dialog"><i class="fa-solid fa-bell" aria-hidden="true"></i>Send an emergency alert</button></div>
+        </div>
+    </section>
+
+    <section class="panel sp-card" aria-labelledby="my-h">
+        <div class="panel-head"><h2 id="my-h">Your recent requests</h2><span class="small muted">Tap a request to open it</span></div>
+        {% if requests_view %}
+        <ul class="sp-list sp-fill">
+        {% for r in requests_view %}
+            <li><button type="button" class="sp-item" data-sp-open="{{ r.id }}" aria-haspopup="dialog">
+                <span class="ico {{ 'tone-danger' if r.emergency else '' }}"><i class="fa-solid {{ 'fa-bell' if r.emergency else 'fa-message' }}" aria-hidden="true"></i></span>
+                <span class="grow"><span class="title">{{ r.subject }}</span>
+                    <span class="sub">{{ r.ticket }}, {{ r.when }}{% if r.reply_count %} &middot; {{ r.reply_count }} repl{{ 'y' if r.reply_count == 1 else 'ies' }}{% endif %}</span></span>
+                {{ tag('Replied' if r.status == 'Answered' else r.status, 'success' if r.status == 'Resolved' else ('info' if r.status == 'Answered' else 'warning')) }}
+                <i class="fa-solid fa-chevron-right sp-chev" aria-hidden="true"></i>
+            </button></li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <div class="panel-body sp-fill sp-center">{{ empty('fa-inbox', 'No requests yet', 'Requests you send show up here with their status.', compact=True) }}</div>
+        {% endif %}
+    </section>
+
+    <section class="panel sp-card" aria-labelledby="rep-h" id="report">
+        <div class="panel-head"><div><h2 id="rep-h">Report a problem or ask for help</h2><p>Your request is saved with a reference number so you can follow it here.</p></div></div>
+        <form class="panel-body sp-fill" id="sp-form" novalidate>
+            <div class="form-grid">
+                <div class="field"><label for="sp-cat">What is it about?</label>
+                    <select class="select" id="sp-cat" name="category">
+                        <option value="">Choose one</option>
+                        {% for key, label in categories.items() %}<option value="{{ key }}" {{ 'selected' if prefill_category == key }}>{{ label }}</option>{% endfor %}
+                    </select><div class="field-error" role="alert"></div></div>
+                <div class="field"><label for="sp-ref">Booking reference (optional)</label>
+                    <input class="input" id="sp-ref" name="booking_ref" placeholder="e.g. 6718a3f2" autocomplete="off"><span class="hint">For a delivery problem, add the trip’s reference.</span><div class="field-error" role="alert"></div></div>
+            </div>
+            <div class="field"><label for="sp-sub">Subject</label><input class="input" id="sp-sub" name="subject" maxlength="100" autocomplete="off"><div class="field-error" role="alert"></div></div>
+            <div class="field"><label for="sp-msg">What happened?</label><textarea class="textarea" id="sp-msg" name="message" maxlength="1000" rows="5"></textarea>
+                <div class="row between"><div class="field-error" role="alert"></div><span class="hint" id="sp-count">0 / 1000</span></div></div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i>Send request</button></div>
+        </form>
+    </section>
+
+    <section class="panel sp-card" aria-labelledby="faq-h">
+        <div class="panel-head"><h2 id="faq-h">Frequently asked questions</h2></div>
+        <div class="faq sp-fill">
+            {% for question, answer in faqs %}
+            <details><summary>{{ question }}</summary><p>{{ answer }}</p></details>
+            {% endfor %}
+        </div>
+        <div class="sp-foot"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Can’t find your answer? Send a request using the form and the team will reply here and in your notifications.</span></div>
+    </section>
+</div>
+{% endblock %}
+
+{% block dialogs %}
+<dialog class="af-dialog sp-dialog" id="sp-req-dialog" aria-labelledby="spr-title">
+    <div class="sp-dhead">
+        <div class="grow"><h2 id="spr-title"></h2>
+            <div class="sp-dtags" id="spr-tags"></div></div>
+        <button type="button" class="sp-x" data-dialog-close aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="sp-thread" id="spr-thread" tabindex="0"></div>
+    <form class="sp-compose" id="spr-form" novalidate>
+        <label class="af-sr" for="spr-msg">Your reply</label>
+        <textarea class="textarea" id="spr-msg" name="message" maxlength="1000" rows="3" placeholder="Write a follow-up to the support team..."></textarea>
+        <div class="field-error" id="spr-err" role="alert"></div>
+        <div class="row between"><span class="hint" id="spr-count">0 / 1000</span>
+            <span><button type="button" class="btn" data-dialog-close>Close</button> <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i>Send reply</button></span></div>
+    </form>
+</dialog>
+
+<dialog class="af-dialog" id="sp-sos-dialog" aria-labelledby="sos-title">
+    <form id="sp-sos-form">
+        <div class="af-dialog-head"><h2 id="sos-title">Send an emergency alert?</h2>
+            <p>The AquaFlow team is told you need urgent help. This does not call emergency services.</p></div>
+        <div class="af-dialog-body"><div class="field" style="margin:0"><label for="sos-msg">What is happening? (optional)</label><textarea class="textarea" id="sos-msg" name="message" maxlength="300" rows="3"></textarea><div class="field-error" id="sos-err" role="alert"></div></div></div>
+        <div class="af-dialog-foot"><button type="button" class="btn" data-dialog-close>Cancel</button><button type="submit" class="btn btn-solid-danger">Send alert</button></div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="sp-data">{{ requests_view|tojson }}</script>
+<script>window.SP_OPEN_TICKET = {{ open_ticket|tojson }};</script>
+<script src="{{ driver_asset('js/driver-support.js') }}"></script>
+{% endblock %}

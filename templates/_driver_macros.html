@@ -1,0 +1,28 @@
+{# Small shared pieces for the driver suite pages #}
+
+{% macro tag(label, tone='muted', icon=None) -%}
+<span class="tag tone-{{ tone }}">{% if icon %}<i class="fa-solid {{ icon }}" aria-hidden="true"></i>{% endif %}{{ label }}</span>
+{%- endmacro %}
+
+{% macro empty(icon, title, text, href=None, cta=None, compact=False) -%}
+<div class="empty{{ ' compact' if compact }}">
+    <i class="fa-solid {{ icon }}" aria-hidden="true"></i>
+    <h3>{{ title }}</h3>
+    {% if text %}<p>{{ text }}</p>{% endif %}
+    {% if href and cta %}<a class="btn btn-sm btn-primary" href="{{ href }}">{{ cta }}</a>{% endif %}
+</div>
+{%- endmacro %}
+
+{# Buttons for the next valid step. The server re-validates every one of them. #}
+{% macro trip_buttons(trip, small=True) -%}
+{%- set size = ' btn-sm' if small else '' -%}
+{%- for action in trip.actions -%}
+    {%- if action == 'accept' -%}<button type="button" class="btn btn-primary{{ size }}" data-af-action="accept" data-id="{{ trip.id }}"><i class="fa-solid fa-check" aria-hidden="true"></i>Accept</button>
+    {%- elif action == 'decline' -%}<button type="button" class="btn btn-danger{{ size }}" data-af-action="decline" data-id="{{ trip.id }}">Decline</button>
+    {%- elif action == 'start' -%}<button type="button" class="btn btn-aqua{{ size }}" data-af-action="start" data-id="{{ trip.id }}"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i>Start delivery</button>
+    {%- elif action == 'arrived' -%}<button type="button" class="btn{{ size }}" data-af-action="arrived" data-id="{{ trip.id }}"><i class="fa-solid fa-location-dot" aria-hidden="true"></i>Mark arrived</button>
+    {%- elif action == 'complete' -%}<button type="button" class="btn btn-aqua{{ size }}" data-af-action="complete" data-id="{{ trip.id }}" data-ref="{{ trip.ref }}"><i class="fa-solid fa-key" aria-hidden="true"></i>Complete with OTP</button>
+    {%- elif action == 'submit_cash' -%}<a class="btn{{ size }}" href="{{ url_for('driver_earnings') }}#cash-due"><i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i>Submit cash</a>
+    {%- endif -%}
+{%- endfor -%}
+{%- endmacro %}

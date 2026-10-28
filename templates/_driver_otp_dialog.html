@@ -1,0 +1,22 @@
+{# Customer delivery OTP entry. Completing a delivery is only possible through this code. #}
+<dialog class="af-dialog" id="af-otp-dialog" aria-labelledby="af-otp-title">
+    <form id="af-otp-form" novalidate>
+        <div class="af-dialog-head">
+            <h2 id="af-otp-title">Complete delivery <span data-ref></span></h2>
+            <p>Ask the customer for the 6-digit OTP AquaFlow emailed them. A delivery can only be marked delivered with this code.</p>
+        </div>
+        <div class="af-dialog-body">
+            <input type="hidden" name="booking_id" value="">
+            <div class="field" style="margin:0">
+                <label for="af-otp-input">Customer OTP</label>
+                <input class="input otp-input" id="af-otp-input" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-describedby="af-otp-error">
+                <div class="field-error" id="af-otp-error" role="alert"></div>
+                <span class="hint">Five wrong attempts lock the delivery to protect the customer.</span>
+            </div>
+        </div>
+        <div class="af-dialog-foot">
+            <button type="button" class="btn" data-dialog-close>Cancel</button>
+            <button type="submit" class="btn btn-primary">Verify and complete</button>
+        </div>
+    </form>
+</dialog>

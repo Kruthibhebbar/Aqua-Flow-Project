@@ -1,842 +1,1164 @@
+{#- AquaFlow Finance Management — styled after booking_management.html (Admin Ops Console). -#}
+{%- macro badge(label) -%}
+{%- set k = {'Pending':'amber','Processing':'blue','Approved':'blue','Paid':'green','Completed':'green','Verified':'green','Settled':'green','Rejected':'red','Cancelled':'red','Awaiting verification':'amber','Not Submitted':'grey'}.get(label,'grey') -%}
+<span class="status-pill s-{{ k }}"><i class="fas fa-circle" aria-hidden="true"></i>{{ label }}</span>
+{%- endmacro -%}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="theme-color" content="#EEF3F4">
+<title>AquaFlow Console | Finance Management</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0A1A22; --ink-2:#123039; --ink-soft:#55707A; --ink-faint:#7F969D;
+  --teal-900:#073239; --teal-700:#0E6672; --teal-600:#0E7C86; --teal-500:#17A6B4; --cyan-glow:#26D0C9;
+  --teal-050:#EAF4F5; --teal-100:#DCEEEF;
+  --amber-600:#A5690C; --amber-100:#FBF0DC; --green-600:#157A50; --green-100:#E1F5EA;
+  --red-600:#B23B30; --red-100:#FBEAE8; --blue-600:#2C5F9E; --blue-100:#E8EFFA;
+  --violet-600:#5B4AA8; --violet-100:#ECE9F9;
+  --bg:#EEF3F4; --surface:#FFFFFF; --border:#DCE6E8; --border-soft:#E7EEEF;
+  --r-lg:16px; --r-md:10px; --r-sm:7px; --r-pill:999px;
+  --shadow-xs:0 1px 2px rgba(10,26,34,.05); --shadow-sm:0 2px 10px -4px rgba(10,26,34,.10);
+  --shadow-md:0 16px 40px -18px rgba(10,26,34,.28); --shadow-lg:0 30px 70px -20px rgba(10,26,34,.35);
+  --topbar-h:56px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+body{background:var(--bg);font-family:'Inter',system-ui,sans-serif;color:var(--ink);min-height:100vh}
+.mono{font-family:'IBM Plex Mono',monospace}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--teal-500);outline-offset:2px}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#C3D3D6;border-radius:20px}::-webkit-scrollbar-thumb:hover{background:var(--teal-600)}
+.app-shell{min-height:100vh;display:flex;flex-direction:column}
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+/* ===== TOP BAR (sticky: the Dashboard button is always on screen) ===== */
+.topbar{background:var(--ink);background-image:radial-gradient(1100px 220px at 15% -60%,rgba(23,166,180,.25),transparent 60%);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;height:var(--topbar-h);flex-shrink:0;
+  position:sticky;top:0;z-index:40;border-top:4px solid var(--cyan-glow)}
+.brand{display:flex;align-items:center;gap:13px;min-width:0}
+.brand-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(155deg,var(--teal-500),var(--teal-700));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}
+.brand-mark i{font-size:17px;color:#fff}
+.brand-text h1{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:-.1px;display:flex;align-items:center;gap:9px;line-height:1.1;white-space:nowrap}
+.brand-text .tag{font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:var(--cyan-glow);background:rgba(38,208,201,.12);border:1px solid rgba(38,208,201,.25);padding:2.5px 8px;border-radius:var(--r-pill);letter-spacing:.6px;text-transform:uppercase}
+.brand-text p{font-size:11.5px;color:#9DB3BA;margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.dispatch-link{text-decoration:none;display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:var(--r-pill);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#C7D6DB;font-weight:600;font-size:11.5px;transition:background .15s,color .15s;white-space:nowrap}
+.dispatch-link:hover{background:rgba(255,255,255,.12);color:#fff}
+.dispatch-link.fin-nav-dashboard{background:var(--cyan-glow);border-color:var(--cyan-glow);color:var(--ink);font-weight:700;box-shadow:0 0 0 3px rgba(38,208,201,.18)}
+.dispatch-link.fin-nav-dashboard:hover{background:#4fe0da;color:var(--ink)}
+.sync-chip{background:rgba(38,208,201,.10);border:1px solid rgba(38,208,201,.22);padding:7px 14px 7px 11px;border-radius:var(--r-pill);display:flex;align-items:center;gap:8px;color:#7FE8DF;font-weight:600;font-size:11.5px;white-space:nowrap}
+.pulse-dot{width:6px;height:6px;background:var(--cyan-glow);border-radius:50%;animation:pulseDot 1.8s infinite}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 rgba(38,208,201,.55)}70%{box-shadow:0 0 0 7px rgba(38,208,201,0)}100%{box-shadow:0 0 0 0 rgba(38,208,201,0)}}
+.admin-chip{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;border-radius:var(--r-pill);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.admin-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(155deg,#3A5A63,#1B343C);display:flex;align-items:center;justify-content:center;color:#DCEBEE;font-size:10.5px;font-weight:700;font-family:'Space Grotesk',sans-serif}
+.admin-chip span{font-size:11.5px;font-weight:600;color:#D6E4E7}
+.flow-line{height:3px;width:100%;flex-shrink:0;background:linear-gradient(90deg,var(--teal-900),var(--teal-600) 40%,var(--cyan-glow) 60%,var(--teal-900));background-size:200% 100%;animation:flowMove 5s linear infinite}
+@keyframes flowMove{0%{background-position:0 0}100%{background-position:-200% 0}}
 
-    <title>AquaFlow | Finance Management</title>
+/* ===== PAGE HEAD ===== */
+.page-head{padding:10px 24px 2px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.page-title{display:flex;align-items:center;gap:12px}
+.title-icon{width:38px;height:38px;border-radius:11px;background:linear-gradient(155deg,var(--teal-500),var(--teal-700));color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:var(--shadow-sm);flex-shrink:0}
+.page-title h2{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:var(--ink);line-height:1.1}
+.page-title p{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+.head-tools{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--ink-faint)}
+.btn-soft{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);padding:8px 15px;border-radius:var(--r-pill);font-weight:700;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;text-decoration:none;transition:background .15s}
+.btn-soft:hover{background:var(--teal-050)}
+.btn-soft:disabled{opacity:.6;cursor:not-allowed}
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+/* ===== KPI CARDS ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:8px 24px 2px}
+@media(min-width:1100px){.kpi-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(min-width:1100px) and (max-width:1299px){.kpi-icon{display:none}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:10px 12px;display:flex;gap:10px;align-items:flex-start;min-width:0;position:relative;overflow:hidden;transition:box-shadow .15s,transform .15s}
+.kpi:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,var(--teal-600))}
+.kpi-icon{width:32px;height:32px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:var(--accent-bg,var(--teal-050));color:var(--accent,var(--teal-600))}
+.kpi-body{min-width:0;flex:1}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.55px;color:var(--ink-faint);margin-bottom:3px}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:clamp(15px,1.3vw,21px);font-weight:600;color:var(--ink);line-height:1.15;overflow-wrap:anywhere}
+.kpi-sub{font-size:10.5px;color:var(--ink-soft);margin-top:2px;line-height:1.3}
+.kpi.k-red{--accent:var(--red-600);--accent-bg:var(--red-100)}
+.kpi.k-amber{--accent:var(--amber-600);--accent-bg:var(--amber-100)}
+.kpi.k-green{--accent:var(--green-600);--accent-bg:var(--green-100)}
+.kpi.k-blue{--accent:var(--blue-600);--accent-bg:var(--blue-100)}
+.kpi.k-violet{--accent:var(--violet-600);--accent-bg:var(--violet-100)}
+.kpi.k-teal{--accent:var(--teal-600);--accent-bg:var(--teal-050)}
+.kpi.is-loading .kpi-value{color:transparent;background:linear-gradient(90deg,#E7EEEF 25%,#F4F8F8 50%,#E7EEEF 75%);background-size:200% 100%;animation:shimmer 1.1s infinite;border-radius:6px;min-width:90px}
+@keyframes shimmer{to{background-position:-200% 0}}
+.kpi.is-error .kpi-value{color:var(--ink-faint)}
+.kpi-err{display:none;font-size:11px;color:var(--red-600);margin-top:5px}
+.kpi.is-error .kpi-err{display:block}
 
-    <style>
+/* ===== INSTRUMENT STRIP ===== */
+.instrument-strip{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:8px;padding:0 24px;display:flex;align-items:stretch;flex-wrap:wrap}
+.instrument{display:flex;align-items:center;gap:10px;padding:7px 20px 7px 0;margin-right:20px;border:0;border-right:1px solid var(--border-soft);background:none;cursor:pointer;text-align:left;font-family:inherit;color:inherit}
+.instrument:last-of-type{border-right:none}
+.instrument:hover .val{color:var(--teal-700)}
+.instrument-icon{width:26px;height:26px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:12.5px;flex-shrink:0}
+.ii-amber{background:var(--amber-100);color:var(--amber-600)}.ii-blue{background:var(--blue-100);color:var(--blue-600)}
+.ii-violet{background:var(--violet-100);color:var(--violet-600)}.ii-red{background:var(--red-100);color:var(--red-600)}
+.instrument h4{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.55px;color:var(--ink-faint);margin-bottom:2px}
+.instrument .val{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--ink);line-height:1}
+.instrument-spacer{flex:1}
+.instrument-time{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-faint);padding:7px 0}
+.instrument-time i{color:var(--teal-600)}
 
-        *{ margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+/* ===== TAB BAR ===== */
+.control-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:6px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:sticky;top:calc(var(--topbar-h) + 3px);z-index:30}
+.seg-filters{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-pill);padding:3px;gap:2px;flex-wrap:wrap}
+.pill-filter{background:transparent;border:none;padding:5px 14px;border-radius:var(--r-pill);font-weight:600;font-size:12px;color:var(--ink-soft);cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;white-space:nowrap}
+.pill-filter i{margin-right:6px;font-size:10.5px}
+.pill-filter.active{background:var(--ink);color:#fff;box-shadow:var(--shadow-xs)}
+.pill-filter:hover:not(.active){color:var(--teal-700)}
+.tab-count{margin-left:7px;background:var(--amber-100);color:var(--amber-600);border-radius:var(--r-pill);padding:1px 8px;font-size:10.5px;font-family:'IBM Plex Mono',monospace;font-weight:700}
+.pill-filter.active .tab-count{background:rgba(255,255,255,.18);color:#fff}
 
-        body{ background:#f5f7fb; min-height:100vh; padding:32px; color:#1e293b; }
+/* ===== MAIN ===== */
+.main-content{flex:1;padding:10px 24px 32px}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px}
+.section-head h3{font-family:'Space Grotesk',sans-serif;font-size:16.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px}
+.section-head h3 i{color:var(--teal-600);font-size:15px}
+.count-chip{background:var(--teal-050);border:1px solid var(--teal-100);border-radius:var(--r-pill);padding:3px 12px;font-size:11.5px;font-weight:700;color:var(--teal-700);font-family:'IBM Plex Mono',monospace}
+.section-note{font-size:12.5px;color:var(--ink-soft);margin:-4px 0 14px;max-width:880px;line-height:1.5}
+.block{margin-bottom:30px}
 
-        .page-container{ width:100%; max-width:1500px; margin:0 auto; }
+/* toolbar */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-pill);padding:8px 15px 8px 14px}
+.search-box i{color:var(--ink-faint);font-size:12px}
+.search-box input{border:none;background:transparent;outline:none;font-family:'Inter',sans-serif;font-size:12.5px;width:230px;max-width:100%;color:var(--ink)}
+.search-box:focus-within{border-color:var(--teal-500)}
+.f-select,.f-date{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-pill);padding:8px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--ink-2)}
+.f-date{padding:7px 12px}
+.toolbar label.mini{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-faint);display:flex;align-items:center;gap:6px}
+.toolbar-spacer{flex:1}
+.btn-export{border:1.5px solid #BFE3CE;border-radius:var(--r-pill);padding:8px 16px 8px 12px;font-weight:700;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;background:var(--surface);color:#157A50;text-decoration:none;font-family:'Inter',sans-serif;transition:all .15s}
+.btn-export:hover{background:var(--green-100);border-color:#157A50}
+.btn-export .chip-ic{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;background:#1D9A5C}
 
-        /* ===================================================== */
-        /* HEADER */
-        /* ===================================================== */
+/* ledger table */
+.ledger-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+.ledger-scroll{overflow-x:auto}
+table.ledger{width:100%;border-collapse:collapse}
+.ledger thead th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-faint);background:#FBFDFD;padding:12px 16px;border-bottom:1px solid var(--border);white-space:nowrap}
+.ledger thead th:first-child{padding-left:20px}
+.ledger tbody tr{border-bottom:1px solid var(--border-soft);transition:background .12s}
+.ledger tbody tr:last-child{border-bottom:none}
+.ledger tbody tr:hover{background:#FAFCFC}
+.ledger tbody td{padding:14px 16px;vertical-align:middle;font-size:13px}
+.ledger tbody td:first-child{padding-left:20px}
+.cell-primary{font-weight:600;color:var(--ink);font-size:13.3px;overflow-wrap:anywhere}
+.cell-secondary{font-size:11.5px;color:var(--ink-soft);margin-top:2px;overflow-wrap:anywhere}
+.amt{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap}
+.ref{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-2);overflow-wrap:anywhere}
+.actions-cell{text-align:right;white-space:nowrap}
+.action-stack{display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.status-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:4px 12px;border-radius:var(--r-pill);font-weight:700;font-size:11px;white-space:nowrap}
+.status-pill i{font-size:7px}
+.s-amber{background:var(--amber-100);color:var(--amber-600)}.s-blue{background:var(--blue-100);color:var(--blue-600)}
+.s-green{background:var(--green-100);color:var(--green-600)}.s-red{background:var(--red-100);color:var(--red-600)}
+.s-grey{background:#F1F3F4;color:#5b6b72}
+.action-btn{border:none;padding:7px 14px;border-radius:var(--r-pill);font-weight:700;font-size:11px;cursor:pointer;transition:filter .15s,transform .1s,opacity .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:'Inter',sans-serif;white-space:nowrap;text-decoration:none}
+.action-btn:active{transform:scale(.96)}
+.action-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-approve{background:var(--green-100);color:var(--green-600)}.btn-approve:hover:not(:disabled){background:#CFEEDD}
+.btn-cancel{background:var(--red-100);color:var(--red-600)}.btn-cancel:hover:not(:disabled){background:#F7D9D5}
+.btn-details{background:var(--violet-100);color:var(--violet-600)}.btn-details:hover{background:#DFD9F3}
+.btn-blue{background:var(--blue-100);color:var(--blue-600)}.btn-blue:hover{background:#D6E4FB}
+.btn-pay{background:var(--ink);color:#fff}.btn-pay:hover{background:var(--teal-700)}
+.btn-link{color:var(--teal-700);font-weight:700;text-decoration:none;font-size:12px}.btn-link:hover{text-decoration:underline}
+.mini-lines{font-size:11.5px;color:var(--ink-soft);line-height:1.65}
+.mini-lines b{color:var(--ink);font-weight:600;font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+.dir{display:inline-flex;width:24px;height:24px;border-radius:50%;align-items:center;justify-content:center;font-size:10px;margin-right:8px}
+.dir.in{background:var(--green-100);color:var(--green-600)}.dir.out{background:var(--amber-100);color:var(--amber-600)}
+.empty-ledger{text-align:center;padding:56px 20px;color:var(--ink-faint)}
+.empty-ledger i{font-size:38px;opacity:.35;color:var(--teal-600)}
+.empty-ledger h4{margin-top:14px;font-family:'Space Grotesk',sans-serif;color:var(--ink-soft);font-size:15px}
+.empty-ledger p{margin-top:4px;font-size:12.5px}
+.empty-ledger.compact{padding:16px 16px 18px}
+.empty-ledger.compact i{font-size:26px}
+.empty-ledger.compact h4{margin-top:8px;font-size:14px}
+.empty-ledger.compact p{margin-top:3px;font-size:12px}
+#panel-overview .ledger tbody td{padding-top:10px;padding-bottom:10px}
+.error-box{background:var(--red-100);border:1px solid #f0c9c4;color:var(--red-600);border-radius:var(--r-md);padding:12px 16px;font-size:12.5px;display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.error-box button{margin-left:auto}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--border-soft);font-size:12px;color:var(--ink-soft)}
+.pager-links{display:flex;gap:6px}
+.pager a,.pager span.cur{padding:6px 12px;border-radius:var(--r-pill);border:1px solid var(--border);text-decoration:none;font-weight:700;font-size:11.5px;color:var(--ink-2);background:var(--surface)}
+.pager a:hover{background:var(--teal-050)}
+.pager .disabled{opacity:.45;pointer-events:none}
 
-        .top-header{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:32px; }
+/* company bank form */
+.bank-layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:18px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:22px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+.field label .req{color:var(--red-600)}
+.field input[type=text]{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--r-md);font-size:13.5px;font-family:'Inter',sans-serif;color:var(--ink);background:#fff;transition:border-color .15s,box-shadow .15s}
+.field input:focus{border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(23,166,180,.15);outline:none}
+.field input.invalid{border-color:var(--red-600)}
+.field .hint{font-size:11px;color:var(--ink-faint);margin-top:5px}
+.field .err{font-size:11.5px;color:var(--red-600);margin-top:5px;display:none}
+.field input.invalid ~ .err{display:block}
+.saved-chip{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft)}
+.saved-chip .ref{background:var(--teal-050);border:1px solid var(--teal-100);padding:3px 10px;border-radius:var(--r-sm)}
+.icon-mini{border:1px solid var(--border);background:var(--surface);color:var(--ink-soft);border-radius:var(--r-sm);padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+.icon-mini:hover{background:var(--teal-050);color:var(--teal-700)}
+.form-actions{display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+.btn-primary{border:none;background:var(--ink);color:#fff;padding:11px 24px;border-radius:var(--r-pill);font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;transition:background .15s}
+.btn-primary:hover:not(:disabled){background:var(--teal-700)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.form-status{font-size:12.5px;font-weight:600;display:none;align-items:center;gap:8px;padding:8px 14px;border-radius:var(--r-md)}
+.form-status.ok{display:inline-flex;background:var(--green-100);color:var(--green-600)}
+.form-status.bad{display:inline-flex;background:var(--red-100);color:var(--red-600)}
+.qr-card{text-align:center}
+.qr-frame{width:100%;aspect-ratio:1/1;max-width:220px;margin:0 auto 12px;border:1px dashed var(--border);border-radius:var(--r-md);background:#FBFDFD;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.qr-frame img{width:100%;height:100%;object-fit:contain}
+.qr-frame .qr-empty{color:var(--ink-faint);font-size:12px;padding:12px}
+.qr-frame .qr-empty i{display:block;font-size:30px;opacity:.4;margin-bottom:8px;color:var(--teal-600)}
+.qr-card input[type=file]{width:100%;font-size:11.5px}
+.meta-line{font-size:11.5px;color:var(--ink-faint);margin-top:12px}
 
-        .page-title{ font-size:36px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:14px; }
+/* toasts / flash */
+.flash-toast{display:flex;align-items:flex-start;gap:10px;border-radius:var(--r-md);padding:11px 16px;font-size:13px;margin-bottom:10px;border:1px solid;box-shadow:var(--shadow-xs)}
+.flash-success{background:var(--green-100);color:var(--green-600);border-color:#bfe3ce}
+.flash-danger{background:#fdecea;color:#a02622;border-color:#f5c2c0}
+.flash-warning{background:#fff8e1;color:#8a6100;border-color:#ffe28a}
+.flash-info{background:#e7f2ff;color:#0d61b8;border-color:#cddff3}
+.flash-zone{padding:10px 24px 0}
+.toast-stack{position:fixed;top:calc(var(--topbar-h) + 14px);right:18px;z-index:6000;display:flex;flex-direction:column;gap:8px;max-width:380px}
+.toast-stack .flash-toast{margin:0;box-shadow:var(--shadow-md)}
 
-        .page-title .title-icon{
-            width:52px; height:52px; border-radius:16px;
-            background:linear-gradient(135deg,#0f766e,#0d9488);
-            color:#fff; display:flex; align-items:center; justify-content:center;
-            font-size:22px; box-shadow:0 8px 20px rgba(13,148,136,0.35);
-        }
+/* modals */
+.glass-modal{display:none;position:fixed;inset:0;background:rgba(10,26,34,.6);backdrop-filter:blur(6px);justify-content:center;align-items:center;z-index:3000;padding:16px}
+.glass-modal.open{display:flex}
+.modal-card{background:var(--surface);width:520px;max-width:100%;max-height:92vh;overflow-y:auto;border-radius:var(--r-lg);padding:26px;box-shadow:var(--shadow-lg);position:relative;animation:fadeUp .2s ease}
+.modal-card.sm{width:420px}
+@keyframes fadeUp{from{opacity:0;transform:scale(.97) translateY(6px)}to{opacity:1;transform:none}}
+.modal-card h3{font-family:'Space Grotesk',sans-serif;font-size:18px;display:flex;align-items:center;gap:10px;margin-bottom:4px;padding-right:34px}
+.modal-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;line-height:1.5}
+.modal-close{position:absolute;right:16px;top:14px;font-size:18px;cursor:pointer;color:var(--ink-faint);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;background:none}
+.modal-close:hover{background:var(--bg);color:var(--ink)}
+.detail-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed var(--border-soft);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.d-label{color:var(--ink-soft);font-weight:600;font-size:12px;flex-shrink:0}
+.d-value{color:var(--ink);font-weight:600;text-align:right;overflow-wrap:anywhere;display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.pay-banner{background:linear-gradient(135deg,var(--teal-700),var(--teal-500));color:#fff;border-radius:var(--r-md);padding:16px;text-align:center;margin-bottom:14px}
+.pay-banner small{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;opacity:.85}
+.pay-banner div{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;margin-top:4px}
+.warn-note{background:var(--amber-100);border:1px solid #f0dbb0;color:#7a4e07;font-size:12px;padding:10px 12px;border-radius:var(--r-md);margin:12px 0;line-height:1.5}
+.check-row{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--ink-2);margin:12px 0;line-height:1.45}
+.check-row input{margin-top:3px;accent-color:var(--teal-600)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.btn-ghost{border:1px solid var(--border);background:var(--bg);color:var(--ink-soft);padding:9px 20px;border-radius:var(--r-pill);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-danger{background:var(--red-600);color:#fff;border:none;padding:9px 20px;border-radius:var(--r-pill);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-ok{background:var(--teal-700);color:#fff;border:none;padding:9px 20px;border-radius:var(--r-pill);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-ok:disabled{opacity:.5;cursor:not-allowed}
+.confirm-remarks{width:100%;margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-md);font-family:'Inter',sans-serif;font-size:13px;resize:vertical;min-height:64px}
+.spin{display:inline-block;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
 
-        .page-subtitle{ color:#64748b; margin-top:8px; font-size:15px; margin-left:66px; }
-
-        .header-actions{ display:flex; gap:12px; flex-wrap:wrap; }
-
-        .btn-nav{
-            display:inline-flex; align-items:center; gap:8px; padding:12px 20px;
-            border-radius:14px; font-size:14px; font-weight:600; text-decoration:none;
-            border:1px solid #e2e8f0; transition:0.2s;
-        }
-        .btn-nav-ghost{ background:#fff; color:#334155; }
-        .btn-nav-ghost:hover{ background:#f1f5f9; transform:translateY(-2px); }
-        .btn-nav-driver{
-            background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:none;
-            box-shadow:0 8px 20px rgba(37,99,235,0.3);
-        }
-        .btn-nav-driver:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(37,99,235,0.4); }
-
-        /* ===================================================== */
-        /* STATS */
-        /* ===================================================== */
-
-        .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:20px; margin-bottom:32px; }
-
-        .stat-card{
-            background:#fff; border-radius:22px; padding:26px; border:1px solid #e2e8f0;
-            box-shadow:0 8px 25px rgba(0,0,0,0.05); transition:0.3s;
-        }
-        .stat-card:hover{ transform:translateY(-4px); box-shadow:0 14px 32px rgba(0,0,0,0.08); }
-        .stat-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
-        .stat-icon{ width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:20px; background:#eff6ff; color:#2563eb; }
-        .stat-icon.icon-green{ background:#dcfce7; color:#15803d; }
-        .stat-icon.icon-red{ background:#fee2e2; color:#dc2626; }
-        .stat-icon.icon-amber{ background:#fef3c7; color:#92400e; }
-        .stat-icon.icon-teal{ background:#ccfbf1; color:#0f766e; }
-        .stat-icon.icon-purple{ background:#ede9fe; color:#6d28d9; }
-        .stat-value{ font-size:30px; font-weight:800; color:#0f172a; }
-        .stat-label{ color:#64748b; font-size:14px; margin-top:4px; font-weight:500; }
-
-        /* ===================================================== */
-        /* SECTION SHELL */
-        /* ===================================================== */
-
-        .table-container{
-            background:#fff; border-radius:28px; padding:28px; border:1px solid #e2e8f0;
-            box-shadow:0 10px 30px rgba(0,0,0,0.05); margin-bottom:28px; scroll-margin-top:24px;
-        }
-        .section-title{ font-size:24px; font-weight:700; margin-bottom:6px; color:#0f172a; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-        .section-sub{ color:#94a3b8; font-size:13.5px; margin-bottom:22px; }
-        .count-pill{ font-size:13px; font-weight:700; background:#fef3c7; color:#92400e; padding:5px 14px; border-radius:30px; }
-
-        /* ===================================================== */
-        /* BANK DETAILS FORM */
-        /* ===================================================== */
-
-        .bank-form-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
-        .bank-form-grid label{ display:block; font-size:13px; font-weight:600; color:#475569; margin-bottom:6px; }
-        .bank-form-grid input[type="text"], .bank-form-grid input[type="file"]{
-            width:100%; padding:12px 14px; border:1px solid #e2e8f0; border-radius:14px;
-            font-size:14px; font-family:'Poppins',sans-serif;
-        }
-        .qr-preview{ width:120px; height:120px; object-fit:cover; border-radius:16px; border:2px solid #dbeafe; }
-
-        .btn-pill{
-            border:none; padding:11px 22px; border-radius:30px; font-weight:600; font-size:13px;
-            cursor:pointer; display:inline-flex; align-items:center; gap:8px; text-decoration:none; transition:0.2s;
-        }
-        .btn-approve{ background:#16a34a; color:#fff; }
-        .btn-approve:hover{ background:#15803d; }
-        .btn-reject{ background:#fff; color:#dc2626; border:1.5px solid #fecaca; }
-        .btn-reject:hover{ background:#fee2e2; }
-        .btn-save-bank{ background:#0d9488; color:#fff; }
-        .btn-save-bank:hover{ background:#0f766e; }
-
-        /* ===================================================== */
-        /* SIMPLE TABLES (bank approvals / COD verification) */
-        /* ===================================================== */
-
-        .table-scroll{ overflow-x:auto; }
-        table{ width:100%; border-collapse:separate; border-spacing:0; }
-        thead{ background:#f8fafc; }
-        th{ padding:14px 16px; text-align:left; color:#64748b; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; border-bottom:2px solid #eef1f4; white-space:nowrap; }
-        td{ padding:14px 16px; border-bottom:1px solid #eef1f4; color:#334155; font-size:13.5px; vertical-align:middle; }
-        tbody tr:hover{ background:#f8fafc; }
-        tbody tr:last-child td{ border-bottom:none; }
-
-        .verify-status{ padding:6px 14px; border-radius:30px; font-size:12px; font-weight:700; display:inline-block; }
-        .verify-approved{ background:#dcfce7; color:#15803d; }
-        .verify-rejected{ background:#fee2e2; color:#b91c1c; }
-        .proof-link{ color:#2563eb; font-weight:600; text-decoration:none; }
-        .proof-link:hover{ text-decoration:underline; }
-        .txn-ref{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#475569; }
-
-        /* ===================================================== */
-        /* EMPTY STATES */
-        /* ===================================================== */
-
-        .empty-box{ background:#f8fafc; padding:64px 30px; border-radius:24px; text-align:center; border:1.5px dashed #e2e8f0; }
-        .empty-box i{ font-size:56px; color:#cbd5e1; margin-bottom:16px; }
-        .empty-title{ font-size:20px; font-weight:700; color:#0f172a; margin-bottom:8px; }
-        .empty-subtitle{ color:#64748b; font-size:14px; }
-
-        /* ===================================================== */
-        /* SETTLEMENT REQUEST CARDS */
-        /* ===================================================== */
-
-        .settlement-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:20px; }
-
-        .settlement-card{
-            border:1px solid #e2e8f0; border-radius:22px; padding:22px;
-            background:#fbfcfe; transition:0.2s;
-        }
-        .settlement-card:hover{ box-shadow:0 12px 30px rgba(0,0,0,0.06); border-color:#cbd5e1; }
-
-        .settlement-head{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
-        .settlement-photo{ width:52px; height:52px; border-radius:50%; object-fit:cover; border:3px solid #dbeafe; }
-        .settlement-name{ font-weight:700; color:#0f172a; font-size:15.5px; }
-        .settlement-meta{ font-size:12px; color:#94a3b8; margin-top:2px; }
-
-        .settlement-amount-row{
-            display:flex; justify-content:space-between; align-items:center;
-            background:#fff7ed; border:1px solid #fed7aa; border-radius:16px;
-            padding:14px 16px; margin-bottom:16px;
-        }
-        .settlement-amount-label{ font-size:12px; color:#c2410c; font-weight:600; }
-        .settlement-amount-value{ font-size:22px; font-weight:800; color:#c2410c; }
-
-        .settlement-stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
-        .settlement-stat{ background:#fff; border:1px solid #eef1f4; border-radius:14px; padding:10px 12px; }
-        .settlement-stat-label{ font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.03em; font-weight:700; }
-        .settlement-stat-value{ font-size:14.5px; font-weight:700; color:#0f172a; margin-top:2px; }
-
-        .settlement-bank-preview{ font-size:12.5px; color:#64748b; margin-bottom:16px; line-height:1.7; }
-        .settlement-bank-preview strong{ color:#334155; }
-
-        .badge-verify{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
-        .badge-verify.Approved{ background:#dcfce7; color:#15803d; }
-        .badge-verify.Pending{ background:#fff6e0; color:#93690b; }
-        .badge-verify.Rejected{ background:#fee2e2; color:#b91c1c; }
-        .badge-verify.Not-Submitted{ background:#f1f3f6; color:#7c8b99; }
-
-        .settlement-actions{ display:flex; flex-wrap:wrap; gap:8px; }
-        .btn-tiny{
-            flex:1; min-width:120px; border:none; padding:10px 12px; border-radius:12px;
-            font-weight:600; font-size:12.5px; cursor:pointer; display:inline-flex;
-            align-items:center; justify-content:center; gap:6px; text-decoration:none; transition:0.2s;
-        }
-        .btn-tiny-profile{ background:#eff6ff; color:#2563eb; }
-        .btn-tiny-profile:hover{ background:#dbeafe; }
-        .btn-tiny-bank{ background:#f0fdfa; color:#0f766e; }
-        .btn-tiny-bank:hover{ background:#ccfbf1; }
-        .btn-tiny-pay{ background:#16a34a; color:#fff; flex-basis:100%; }
-        .btn-tiny-pay:hover{ background:#15803d; }
-        .btn-tiny-reject{ background:#fff; color:#dc2626; border:1.5px solid #fecaca; flex-basis:100%; }
-        .btn-tiny-reject:hover{ background:#fee2e2; }
-        .btn-tiny-history{ background:#f8fafc; color:#475569; border:1px solid #e2e8f0; }
-        .btn-tiny-history:hover{ background:#f1f5f9; }
-        .btn-tiny-receipt{ background:#ede9fe; color:#6d28d9; }
-        .btn-tiny-receipt:hover{ background:#ddd6fe; }
-
-        /* ===================================================== */
-        /* MODALS (shared shell) */
-        /* ===================================================== */
-
-        .modal-overlay{
-            display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6);
-            z-index:9998; align-items:center; justify-content:center; padding:20px;
-        }
-        .modal-overlay.open{ display:flex; animation:fadeIn 0.2s ease; }
-        .modal-box{
-            background:#fff; border-radius:26px; width:100%; max-width:520px;
-            max-height:88vh; overflow-y:auto; padding:30px; box-shadow:0 25px 70px rgba(0,0,0,0.3);
-            animation:popIn 0.25s ease;
-        }
-        .modal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-        .modal-header h3{ font-size:20px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:10px; }
-        .modal-close{ border:none; background:#f1f5f9; color:#475569; width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:15px; }
-        .modal-sub{ color:#64748b; font-size:13px; margin-bottom:22px; }
-
-        .pay-amount-banner{
-            background:linear-gradient(135deg,#0f766e,#0d9488); color:#fff; border-radius:18px;
-            padding:20px; text-align:center; margin-bottom:20px;
-        }
-        .pay-amount-banner .lbl{ font-size:12px; opacity:0.85; text-transform:uppercase; letter-spacing:0.05em; }
-        .pay-amount-banner .val{ font-size:30px; font-weight:800; margin-top:4px; }
-
-        .copy-row{
-            display:flex; justify-content:space-between; align-items:center;
-            padding:12px 14px; border:1px solid #e2e8f0; border-radius:14px; margin-bottom:10px;
-        }
-        .copy-row .crl{ font-size:12px; color:#94a3b8; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; }
-        .copy-row .crv{ font-size:14.5px; font-weight:700; color:#0f172a; font-family:'IBM Plex Mono',monospace; }
-        .copy-btn{
-            border:none; background:#eff6ff; color:#2563eb; width:34px; height:34px;
-            border-radius:10px; cursor:pointer; font-size:13px; flex-shrink:0;
-        }
-        .copy-btn:hover{ background:#dbeafe; }
-        .copy-btn.copied{ background:#dcfce7; color:#15803d; }
-
-        .pay-qr-wrap{ text-align:center; margin:18px 0; }
-        .pay-qr-wrap img{ width:160px; height:160px; border-radius:16px; border:2px solid #dbeafe; object-fit:cover; }
-
-        .confirm-form{ margin-top:20px; }
-        .confirm-note{
-            background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:12.5px;
-            padding:12px 14px; border-radius:14px; margin-bottom:16px; line-height:1.5;
-        }
-        .btn-confirm-payment{ width:100%; background:#16a34a; color:#fff; padding:14px; border-radius:16px; border:none; font-weight:700; font-size:14.5px; cursor:pointer; }
-        .btn-confirm-payment:hover{ background:#15803d; }
-
-        .profile-loading{ text-align:center; padding:40px 0; color:#94a3b8; }
-        .profile-row{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eef1f4; font-size:13.5px; }
-        .profile-row:last-child{ border-bottom:none; }
-        .profile-row .pl{ color:#94a3b8; font-weight:600; }
-        .profile-row .pv{ color:#0f172a; font-weight:700; text-align:right; }
-
-        @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
-        @keyframes popIn{ from{opacity:0; transform:scale(0.92);} to{opacity:1; transform:scale(1);} }
-
-        @media(max-width:768px){
-            body{ padding:16px; }
-            .page-title{ font-size:26px; }
-            .page-subtitle{ margin-left:0; margin-top:6px; }
-            .page-title .title-icon{ width:42px; height:42px; font-size:18px; }
-            .section-title{ font-size:20px; }
-            .table-container{ padding:18px; border-radius:20px; }
-            .settlement-grid{ grid-template-columns:1fr; }
-        }
-
-    </style>
-
+/* ===== RESPONSIVE ===== */
+@media(max-width:1180px){.bank-layout{grid-template-columns:1fr}.qr-card{display:grid;grid-template-columns:200px 1fr;gap:18px;text-align:left;align-items:center}.qr-frame{margin:0}}
+@media(max-width:980px){
+  .brand-text p,.sync-chip,.admin-chip{display:none}
+  .ledger.stack thead{display:none}
+  table.ledger.stack,.ledger.stack tbody,.ledger.stack tbody tr,.ledger.stack tbody td{display:block;width:100%}
+  .ledger.stack tbody tr{padding:14px 16px}
+  .ledger.stack tbody td{padding:5px 0!important;text-align:left}
+  .ledger.stack tbody td[data-label]::before{content:attr(data-label);display:block;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-faint);margin-bottom:2px}
+  .ledger.stack .actions-cell{margin-top:8px}.ledger.stack .action-stack{justify-content:flex-start}
+}
+@media(max-width:760px){
+  :root{--topbar-h:64px}
+  .topbar,.page-head,.kpi-grid,.instrument-strip,.control-bar,.main-content,.flash-zone{padding-left:14px;padding-right:14px}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar-right{gap:6px}
+  .dispatch-link{padding:8px 11px}
+  .dispatch-link:not(.fin-nav-dashboard) .fin-nav-label{display:none}
+  .brand-text h1 .tag{display:none}
+  .form-grid{grid-template-columns:1fr}
+  .qr-card{grid-template-columns:1fr;text-align:center}.qr-frame{margin:0 auto}
+  .search-box input{width:150px}
+  .instrument{padding-right:14px;margin-right:14px}
+}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr}.brand-text h1{font-size:16px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<noscript><style>[hidden]{display:block!important}.glass-modal{display:none!important}</style></noscript>
 </head>
-
 <body>
+<div class="app-shell">
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div id="flashContainer" style="position:fixed; top:16px; right:16px; z-index:9999; max-width:380px; display:flex; flex-direction:column; gap:10px;">
-            {% for category, message in messages %}
-            <div class="flash-toast" style="background:#fff; border-left:4px solid {{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; box-shadow:0 6px 20px rgba(0,0,0,.12); border-radius:8px; padding:12px 16px; font-size:14px; display:flex; align-items:flex-start; gap:10px;">
-                <i class="fas {{ 'fa-check-circle' if category=='success' else 'fa-triangle-exclamation' if category=='danger' else 'fa-circle-info' }}" style="color:{{ '#28a745' if category=='success' else '#dc3545' if category=='danger' else '#f39c12' }}; margin-top:2px;"></i>
-                <span style="flex:1;">{{ message }}</span>
-                <button onclick="this.closest('.flash-toast').remove()" style="background:none; border:none; cursor:pointer; color:#9aa5b1; font-size:14px;">&times;</button>
-            </div>
-            {% endfor %}
+  <!-- ================= TOP BAR ================= -->
+  <header class="topbar" role="banner">
+    <div class="brand">
+      <div class="brand-mark"><i class="fas fa-droplet" aria-hidden="true"></i></div>
+      <div class="brand-text">
+        <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+        <p>Finance operations &amp; cash reconciliation</p>
+      </div>
+    </div>
+    <nav class="topbar-right" aria-label="Finance navigation">
+      {% set finance_nav_current = 'finance' %}{% include '_finance_nav_links.html' %}
+      <div class="sync-chip"><div class="pulse-dot"></div><span>Live data</span></div>
+      <div class="admin-chip"><div class="admin-avatar">A</div><span>Admin</span></div>
+    </nav>
+  </header>
+  <div class="flow-line"></div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-zone" id="flashZone" role="status" aria-live="polite">
+      {% for category, message in messages %}
+      {% set cat = category if category in ['success','danger','warning','info'] else 'info' %}
+      <div class="flash-toast flash-{{ cat }}">
+        <i class="fas {{ {'success':'fa-circle-check','danger':'fa-triangle-exclamation','warning':'fa-circle-exclamation','info':'fa-circle-info'}[cat] }}" style="margin-top:2px" aria-hidden="true"></i>
+        <span style="flex:1">{{ message }}</span>
+        <button type="button" aria-label="Dismiss message" onclick="this.closest('.flash-toast').remove()" style="background:none;border:none;cursor:pointer;font-size:15px;line-height:1;color:inherit">&times;</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ================= PAGE HEAD ================= -->
+  <div class="page-head">
+    <div class="page-title">
+      <div class="title-icon"><i class="fas fa-wallet" aria-hidden="true"></i></div>
+      <div>
+        <h2>Finance Management</h2>
+        <p>Company bank details, driver payouts and cash reconciliation.</p>
+      </div>
+    </div>
+    <div class="head-tools">
+      <span><i class="far fa-clock" aria-hidden="true"></i> Updated <span id="kpiUpdated">{{ current_time.strftime('%d %b, %I:%M %p') }}</span></span>
+      <button type="button" class="btn-soft" id="kpiRefresh"><i class="fas fa-rotate" aria-hidden="true"></i> Refresh figures</button>
+    </div>
+  </div>
+
+  <!-- ================= SUMMARY CARDS ================= -->
+  {% set m_err = section_errors.get('metrics') %}
+  <section class="kpi-grid" aria-label="Finance summary" id="kpiGrid">
+    {% set kpis = [
+      ('pending_driver_deposits','Pending Driver Deposits','fa-hand-holding-dollar','k-red','Cash drivers still owe the company', finance.pending_driver_deposits if finance else 0),
+      ('pending_driver_payouts','Pending Driver Payouts','fa-money-bill-transfer','k-amber','Commission available to withdraw', finance.pending_driver_payouts if finance else 0),
+      ('today_revenue',"Today's Revenue",'fa-calendar-day','k-green','Delivered orders today', finance.today_revenue if finance else 0),
+      ('profit','Profit','fa-chart-line','k-teal','Platform commission earned', finance.profit if finance else 0),
+      ('gst_collected','GST Collected','fa-receipt','k-violet','From paid / settled transactions', ledger_overview.gst_collected if ledger_overview else 0),
+      ('total_withdrawals','Total Withdrawals Paid','fa-money-check-dollar','k-blue','All driver payouts in the ledger', ledger_overview.total_withdrawals if ledger_overview else 0)
+    ] %}
+    {% for key, label, icon, cls, sub, val in kpis %}
+    <article class="kpi {{ cls }}{% if m_err %} is-error{% endif %}" data-kpi="{{ key }}">
+      <div class="kpi-icon"><i class="fas {{ icon }}" aria-hidden="true"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">{{ label }}</div>
+        <div class="kpi-value" title="{{ val|inr if not m_err else '' }}">{{ '—' if m_err else val|inr }}</div>
+        <div class="kpi-sub">{{ sub }}</div>
+        <div class="kpi-err">Couldn't load this figure. Use “Refresh figures”.</div>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+
+  <!-- ================= STATUS STRIP ================= -->
+  <div class="instrument-strip" aria-label="Items needing attention">
+    <button type="button" class="instrument" data-goto-tab="payouts">
+      <div class="instrument-icon ii-amber"><i class="fas fa-money-bill-transfer" aria-hidden="true"></i></div>
+      <div><h4>Payout requests</h4><div class="val">{{ pending_settlements|length }}</div></div>
+    </button>
+    <button type="button" class="instrument" data-goto-tab="bank">
+      <div class="instrument-icon ii-blue"><i class="fas fa-building-columns" aria-hidden="true"></i></div>
+      <div><h4>Bank approvals</h4><div class="val">{{ pending_bank_details|length }}</div></div>
+    </button>
+    <button type="button" class="instrument" data-goto-tab="cash">
+      <div class="instrument-icon ii-violet"><i class="fas fa-money-check-dollar" aria-hidden="true"></i></div>
+      <div><h4>Deposits to verify</h4><div class="val">{{ pending_verifications|length }}</div></div>
+    </button>
+    <button type="button" class="instrument" data-goto-tab="cash">
+      <div class="instrument-icon ii-red"><i class="fas fa-scale-unbalanced" aria-hidden="true"></i></div>
+      <div><h4>Drivers holding cash</h4><div class="val">{{ cash_holders|length }}</div></div>
+    </button>
+    <div class="instrument-spacer"></div>
+  </div>
+
+  <!-- ================= TABS ================= -->
+  <div class="control-bar">
+    <div class="seg-filters" role="tablist" aria-label="Finance sections">
+      <button class="pill-filter active" role="tab" id="tab-overview" data-tab="overview" aria-controls="panel-overview" aria-selected="true"><i class="fas fa-gauge-high" aria-hidden="true"></i>Overview</button>
+      <button class="pill-filter" role="tab" id="tab-payouts" data-tab="payouts" aria-controls="panel-payouts" aria-selected="false" tabindex="-1"><i class="fas fa-money-bill-transfer" aria-hidden="true"></i>Payouts{% if pending_settlements %}<span class="tab-count">{{ pending_settlements|length }}</span>{% endif %}</button>
+      <button class="pill-filter" role="tab" id="tab-bank" data-tab="bank" aria-controls="panel-bank" aria-selected="false" tabindex="-1"><i class="fas fa-building-columns" aria-hidden="true"></i>Bank &amp; UPI{% if pending_bank_details %}<span class="tab-count">{{ pending_bank_details|length }}</span>{% endif %}</button>
+      <button class="pill-filter" role="tab" id="tab-cash" data-tab="cash" aria-controls="panel-cash" aria-selected="false" tabindex="-1"><i class="fas fa-money-check-dollar" aria-hidden="true"></i>Cash Verification{% if pending_verifications %}<span class="tab-count">{{ pending_verifications|length }}</span>{% endif %}</button>
+      <button class="pill-filter" role="tab" id="tab-history" data-tab="history" aria-controls="panel-history" aria-selected="false" tabindex="-1"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i>Payment History</button>
+    </div>
+  </div>
+
+  <main class="main-content">
+
+  <!-- ================= OVERVIEW ================= -->
+  <section class="fin-panel" data-panel="overview" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+    <div class="section-head">
+      <h3><i class="fas fa-bolt" aria-hidden="true"></i> Recent Financial Activity <span class="count-chip">{{ recent_activity|length }} latest</span></h3>
+    </div>
+    {% if section_errors.get('activity') %}
+    <div class="error-box"><i class="fas fa-triangle-exclamation"></i> Recent activity could not be loaded. <button type="button" class="btn-soft" onclick="location.reload()">Retry</button></div>
+    {% endif %}
+    <div class="ledger-wrap">
+      {% if recent_activity %}
+      <div class="ledger-scroll">
+      <table class="ledger stack">
+        <thead><tr><th>Activity</th><th>Driver</th><th>Amount</th><th>Date</th><th>Reference</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for e in recent_activity %}
+          <tr>
+            <td data-label="Activity"><span class="dir {{ e.direction }}" title="{{ 'Money in' if e.direction=='in' else 'Money out' }}"><i class="fas {{ 'fa-arrow-down' if e.direction=='in' else 'fa-arrow-up' }}" aria-hidden="true"></i></span><span class="cell-primary">{{ e.kind }}</span></td>
+            <td data-label="Driver"><div class="cell-primary">{{ e.driver }}</div></td>
+            <td data-label="Amount"><span class="amt">{{ e.amount|inr }}</span></td>
+            <td data-label="Date"><div class="cell-secondary" style="margin:0">{{ e.when|fin_dt }}</div></td>
+            <td data-label="Reference"><span class="ref">{{ e.ref or '—' }}</span></td>
+            <td data-label="Status">{{ badge(e.status) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <div class="empty-ledger compact"><i class="fas fa-receipt" aria-hidden="true"></i><h4>No Recent Financial Activity</h4><p>Financial transactions will appear here once activity is recorded.</p></div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ================= PAYOUTS ================= -->
+  <section class="fin-panel" data-panel="payouts" id="panel-payouts" role="tabpanel" aria-labelledby="tab-payouts" hidden>
+    <div class="section-head">
+      <h3><i class="fas fa-money-bill-transfer" aria-hidden="true"></i> Driver Settlement Requests <span class="count-chip" data-f-count>{{ pending_settlements|length }} requests</span></h3>
+      <a href="#history" class="btn-link" data-goto-tab="history">View payout history →</a>
+    </div>
+    <p class="section-note">Money flowing <strong>company → driver</strong>. Review the driver's bank details, transfer manually via your banking app, then record the bank reference to confirm the payout.</p>
+    {% if section_errors.get('settlements') %}
+    <div class="error-box"><i class="fas fa-triangle-exclamation"></i> Payout requests could not be loaded. <button type="button" class="btn-soft" onclick="location.reload()">Retry</button></div>
+    {% endif %}
+    <div data-filter-scope>
+      <div class="toolbar">
+        <label class="search-box" for="sSearch"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="text" id="sSearch" data-f-search placeholder="Search driver, phone, email…" autocomplete="off"></label>
+        <select class="f-select" data-f-status aria-label="Filter by status">
+          <option value="all">All statuses</option><option value="Pending">Pending</option><option value="Processing">Approved (processing)</option>
+        </select>
+        <select class="f-select" data-f-sort aria-label="Sort requests">
+          <option value="date:desc">Newest first</option><option value="date:asc">Oldest first</option>
+          <option value="amount:desc">Amount: high to low</option><option value="amount:asc">Amount: low to high</option><option value="status:asc">Status</option>
+        </select>
+        <label class="mini">From <input type="date" class="f-date" data-f-from aria-label="From date"></label>
+        <label class="mini">To <input type="date" class="f-date" data-f-to aria-label="To date"></label>
+      </div>
+      <div class="ledger-wrap">
+        {% if pending_settlements %}
+        <div class="ledger-scroll">
+        <table class="ledger stack">
+          <thead><tr><th>Driver</th><th>Requested</th><th>Driver balance</th><th>Bank account</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody data-rows>
+          {% for req in pending_settlements %}
+            <tr data-row data-status="{{ req.status }}" data-amount="{{ req.amount|int }}" data-date="{{ req.requested_at|fin_epoch }}"
+                data-search="{{ [req.driver_name, req.driver_phone, req.driver_email, req.bank_account_holder]|select|join(' ')|lower }}">
+              <td data-label="Driver"><div class="cell-primary">{{ req.driver_name }}</div><div class="cell-secondary">{{ req.driver_phone or req.driver_email }}</div></td>
+              <td data-label="Requested"><div class="amt">{{ req.amount|inr }}</div><div class="cell-secondary">{{ req.requested_at|fin_dt('%d %b %Y') }}</div></td>
+              <td data-label="Driver balance"><div class="mini-lines">Earned <b>{{ req.total_earnings|inr }}</b><br>Paid <b>{{ req.total_paid|inr }}</b><br>Withdrawable <b>{{ req.current_pending_payout|inr }}</b></div></td>
+              <td data-label="Bank account">
+                <div class="cell-primary">{{ req.bank_account_holder or 'Not provided' }}</div>
+                <div class="cell-secondary">{{ req.bank_name or 'Bank not specified' }} · <span class="mono">{{ req.bank_account_number_masked or '—' }}</span></div>
+                <div class="cell-secondary">IFSC {{ req.bank_ifsc or '—' }}{% if req.bank_upi_id %} · UPI {{ req.bank_upi_id }}{% endif %}</div>
+                <div style="margin-top:5px">{{ badge(req.bank_verification_status) }}</div>
+              </td>
+              <td data-label="Status">{{ badge(req.status) }}</td>
+              <td class="actions-cell">
+                <div class="action-stack">
+                  <button type="button" class="action-btn btn-details js-profile" data-driver-id="{{ req.driver_id }}" data-driver-name="{{ req.driver_name }}"><i class="fas fa-id-badge" aria-hidden="true"></i> Profile</button>
+                  <button type="button" class="action-btn btn-blue js-bank" data-holder="{{ req.bank_account_holder or 'Not provided' }}" data-bank="{{ req.bank_name or 'Not specified' }}" data-account-masked="{{ req.bank_account_number_masked or '—' }}" data-account-url="{{ url_for('reveal_driver_account', driver_email=req.driver_email) }}" data-ifsc="{{ req.bank_ifsc or 'Not provided' }}" data-upi="{{ req.bank_upi_id or '' }}" data-status="{{ req.bank_verification_status }}"><i class="fas fa-building-columns" aria-hidden="true"></i> Bank</button>
+                  <button type="button" class="action-btn btn-pay js-pay" data-driver="{{ req.driver_name }}" data-amount="{{ req.amount|inr }}" data-holder="{{ req.bank_account_holder or 'Not provided' }}" data-bank="{{ req.bank_name or 'Not specified' }}" data-account-masked="{{ req.bank_account_number_masked or '—' }}" data-account-url="{{ url_for('reveal_driver_account', driver_email=req.driver_email) }}" data-ifsc="{{ req.bank_ifsc or 'Not provided' }}" data-upi="{{ req.bank_upi_id or '' }}" data-bank-status="{{ req.bank_verification_status }}" data-confirm-url="{{ url_for('resolve_driver_settlement', request_id=req._id, action='complete') }}"><i class="fas fa-money-check-dollar" aria-hidden="true"></i> Pay now</button>
+                  <form method="POST" action="{{ url_for('resolve_driver_settlement', request_id=req._id, action='reject') }}" data-async data-confirm-title="Reject this payout request?" data-confirm-msg="The {{ req.amount|inr }} request from {{ req.driver_name }} will be rejected and the driver will be notified. This cannot be undone." data-confirm-tone="danger" data-confirm-ok="Reject request" style="display:inline">
+                    <button type="submit" class="action-btn btn-cancel"><i class="fas fa-ban" aria-hidden="true"></i> Reject</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
         </div>
-        <script>
-            setTimeout(function () {
-                document.querySelectorAll('.flash-toast').forEach(function (el) {
-                    el.style.transition = 'opacity .4s'; el.style.opacity = '0';
-                    setTimeout(function () { el.remove(); }, 400);
-                });
-            }, 5000);
-        </script>
+        <div class="empty-ledger fin-noresult" hidden><i class="fas fa-magnifying-glass"></i><h4>No requests match your filters</h4><p>Try a different search or clear the filters.</p></div>
+        {% else %}
+        <div class="empty-ledger"><i class="fas fa-circle-check" aria-hidden="true"></i><h4>No settlement requests</h4><p>Every driver has been paid out — new withdrawal requests will show up here.</p></div>
         {% endif %}
-    {% endwith %}
+      </div>
+    </div>
+  </section>
 
-    <div class="page-container">
-
-        <!-- HEADER -->
-        <div class="top-header">
-            <div>
-                <h1 class="page-title">
-                    <span class="title-icon"><i class="fas fa-sack-dollar"></i></span>
-                    Finance Management
-                </h1>
-                <p class="page-subtitle">Company bank details, driver payouts and cash reconciliation</p>
-            </div>
-            <div class="header-actions">
-                <a href="/admin-dashboard" class="btn-nav btn-nav-ghost"><i class="fas fa-arrow-left"></i> Dashboard</a>
-                <a href="/driver-management" class="btn-nav btn-nav-driver"><i class="fas fa-id-card"></i> Driver Management</a>
-            </div>
+  <!-- ================= BANK & UPI ================= -->
+  <section class="fin-panel" data-panel="bank" id="panel-bank" role="tabpanel" aria-labelledby="tab-bank" hidden>
+    <div class="section-head"><h3><i class="fas fa-building-columns" aria-hidden="true"></i> Company Bank &amp; UPI Details</h3></div>
+    <p class="section-note">Shown to every driver on their dashboard as the account to send collected cash to. Total the company is currently owed across all drivers: <strong style="color:var(--red-600)">{{ (finance.pending_driver_deposits if finance else 0)|inr }}</strong></p>
+    {% if section_errors.get('bank') %}
+    <div class="error-box"><i class="fas fa-triangle-exclamation"></i> Bank details could not be loaded, so editing is disabled. <button type="button" class="btn-soft" onclick="location.reload()">Retry</button></div>
+    {% else %}
+    <form id="bankForm" action="{{ url_for('update_bank_details') }}" method="POST" enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="keep_account_number" value="1" id="keepAcct">
+      <div class="bank-layout">
+        <div class="card">
+          <div class="form-grid">
+            <div class="field"><label for="f_bank_name">Bank Name <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="f_bank_name" name="bank_name" maxlength="100" value="{{ bank_details.bank_name if bank_details.bank_name != 'Not set up yet' else '' }}" placeholder="e.g. Canara Bank" autocomplete="off">
+              <div class="err" id="e_bank_name"></div></div>
+            <div class="field"><label for="f_holder">Account Holder Name <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="f_holder" name="account_holder" maxlength="100" value="{{ bank_details.account_holder if bank_details.account_holder != 'Not set up yet' else '' }}" placeholder="e.g. AquaFlow Services" autocomplete="off" required>
+              <div class="err" id="e_holder">Account holder name is required.</div></div>
+            <div class="field"><label for="f_account">Account Number <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="f_account" name="account_number" inputmode="numeric" maxlength="24" value="" placeholder="{{ 'Enter a new number to replace the saved one' if bank_details.has_account_number else '9–18 digit account number' }}" autocomplete="off" aria-describedby="acctHint">
+              <div class="err" id="e_account">Account number should be 9–18 digits.</div>
+              <div class="saved-chip" id="acctSaved" {% if not bank_details.has_account_number %}hidden{% endif %}>
+                <span>Saved:</span><span class="ref" id="acctMasked">{{ bank_details.account_number }}</span>
+                <button type="button" class="icon-mini js-reveal-company" aria-label="Reveal saved account number"><i class="fas fa-eye" aria-hidden="true"></i> Reveal</button>
+              </div>
+              <div class="hint" id="acctHint">Only the last 4 digits are shown. Leave blank to keep the saved number.</div></div>
+            <div class="field"><label for="f_ifsc">IFSC Code <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="f_ifsc" name="ifsc" maxlength="11" value="{{ bank_details.ifsc }}" placeholder="e.g. CNRB0001234" autocomplete="off" style="text-transform:uppercase">
+              <div class="err" id="e_ifsc">IFSC looks invalid (format: CNRB0001234).</div></div>
+            <div class="field" style="grid-column:1/-1"><label for="f_upi">UPI ID</label>
+              <input type="text" id="f_upi" name="upi_id" maxlength="100" value="{{ bank_details.upi_id }}" placeholder="e.g. aquaflow@upi" autocomplete="off">
+              <div class="err" id="e_upi">UPI ID looks invalid (format: name@bank).</div>
+              <div class="hint">Provide full bank details, a UPI ID, or both.</div></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="bankSave"><i class="fas fa-floppy-disk" aria-hidden="true"></i> Save Changes</button>
+            <span class="form-status" id="bankStatus" role="status" aria-live="polite"></span>
+          </div>
+          <div class="meta-line" id="bankMeta">{% if bank_details.updated_at %}Last updated {{ bank_details.updated_at|fin_dt }}{% if bank_details.updated_by %} by {{ bank_details.updated_by }}{% endif %}{% else %}Not saved yet.{% endif %}</div>
         </div>
-
-        <!-- STATS -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-top"><div class="stat-icon icon-red"><i class="fas fa-hand-holding-dollar"></i></div></div>
-                <div class="stat-value">₹{{ "{:,.0f}".format(finance.pending_driver_deposits) }}</div>
-                <div class="stat-label">Pending Driver Deposits</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-top"><div class="stat-icon icon-amber"><i class="fas fa-money-bill-transfer"></i></div></div>
-                <div class="stat-value">₹{{ "{:,.0f}".format(finance.pending_driver_payouts) }}</div>
-                <div class="stat-label">Pending Driver Payouts</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-top"><div class="stat-icon icon-green"><i class="fas fa-calendar-day"></i></div></div>
-                <div class="stat-value">₹{{ "{:,.0f}".format(finance.today_revenue) }}</div>
-                <div class="stat-label">Today's Revenue</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-top"><div class="stat-icon icon-teal"><i class="fas fa-sack-dollar"></i></div></div>
-                <div class="stat-value">₹{{ "{:,.0f}".format(finance.profit) }}</div>
-                <div class="stat-label">Profit</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-top"><div class="stat-icon icon-purple"><i class="fas fa-receipt"></i></div></div>
-                <div class="stat-value">₹{{ "{:,.0f}".format(ledger_overview.gst_collected) }}</div>
-                <div class="stat-label">GST Collected</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-top"><div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div></div>
-                <div class="stat-value">₹{{ "{:,.0f}".format(ledger_overview.total_withdrawals) }}</div>
-                <div class="stat-label">Total Withdrawals Paid</div>
-            </div>
+        <div class="card qr-card">
+          <div class="qr-frame" id="qrFrame">
+            {% if bank_details.qr_image %}<img id="qrPreview" src="{{ url_for('static', filename=bank_details.qr_image) }}" alt="Current company payment QR code">
+            {% else %}<div class="qr-empty" id="qrEmpty"><i class="fas fa-qrcode" aria-hidden="true"></i>No QR code uploaded</div>{% endif %}
+          </div>
+          <div>
+            <div class="field"><label for="f_qr">Payment QR Code Image</label>
+              <input type="file" id="f_qr" name="qr_image" accept="image/png,image/jpeg,image/webp">
+              <div class="err" id="e_qr" style="display:none"></div>
+              <div class="hint">PNG, JPG or WEBP, up to 5 MB. Choosing a file replaces the current QR when you save.</div></div>
+          </div>
         </div>
+      </div>
+    </form>
+    {% endif %}
 
-        <!-- ===================================================== -->
-        <!-- COMPANY BANK / UPI DETAILS -->
-        <!-- ===================================================== -->
-        <div class="table-container">
-            <h2 class="section-title"><i class="fas fa-building-columns"></i> Company Bank &amp; UPI Details</h2>
-            <p class="section-sub">
-                Shown to every driver on their dashboard as the account to send collected cash to.
-                Total the company is currently owed across all drivers:
-                <strong style="color:#b91c1c;">₹{{ "{:,.0f}".format(finance.pending_driver_deposits) }}</strong>
-            </p>
-
-            <form action="{{ url_for('update_bank_details') }}" method="POST" enctype="multipart/form-data">
-                <div class="bank-form-grid">
-                    <div>
-                        <label>Bank Name</label>
-                        <input type="text" name="bank_name" value="{{ bank_details.bank_name if bank_details.bank_name != 'Not set up yet' else '' }}" placeholder="e.g. Canara Bank">
-                    </div>
-                    <div>
-                        <label>Account Holder Name</label>
-                        <input type="text" name="account_holder" value="{{ bank_details.account_holder if bank_details.account_holder != 'Not set up yet' else '' }}" placeholder="e.g. Kruthik B Hebbar">
-                    </div>
-                    <div>
-                        <label>Account Number</label>
-                        <input type="text" name="account_number" value="{{ bank_details.account_number }}" placeholder="e.g. XXXXXXXX1234">
-                    </div>
-                    <div>
-                        <label>IFSC Code</label>
-                        <input type="text" name="ifsc" value="{{ bank_details.ifsc }}" placeholder="e.g. CNRB0001234">
-                    </div>
-                    <div>
-                        <label>UPI ID</label>
-                        <input type="text" name="upi_id" value="{{ bank_details.upi_id }}" placeholder="e.g. aquaflow@upi">
-                    </div>
-                    <div>
-                        <label>Payment QR Code Image</label>
-                        <input type="file" name="qr_image" accept="image/*">
-                    </div>
-                </div>
-
-                <div style="display:flex; align-items:center; gap:20px; margin-top:20px;">
-                    <button type="submit" class="btn-pill btn-save-bank"><i class="fas fa-floppy-disk"></i> Save Bank Details</button>
-                    {% if bank_details.qr_image %}
-                    <img src="{{ url_for('static', filename=bank_details.qr_image) }}" class="qr-preview" alt="Current QR code">
-                    {% endif %}
-                </div>
-            </form>
+    <div class="block" style="margin-top:30px">
+      <div class="section-head">
+        <h3><i class="fas fa-user-check" aria-hidden="true"></i> Driver Bank Details Awaiting Approval <span class="count-chip">{{ pending_bank_details|length }} awaiting action</span></h3>
+      </div>
+      <p class="section-note">A driver's withdrawal button stays disabled until their bank details are approved here. Check the account holder name matches the driver's identity before approving.</p>
+      {% if section_errors.get('banks') %}<div class="error-box"><i class="fas fa-triangle-exclamation"></i> Pending approvals could not be loaded. <button type="button" class="btn-soft" onclick="location.reload()">Retry</button></div>{% endif %}
+      <div class="ledger-wrap">
+        {% if pending_bank_details %}
+        <div class="ledger-scroll">
+        <table class="ledger stack">
+          <thead><tr><th>Driver</th><th>Account holder</th><th>Account number</th><th>IFSC</th><th>Submitted</th><th style="text-align:right">Decision</th></tr></thead>
+          <tbody>
+          {% for d in pending_bank_details %}{% set bank = d.bank_details %}
+            <tr>
+              <td data-label="Driver"><div class="cell-primary">{{ d.name }}</div><div class="cell-secondary">{{ d.email }}{% if d.phone %} · {{ d.phone }}{% endif %}</div></td>
+              <td data-label="Account holder">{{ bank.account_holder_name or '—' }}{% if bank.bank_name %}<div class="cell-secondary">{{ bank.bank_name }}</div>{% endif %}</td>
+              <td data-label="Account number"><span class="ref js-acct" data-masked="{{ d.bank_account_masked or '—' }}">{{ d.bank_account_masked or '—' }}</span>
+                <button type="button" class="icon-mini js-reveal" data-url="{{ url_for('reveal_driver_account', driver_email=d.email) }}" aria-label="Reveal account number for {{ d.name }}"><i class="fas fa-eye" aria-hidden="true"></i> Reveal</button></td>
+              <td data-label="IFSC"><span class="ref">{{ bank.ifsc or '—' }}</span></td>
+              <td data-label="Submitted"><div class="cell-secondary" style="margin:0">{{ bank.submitted_at|fin_dt }}</div></td>
+              <td class="actions-cell"><div class="action-stack">
+                <form method="POST" action="{{ url_for('resolve_driver_bank_details', driver_email=d.email, action='approve') }}" data-async data-confirm-title="Approve these bank details?" data-confirm-msg="{{ d.name }} will be able to request withdrawals to this account. Make sure the account holder name matches their identity." data-confirm-ok="Approve" style="display:inline"><button type="submit" class="action-btn btn-approve"><i class="fas fa-check" aria-hidden="true"></i> Approve</button></form>
+                <form method="POST" action="{{ url_for('resolve_driver_bank_details', driver_email=d.email, action='reject') }}" data-async data-confirm-title="Reject these bank details?" data-confirm-msg="{{ d.name }} will be asked to re-check and resubmit their bank details." data-confirm-tone="danger" data-confirm-ok="Reject" style="display:inline"><button type="submit" class="action-btn btn-cancel"><i class="fas fa-xmark" aria-hidden="true"></i> Reject</button></form>
+              </div></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
         </div>
+        {% else %}
+        <div class="empty-ledger"><i class="fas fa-circle-check" aria-hidden="true"></i><h4>All caught up</h4><p>No bank-details submissions are waiting on approval right now.</p></div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
 
-        <!-- ===================================================== -->
-        <!-- DRIVER BANK DETAILS AWAITING APPROVAL -->
-        <!-- ===================================================== -->
-        <div class="table-container">
-            <h2 class="section-title">
-                <i class="fas fa-building-columns"></i> Driver Bank Details Awaiting Approval
-                {% if pending_bank_details %}<span class="count-pill">{{ pending_bank_details|length }} awaiting action</span>{% endif %}
-            </h2>
-            <p class="section-sub">A driver's withdrawal button stays disabled until their bank details are approved here. Check the account holder name matches the driver's identity before approving.</p>
-
-            {% if pending_bank_details %}
-            <div class="table-scroll">
-                <table>
-                    <thead><tr><th>Driver</th><th>Account Holder</th><th>Account Number</th><th>IFSC</th><th>Submitted</th><th>Action</th></tr></thead>
-                    <tbody>
-                        {% for d in pending_bank_details %}
-                        {% set bank = d.bank_details %}
-                        <tr>
-                            <td>{{ d.name }} ({{ d.email }})</td>
-                            <td>{{ bank.account_holder_name }}</td>
-                            <td class="txn-ref">{{ bank.account_number }}</td>
-                            <td class="txn-ref">{{ bank.ifsc }}</td>
-                            <td>{{ bank.submitted_at.strftime('%d %b %Y, %I:%M %p') if bank.submitted_at else '—' }}</td>
-                            <td style="display:flex; gap:8px;">
-                                <form method="POST" action="{{ url_for('resolve_driver_bank_details', driver_email=d.email, action='approve') }}">
-                                    <button type="submit" class="btn-pill btn-approve"><i class="fas fa-check"></i> Approve</button>
-                                </form>
-                                <form method="POST" action="{{ url_for('resolve_driver_bank_details', driver_email=d.email, action='reject') }}">
-                                    <button type="submit" class="btn-pill btn-reject"><i class="fas fa-xmark"></i> Reject</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="empty-box">
-                <i class="fas fa-circle-check"></i>
-                <div class="empty-title">All Caught Up</div>
-                <div class="empty-subtitle">No bank-details submissions are waiting on approval right now.</div>
-            </div>
-            {% endif %}
+  <!-- ================= CASH VERIFICATION ================= -->
+  <section class="fin-panel" data-panel="cash" id="panel-cash" role="tabpanel" aria-labelledby="tab-cash" hidden>
+    <div class="block">
+      <div class="section-head"><h3><i class="fas fa-money-check-dollar" aria-hidden="true"></i> Cash Collection Verification (COD) <span class="count-chip" data-f-count-pending>{{ pending_verifications|length }} awaiting review</span></h3></div>
+      <p class="section-note">Money flowing <strong>driver → company</strong>: cash a driver collected from a customer on delivery, which they're remitting back. Approve only after matching the transaction reference with your bank statement.</p>
+      {% if section_errors.get('cod') %}<div class="error-box"><i class="fas fa-triangle-exclamation"></i> Cash verification data could not be loaded. <button type="button" class="btn-soft" onclick="location.reload()">Retry</button></div>{% endif %}
+      <div data-filter-scope>
+        <div class="toolbar">
+          <label class="search-box" for="cSearch"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="text" id="cSearch" data-f-search placeholder="Search driver, phone, reference…" autocomplete="off"></label>
+          <select class="f-select" data-f-sort aria-label="Sort submissions"><option value="date:desc">Newest first</option><option value="date:asc">Oldest first</option><option value="amount:desc">Amount: high to low</option><option value="amount:asc">Amount: low to high</option></select>
+          <label class="mini">From <input type="date" class="f-date" data-f-from aria-label="From date"></label>
+          <label class="mini">To <input type="date" class="f-date" data-f-to aria-label="To date"></label>
         </div>
-
-        <!-- ===================================================== -->
-        <!-- DRIVER SETTLEMENT (PAYOUT) REQUESTS -->
-        <!-- ===================================================== -->
-        <div class="table-container">
-            <h2 class="section-title">
-                <i class="fas fa-money-bill-transfer"></i> Driver Settlement Requests
-                {% if pending_settlements %}<span class="count-pill">{{ pending_settlements|length }} awaiting action</span>{% endif %}
-            </h2>
-            <p class="section-sub">Money flowing <strong>company → driver</strong>. Review the driver's bank details, transfer manually via your banking app, then confirm the payment here.</p>
-
-            {% if pending_settlements %}
-            <div class="settlement-grid">
-                {% for req in pending_settlements %}
-                {% set photo_url = ('/' + req.driver_photo) if req.driver_photo else 'https://ui-avatars.com/api/?background=0d9488&color=fff&size=104&name=' + (req.driver_name|default('Driver'))|urlencode %}
-                <div class="settlement-card">
-
-                    <div class="settlement-head">
-                        <img src="{{ photo_url }}" class="settlement-photo" loading="lazy"
-                             onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?background=0d9488&color=fff&size=104&name={{ (req.driver_name|default('Driver'))|urlencode }}';">
-                        <div>
-                            <div class="settlement-name">{{ req.driver_name }}</div>
-                            <div class="settlement-meta">{{ req.driver_phone or req.driver_email }} &middot; ID {{ req.driver_id[-6:] if req.driver_id else '—' }}</div>
-                        </div>
-                    </div>
-
-                    <div class="settlement-amount-row">
-                        <div>
-                            <div class="settlement-amount-label">Requested Withdrawal</div>
-                            <div class="settlement-amount-value">₹{{ "{:,.0f}".format(req.amount) }}</div>
-                        </div>
-                        <span class="badge-verify {{ req.bank_verification_status|replace(' ', '-') }}">{{ req.bank_verification_status }} Bank</span>
-                    </div>
-
-                    <div class="settlement-stats">
-                        <div class="settlement-stat"><div class="settlement-stat-label">Total Earnings</div><div class="settlement-stat-value">₹{{ "{:,.0f}".format(req.total_earnings) }}</div></div>
-                        <div class="settlement-stat"><div class="settlement-stat-label">Total Paid</div><div class="settlement-stat-value">₹{{ "{:,.0f}".format(req.total_paid) }}</div></div>
-                        <div class="settlement-stat"><div class="settlement-stat-label">Pending Payout</div><div class="settlement-stat-value">₹{{ "{:,.0f}".format(req.current_pending_payout) }}</div></div>
-                        <div class="settlement-stat"><div class="settlement-stat-label">Requested On</div><div class="settlement-stat-value" style="font-size:12.5px;">{{ req.requested_at.strftime('%d %b %Y') if req.requested_at else '—' }}</div></div>
-                    </div>
-
-                    <div class="settlement-bank-preview">
-                        <strong>{{ req.bank_account_holder or 'Not provided' }}</strong><br>
-                        {{ req.bank_name or 'Bank not specified' }} &middot; {{ req.bank_account_number_masked or '—' }}<br>
-                        IFSC: {{ req.bank_ifsc or '—' }}{% if req.bank_upi_id %} &middot; UPI: {{ req.bank_upi_id }}{% endif %}
-                    </div>
-
-                    <div class="settlement-actions">
-                        <button type="button" class="btn-tiny btn-tiny-profile" onclick="openProfileModal('{{ req.driver_id }}', '{{ req.driver_name }}')">
-                            <i class="fas fa-id-badge"></i> Profile
-                        </button>
-                        <button type="button" class="btn-tiny btn-tiny-bank" onclick="openBankModal(this)"
-                            data-holder="{{ req.bank_account_holder or 'Not provided' }}"
-                            data-bank="{{ req.bank_name or 'Not specified' }}"
-                            data-account="{{ req.bank_account_number_full or 'Not provided' }}"
-                            data-ifsc="{{ req.bank_ifsc or 'Not provided' }}"
-                            data-upi="{{ req.bank_upi_id or '' }}"
-                            data-status="{{ req.bank_verification_status }}">
-                            <i class="fas fa-building-columns"></i> Bank Details
-                        </button>
-                        <a href="#payment-history" class="btn-tiny btn-tiny-history"><i class="fas fa-clock-rotate-left"></i> History</a>
-
-                        <button type="button" class="btn-tiny btn-tiny-pay" onclick="openPayModal(this)"
-                            data-request-id="{{ req._id }}"
-                            data-driver="{{ req.driver_name }}"
-                            data-amount="{{ '%.0f'|format(req.amount) }}"
-                            data-holder="{{ req.bank_account_holder or 'Not provided' }}"
-                            data-bank="{{ req.bank_name or 'Not specified' }}"
-                            data-account="{{ req.bank_account_number_full or 'Not provided' }}"
-                            data-ifsc="{{ req.bank_ifsc or 'Not provided' }}"
-                            data-upi="{{ req.bank_upi_id or '' }}"
-                            data-confirm-url="{{ url_for('resolve_driver_settlement', request_id=req._id, action='complete') }}">
-                            <i class="fas fa-money-check-dollar"></i> Pay Now
-                        </button>
-
-                        <form action="{{ url_for('resolve_driver_settlement', request_id=req._id, action='reject') }}" method="POST" style="flex-basis:100%;">
-                            <button type="submit" class="btn-tiny btn-tiny-reject" style="width:100%;"
-                                onclick="return confirm('Reject this settlement request for {{ req.driver_name }}?');">
-                                <i class="fas fa-ban"></i> Reject Request
-                            </button>
-                        </form>
-                    </div>
-
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-box">
-                <i class="fas fa-circle-check"></i>
-                <div class="empty-title">No Settlement Requests</div>
-                <div class="empty-subtitle">Every driver has been paid out — new withdrawal requests will show up here.</div>
-            </div>
-            {% endif %}
+        <div class="ledger-wrap">
+          {% if pending_verifications %}
+          <div class="ledger-scroll">
+          <table class="ledger stack">
+            <thead><tr><th>Driver</th><th>Booking</th><th>Amount</th><th>Method</th><th>Transaction ref</th><th>Proof</th><th>Submitted</th><th style="text-align:right">Decision</th></tr></thead>
+            <tbody data-rows>
+            {% for order in pending_verifications %}
+              {% set amount = order.get('cash_submitted_amount', order.get('delivery_fee', 500)) %}
+              <tr data-row data-status="Pending Verification" data-amount="{{ amount|int }}" data-date="{{ order.get('payment_submitted_at')|fin_epoch }}"
+                  data-search="{{ [order.get('driver_name'), order.get('driver_email'), order.driver_phone, order.get('payment_transaction_ref')]|select|join(' ')|lower }}">
+                <td data-label="Driver"><div class="cell-primary">{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</div>{% if order.driver_phone %}<div class="cell-secondary">{{ order.driver_phone }}</div>{% endif %}</td>
+                <td data-label="Booking"><span class="ref">#{{ order._id|string|truncate(10, True, '') }}</span></td>
+                <td data-label="Amount"><span class="amt">{{ amount|inr }}</span></td>
+                <td data-label="Method">{{ order.get('payment_submission_method', 'UPI') }}</td>
+                <td data-label="Transaction ref"><span class="ref">{{ order.get('payment_transaction_ref', '-') }}</span></td>
+                <td data-label="Proof">{% if order.get('payment_screenshot') %}<a class="btn-link" href="{{ url_for('static', filename=order.payment_screenshot) }}" target="_blank" rel="noopener"><i class="fas fa-image" aria-hidden="true"></i> View</a>{% else %}<span class="cell-secondary">None</span>{% endif %}</td>
+                <td data-label="Submitted"><div class="cell-secondary" style="margin:0">{{ order.get('payment_submitted_at')|fin_dt('%d %b, %I:%M %p') }}</div></td>
+                <td class="actions-cell"><div class="action-stack">
+                  <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST" data-async data-confirm-title="Approve this cash deposit?" data-confirm-msg="Confirm {{ amount|inr }} from {{ order.driver_name or order.get('driver_email','the driver') }} (ref {{ order.get('payment_transaction_ref','-') }}) is in your bank statement. The driver's pending deposit will be reduced." data-confirm-ok="Approve deposit" style="display:inline"><input type="hidden" name="action" value="approve"><button type="submit" class="action-btn btn-approve"><i class="fas fa-check" aria-hidden="true"></i> Approve</button></form>
+                  <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST" data-async data-confirm-title="Reject this submission?" data-confirm-msg="The driver will be notified to check the reference and resubmit." data-confirm-tone="danger" data-confirm-ok="Reject" data-confirm-remarks="1" style="display:inline"><input type="hidden" name="action" value="reject"><button type="submit" class="action-btn btn-cancel"><i class="fas fa-xmark" aria-hidden="true"></i> Reject</button></form>
+                </div></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          </div>
+          <div class="empty-ledger fin-noresult" hidden><i class="fas fa-magnifying-glass"></i><h4>No submissions match your filters</h4></div>
+          {% else %}
+          <div class="empty-ledger"><i class="fas fa-circle-check" aria-hidden="true"></i><h4>All caught up</h4><p>No payment submissions are waiting on verification right now.</p></div>
+          {% endif %}
         </div>
-
-        <!-- ===================================================== -->
-        <!-- PAYMENT HISTORY -->
-        <!-- ===================================================== -->
-        <div class="table-container" id="payment-history">
-            <h2 class="section-title"><i class="fas fa-clock-rotate-left"></i> Driver Payment History</h2>
-            <p class="section-sub">Complete audit trail of every driver payout that has actually been paid and confirmed.</p>
-
-            {% if payment_history %}
-            <div class="table-scroll">
-                <table>
-                    <thead><tr><th>Transaction Ref</th><th>Driver</th><th>Amount</th><th>Method</th><th>Paid By</th><th>Paid Date &amp; Time</th><th>Status</th><th></th></tr></thead>
-                    <tbody>
-                        {% for txn in payment_history %}
-                        <tr>
-                            <td class="txn-ref">{{ txn.transaction_id }}</td>
-                            <td>{{ txn.driver_email }}</td>
-                            <td style="font-weight:700;">₹{{ "{:,.0f}".format(txn.amount) }}</td>
-                            <td>{{ (txn.gateway or 'bank_transfer')|replace('_',' ')|title }}</td>
-                            <td>{{ txn.admin_remarks or '—' }}</td>
-                            <td>{{ txn.updated_at.strftime('%d %b %Y, %I:%M %p') if txn.updated_at else '—' }}</td>
-                            <td><span class="verify-status verify-approved">{{ txn.status }}</span></td>
-                            <td>
-                                {% if txn.settlement_request_id %}
-                                <a href="/admin/settlement/{{ txn.settlement_request_id }}/receipt" target="_blank" class="proof-link"><i class="fas fa-file-invoice"></i> Receipt</a>
-                                {% else %}
-                                <span style="color:#94a3b8;">—</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="empty-box">
-                <i class="fas fa-receipt"></i>
-                <div class="empty-title">No Payments Yet</div>
-                <div class="empty-subtitle">Confirmed driver payouts will be listed here with full transaction details.</div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- ===================================================== -->
-        <!-- CASH COLLECTION VERIFICATION (COD) -->
-        <!-- ===================================================== -->
-        <div class="table-container">
-            <h2 class="section-title">
-                <i class="fas fa-money-check-dollar"></i> Cash Collection Verification (COD)
-                {% if pending_verifications %}<span class="count-pill">{{ pending_verifications|length }} awaiting review</span>{% endif %}
-            </h2>
-            <p class="section-sub">Money flowing <strong>driver → company</strong>: cash a driver collected from a customer on delivery, which they're remitting back. Unrelated to the driver payout requests above.</p>
-
-            {% if pending_verifications %}
-            <div class="table-scroll">
-                <table>
-                    <thead><tr><th>Driver</th><th>Booking</th><th>Amount</th><th>Method</th><th>Transaction Ref</th><th>Proof</th><th>Submitted</th><th>Decision</th></tr></thead>
-                    <tbody>
-                        {% for order in pending_verifications %}
-                        <tr>
-                            <td>{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</td>
-                            <td>#{{ order._id|string|truncate(10, True, '') }}</td>
-                            <td style="font-weight:700;">₹{{ "{:,.0f}".format(order.get('cash_submitted_amount', order.get('delivery_fee', 500))) }}</td>
-                            <td>{{ order.get('payment_submission_method', 'UPI') }}</td>
-                            <td class="txn-ref">{{ order.get('payment_transaction_ref', '-') }}</td>
-                            <td>
-                                {% if order.get('payment_screenshot') %}
-                                <a href="{{ url_for('static', filename=order.payment_screenshot) }}" target="_blank" class="proof-link"><i class="fas fa-image"></i> View</a>
-                                {% else %}<span style="color:#94a3b8;">None</span>{% endif %}
-                            </td>
-                            <td>{{ order.payment_submitted_at.strftime('%d %b, %I:%M %p') if order.get('payment_submitted_at') else '-' }}</td>
-                            <td>
-                                <div style="display:flex; gap:8px;">
-                                    <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST">
-                                        <input type="hidden" name="action" value="approve">
-                                        <button type="submit" class="btn-pill btn-approve"><i class="fas fa-check"></i> Approve</button>
-                                    </form>
-                                    <form action="{{ url_for('verify_driver_payment', booking_id=order._id) }}" method="POST">
-                                        <input type="hidden" name="action" value="reject">
-                                        <button type="submit" class="btn-pill btn-reject"><i class="fas fa-xmark"></i> Reject</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="empty-box">
-                <i class="fas fa-circle-check"></i>
-                <div class="empty-title">All Caught Up</div>
-                <div class="empty-subtitle">No payment submissions are waiting on verification right now.</div>
-            </div>
-            {% endif %}
-
-            {% if recent_verifications %}
-            <h2 class="section-title" style="font-size:19px; margin-top:32px;"><i class="fas fa-clock-rotate-left"></i> Recent Cash Verification Decisions</h2>
-            <p class="section-sub">Approve/reject history for cash a driver submitted — not the same as the payout decisions above.</p>
-            <div class="table-scroll">
-                <table>
-                    <thead><tr><th>Driver</th><th>Booking</th><th>Amount</th><th>Reference</th><th>Decided</th><th>Status</th></tr></thead>
-                    <tbody>
-                        {% for order in recent_verifications %}
-                        <tr>
-                            <td>{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</td>
-                            <td>#{{ order._id|string|truncate(10, True, '') }}</td>
-                            <td style="font-weight:700;">₹{{ "{:,.0f}".format(order.get('cash_submitted_amount', order.get('delivery_fee', 500))) }}</td>
-                            <td class="txn-ref">{{ order.get('payment_transaction_ref', '-') }}</td>
-                            <td>{{ order.payment_verified_at.strftime('%d %b, %I:%M %p') if order.get('payment_verified_at') else '-' }}</td>
-                            <td>
-                                {% set vstatus = order.get('payment_submission_status') %}
-                                <span class="verify-status {% if vstatus == 'Approved' %}verify-approved{% else %}verify-rejected{% endif %}">{{ vstatus }}</span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-        </div>
-
+      </div>
     </div>
 
-    <!-- ===================================================== -->
-    <!-- PAY NOW MODAL -->
-    <!-- ===================================================== -->
-    <div class="modal-overlay" id="payModalOverlay" onclick="if(event.target === this) closePayModal()">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3><i class="fas fa-money-check-dollar" style="color:#16a34a;"></i> Pay Driver</h3>
-                <button type="button" class="modal-close" onclick="closePayModal()"><i class="fas fa-xmark"></i></button>
-            </div>
-            <p class="modal-sub" id="payModalDriverLine">Transfer manually via your banking app, then confirm below.</p>
-
-            <div class="pay-amount-banner">
-                <div class="lbl">Requested Amount</div>
-                <div class="val" id="payModalAmount">₹0</div>
-            </div>
-
-            <div class="copy-row">
-                <div><div class="crl">Account Holder</div><div class="crv" id="payHolder">—</div></div>
-            </div>
-            <div class="copy-row">
-                <div><div class="crl">Bank</div><div class="crv" id="payBank">—</div></div>
-            </div>
-            <div class="copy-row">
-                <div><div class="crl">Account Number</div><div class="crv" id="payAccount">—</div></div>
-                <button type="button" class="copy-btn" onclick="copyField('payAccount', this)"><i class="fas fa-copy"></i></button>
-            </div>
-            <div class="copy-row">
-                <div><div class="crl">IFSC Code</div><div class="crv" id="payIfsc">—</div></div>
-                <button type="button" class="copy-btn" onclick="copyField('payIfsc', this)"><i class="fas fa-copy"></i></button>
-            </div>
-            <div class="copy-row" id="payUpiRow" style="display:none;">
-                <div><div class="crl">UPI ID</div><div class="crv" id="payUpi">—</div></div>
-                <button type="button" class="copy-btn" onclick="copyField('payUpi', this)"><i class="fas fa-copy"></i></button>
-            </div>
-
-            {% if bank_details.qr_image %}
-            <div class="pay-qr-wrap">
-                <img src="{{ url_for('static', filename=bank_details.qr_image) }}" alt="Company QR">
-                <div style="font-size:11.5px; color:#94a3b8; margin-top:6px;">Company scan-to-pay QR (for reference)</div>
-            </div>
-            {% endif %}
-
-            <form class="confirm-form" id="confirmPaymentForm" method="POST" action="">
-                <div class="confirm-note">
-                    <i class="fas fa-triangle-exclamation"></i>
-                    Only click "Confirm Payment" after you have actually completed the bank/UPI transfer. This marks the request as <strong>Paid</strong>.
-                </div>
-                <button type="submit" class="btn-confirm-payment"><i class="fas fa-check-double"></i> Confirm Payment</button>
-            </form>
-        </div>
+    <div class="block">
+      <div class="section-head"><h3><i class="fas fa-scale-unbalanced" aria-hidden="true"></i> Cash Held by Drivers <span class="count-chip">{{ cash_holders|length }} drivers</span></h3></div>
+      <p class="section-note">Reconciliation view: what each driver collected, what the company has verified, and what is still outstanding (including deposits already submitted and awaiting your review).</p>
+      {% if section_errors.get('cash') %}<div class="error-box"><i class="fas fa-triangle-exclamation"></i> Could not calculate driver cash balances. <button type="button" class="btn-soft" onclick="location.reload()">Retry</button></div>{% endif %}
+      <div class="ledger-wrap">
+        {% if cash_holders %}
+        <div class="ledger-scroll"><table class="ledger stack">
+          <thead><tr><th>Driver</th><th>Collected</th><th>Verified</th><th>In review</th><th>Outstanding</th></tr></thead>
+          <tbody>{% for h in cash_holders %}
+            <tr><td data-label="Driver"><div class="cell-primary">{{ h.name }}</div><div class="cell-secondary">{{ h.phone or h.email }}</div></td>
+              <td data-label="Collected"><span class="amt">{{ h.collected|inr }}</span></td>
+              <td data-label="Verified"><span class="amt">{{ h.verified|inr }}</span></td>
+              <td data-label="In review"><span class="amt">{{ h.in_review|inr }}</span></td>
+              <td data-label="Outstanding"><span class="amt" style="color:var(--red-600)">{{ h.outstanding|inr }}</span></td></tr>
+          {% endfor %}</tbody></table></div>
+        {% else %}
+        <div class="empty-ledger"><i class="fas fa-circle-check" aria-hidden="true"></i><h4>No outstanding cash</h4><p>Every approved driver has remitted what they collected.</p></div>
+        {% endif %}
+      </div>
     </div>
 
-    <!-- ===================================================== -->
-    <!-- BANK DETAILS VIEW MODAL -->
-    <!-- ===================================================== -->
-    <div class="modal-overlay" id="bankModalOverlay" onclick="if(event.target === this) closeBankModal()">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3><i class="fas fa-building-columns" style="color:#0f766e;"></i> Bank Details</h3>
-                <button type="button" class="modal-close" onclick="closeBankModal()"><i class="fas fa-xmark"></i></button>
-            </div>
-            <p class="modal-sub">Where this driver's payout will be sent.</p>
-            <div class="profile-row"><span class="pl">Account Holder</span><span class="pv" id="bankHolder">—</span></div>
-            <div class="profile-row"><span class="pl">Bank</span><span class="pv" id="bankBank">—</span></div>
-            <div class="profile-row"><span class="pl">Account Number</span><span class="pv" id="bankAccount">—</span></div>
-            <div class="profile-row"><span class="pl">IFSC Code</span><span class="pv" id="bankIfsc">—</span></div>
-            <div class="profile-row" id="bankUpiRow" style="display:none;"><span class="pl">UPI ID</span><span class="pv" id="bankUpi">—</span></div>
-            <div class="profile-row"><span class="pl">Verification Status</span><span class="pv" id="bankStatus">—</span></div>
+    <div class="block">
+      <div class="section-head"><h3><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Recent Cash Verification Decisions <span class="count-chip" data-f-count>{{ recent_verifications|length }} entries</span></h3>
+        <a class="btn-export" id="codExport" href="{{ url_for('finance_export_cash') }}"><span class="chip-ic"><i class="fas fa-file-csv" aria-hidden="true"></i></span>Export CSV (Excel)</a></div>
+      <p class="section-note">Approve/reject history for cash a driver submitted. Showing the latest {{ recent_verifications|length }}; the export includes the full history for the selected status and dates.</p>
+      <div data-filter-scope data-cod-scope>
+        <div class="toolbar">
+          <label class="search-box" for="dSearch"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="text" id="dSearch" data-f-search placeholder="Search driver, phone, reference…" autocomplete="off"></label>
+          <select class="f-select" data-f-status aria-label="Filter by decision"><option value="all">All decisions</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select>
+          <select class="f-select" data-f-sort aria-label="Sort decisions"><option value="date:desc">Newest first</option><option value="date:asc">Oldest first</option><option value="amount:desc">Amount: high to low</option><option value="amount:asc">Amount: low to high</option><option value="status:asc">Status</option></select>
+          <label class="mini">From <input type="date" class="f-date" data-f-from aria-label="From date"></label>
+          <label class="mini">To <input type="date" class="f-date" data-f-to aria-label="To date"></label>
         </div>
-    </div>
-
-    <!-- ===================================================== -->
-    <!-- DRIVER PROFILE MODAL -->
-    <!-- ===================================================== -->
-    <div class="modal-overlay" id="profileModalOverlay" onclick="if(event.target === this) closeProfileModal()">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3><i class="fas fa-id-badge" style="color:#2563eb;"></i> <span id="profileModalName">Driver Profile</span></h3>
-                <button type="button" class="modal-close" onclick="closeProfileModal()"><i class="fas fa-xmark"></i></button>
-            </div>
-            <p class="modal-sub">Live driver details and recent bookings.</p>
-            <div id="profileModalBody"><div class="profile-loading"><i class="fas fa-spinner fa-spin"></i> Loading driver profile…</div></div>
+        <div class="ledger-wrap">
+          {% if recent_verifications %}
+          <div class="ledger-scroll"><table class="ledger stack">
+            <thead><tr><th>Driver</th><th>Booking</th><th>Amount</th><th>Reference</th><th>Decided</th><th>Remarks</th><th>Status</th></tr></thead>
+            <tbody data-rows>{% for order in recent_verifications %}
+              {% set amount = order.get('cash_submitted_amount', order.get('delivery_fee', 500)) %}{% set vstatus = order.get('payment_submission_status') %}
+              <tr data-row data-status="{{ vstatus }}" data-amount="{{ amount|int }}" data-date="{{ order.get('payment_verified_at')|fin_epoch }}"
+                  data-search="{{ [order.get('driver_name'), order.get('driver_email'), order.driver_phone, order.get('payment_transaction_ref')]|select|join(' ')|lower }}">
+                <td data-label="Driver"><div class="cell-primary">{{ order.driver_name if order.driver_name else order.get('driver_email','Unknown') }}</div></td>
+                <td data-label="Booking"><span class="ref">#{{ order._id|string|truncate(10, True, '') }}</span></td>
+                <td data-label="Amount"><span class="amt">{{ amount|inr }}</span></td>
+                <td data-label="Reference"><span class="ref">{{ order.get('payment_transaction_ref', '-') }}</span></td>
+                <td data-label="Decided"><div class="cell-secondary" style="margin:0">{{ order.get('payment_verified_at')|fin_dt('%d %b, %I:%M %p') }}</div></td>
+                <td data-label="Remarks"><div class="cell-secondary" style="margin:0">{{ order.get('payment_verification_remarks') or '—' }}</div></td>
+                <td data-label="Status">{{ badge(vstatus) }}</td>
+              </tr>{% endfor %}</tbody></table></div>
+          <div class="empty-ledger fin-noresult" hidden><i class="fas fa-magnifying-glass"></i><h4>No decisions match your filters</h4></div>
+          {% else %}
+          <div class="empty-ledger"><i class="fas fa-receipt" aria-hidden="true"></i><h4>No decisions yet</h4><p>Approved and rejected cash submissions will be listed here.</p></div>
+          {% endif %}
         </div>
+      </div>
     </div>
+  </section>
 
-    <script>
-        // ---------- PAY NOW MODAL ----------
-        function openPayModal(btn) {
-            const d = btn.dataset;
-            document.getElementById('payModalDriverLine').textContent = 'Paying ' + d.driver + ' — transfer manually, then confirm.';
-            document.getElementById('payModalAmount').textContent = '₹' + Number(d.amount).toLocaleString('en-IN');
-            document.getElementById('payHolder').textContent = d.holder;
-            document.getElementById('payBank').textContent = d.bank;
-            document.getElementById('payAccount').textContent = d.account;
-            document.getElementById('payIfsc').textContent = d.ifsc;
-            if (d.upi) {
-                document.getElementById('payUpiRow').style.display = 'flex';
-                document.getElementById('payUpi').textContent = d.upi;
-            } else {
-                document.getElementById('payUpiRow').style.display = 'none';
-            }
-            document.getElementById('confirmPaymentForm').setAttribute('action', d.confirmUrl);
-            document.getElementById('payModalOverlay').classList.add('open');
-        }
-        function closePayModal() {
-            document.getElementById('payModalOverlay').classList.remove('open');
-        }
+  <!-- ================= PAYMENT HISTORY ================= -->
+  <section class="fin-panel" data-panel="history" id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+    <div class="section-head">
+      <h3><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Driver Payment History <span class="count-chip">{{ history.total }} {{ 'entry' if history.total == 1 else 'entries' }}</span></h3>
+      <a class="btn-export" id="payoutExport" href="{{ url_for('finance_export_payouts', h_q=history.q or None, h_status=(history.status if history.status != 'withdrawn' else None), h_sort=(history.sort if history.sort != 'date_desc' else None), h_from=history.date_from or None, h_to=history.date_to or None) }}"><span class="chip-ic"><i class="fas fa-file-csv" aria-hidden="true"></i></span>Export CSV (Excel)</a>
+    </div>
+    <p class="section-note">Complete audit trail of driver payouts from the payment ledger, with the bank reference recorded when each payout was confirmed. Filters apply to the full history, not just this page.</p>
+    {% if section_errors.get('history') %}<div class="error-box"><i class="fas fa-triangle-exclamation"></i> Payment history could not be loaded. <button type="button" class="btn-soft" onclick="location.reload()">Retry</button></div>{% endif %}
+    <form method="get" action="{{ url_for('finance_management') }}" id="historyFilters" class="toolbar">
+      <label class="search-box" for="hSearch"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="text" id="hSearch" name="h_q" value="{{ history.q }}" placeholder="Search driver, phone, transaction or bank ref…" autocomplete="off"></label>
+      <select class="f-select" name="h_status" aria-label="Filter by status">{% for v, l in history_status_choices %}<option value="{{ v }}" {{ 'selected' if history.status == v }}>{{ l }}</option>{% endfor %}</select>
+      <select class="f-select" name="h_sort" aria-label="Sort history">{% for v, l in history_sort_choices %}<option value="{{ v }}" {{ 'selected' if history.sort == v }}>{{ l }}</option>{% endfor %}</select>
+      <label class="mini">From <input type="date" class="f-date" name="h_from" value="{{ history.date_from }}" aria-label="From date"></label>
+      <label class="mini">To <input type="date" class="f-date" name="h_to" value="{{ history.date_to }}" aria-label="To date"></label>
+      <button type="submit" class="btn-soft"><i class="fas fa-filter" aria-hidden="true"></i> Apply</button>
+      {% if history.active %}<a class="btn-soft" href="{{ url_for('finance_management') }}#history" data-replace>Clear filters</a>{% endif %}
+    </form>
+    <div class="ledger-wrap">
+      {% if history.rows %}
+      <div class="ledger-scroll"><table class="ledger stack">
+        <thead><tr><th>Transaction ref</th><th>Driver</th><th>Amount</th><th>Method</th><th>Processed by</th><th>Date &amp; time</th><th>Status</th><th></th></tr></thead>
+        <tbody>{% for txn in history.rows %}
+          <tr>
+            <td data-label="Transaction ref"><span class="ref">{{ txn.transaction_id }}</span>{% if txn.bank_reference %}<div class="cell-secondary">Bank ref <span class="ref">{{ txn.bank_reference }}</span></div>{% endif %}</td>
+            <td data-label="Driver"><div class="cell-primary">{{ txn.driver_name }}</div><div class="cell-secondary">{{ txn.driver_phone or txn.driver_email }}</div></td>
+            <td data-label="Amount"><span class="amt">{{ txn.amount|inr }}</span></td>
+            <td data-label="Method">{{ (txn.gateway or 'bank_transfer')|replace('_',' ')|title }}</td>
+            <td data-label="Processed by"><div class="cell-secondary" style="margin:0">{{ txn.admin_remarks or '—' }}</div></td>
+            <td data-label="Date &amp; time"><div class="cell-secondary" style="margin:0">{{ txn.updated_at|fin_dt }}</div></td>
+            <td data-label="Status">{{ badge(txn.status_label) }}</td>
+            <td class="actions-cell">{% if txn.settlement_request_id and txn.status == 'Withdrawn' %}<a class="btn-link" href="{{ url_for('settlement_receipt', request_id=txn.settlement_request_id) }}" target="_blank" rel="noopener"><i class="fas fa-file-invoice" aria-hidden="true"></i> Receipt</a>{% else %}<span class="cell-secondary">—</span>{% endif %}</td>
+          </tr>{% endfor %}</tbody></table></div>
+      <div class="pager">
+        <span>Showing {{ history.first }}–{{ history.last }} of {{ history.total }}</span>
+        <div class="pager-links">
+          <a href="#" class="{{ 'disabled' if history.page <= 1 }}" data-hpage="{{ history.page - 1 }}" data-replace-page aria-label="Previous page"><i class="fas fa-chevron-left"></i> Prev</a>
+          <span class="cur">Page {{ history.page }} of {{ history.pages }}</span>
+          <a href="#" class="{{ 'disabled' if history.page >= history.pages }}" data-hpage="{{ history.page + 1 }}" data-replace-page aria-label="Next page">Next <i class="fas fa-chevron-right"></i></a>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-ledger"><i class="fas fa-receipt" aria-hidden="true"></i><h4>{{ 'No payments match your filters' if history.active else 'No payments yet' }}</h4><p>{{ 'Try a different search, status or date range.' if history.active else 'Confirmed driver payouts will be listed here with full transaction details.' }}</p></div>
+      {% endif %}
+    </div>
+  </section>
 
-        // ---------- BANK DETAILS MODAL ----------
-        function openBankModal(btn) {
-            const d = btn.dataset;
-            document.getElementById('bankHolder').textContent = d.holder;
-            document.getElementById('bankBank').textContent = d.bank;
-            document.getElementById('bankAccount').textContent = d.account;
-            document.getElementById('bankIfsc').textContent = d.ifsc;
-            document.getElementById('bankStatus').textContent = d.status;
-            if (d.upi) {
-                document.getElementById('bankUpiRow').style.display = 'flex';
-                document.getElementById('bankUpi').textContent = d.upi;
-            } else {
-                document.getElementById('bankUpiRow').style.display = 'none';
-            }
-            document.getElementById('bankModalOverlay').classList.add('open');
-        }
-        function closeBankModal() {
-            document.getElementById('bankModalOverlay').classList.remove('open');
-        }
+  </main>
+</div>
 
-        // ---------- COPY TO CLIPBOARD ----------
-        function copyField(id, btn) {
-            const text = document.getElementById(id).textContent;
-            navigator.clipboard.writeText(text).then(function () {
-                btn.classList.add('copied');
-                btn.innerHTML = '<i class="fas fa-check"></i>';
-                setTimeout(function () {
-                    btn.classList.remove('copied');
-                    btn.innerHTML = '<i class="fas fa-copy"></i>';
-                }, 1500);
-            });
-        }
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
-        // ---------- DRIVER PROFILE MODAL ----------
-        function openProfileModal(driverId, driverName) {
-            document.getElementById('profileModalName').textContent = driverName;
-            document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading"><i class="fas fa-spinner fa-spin"></i> Loading driver profile…</div>';
-            document.getElementById('profileModalOverlay').classList.add('open');
+<!-- ================= PAY MODAL ================= -->
+<div class="glass-modal" id="payModal" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+  <div class="modal-card">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+    <h3 id="payTitle"><i class="fas fa-money-check-dollar" style="color:var(--green-600)" aria-hidden="true"></i> Pay driver</h3>
+    <p class="modal-sub" id="payLine">Transfer manually via your banking app, then record the bank reference below.</p>
+    <div class="pay-banner"><small>Requested amount</small><div id="payAmount">—</div></div>
+    <div class="detail-row"><span class="d-label">Account holder</span><span class="d-value" id="payHolder">—</span></div>
+    <div class="detail-row"><span class="d-label">Bank</span><span class="d-value" id="payBank">—</span></div>
+    <div class="detail-row"><span class="d-label">Account number</span><span class="d-value"><span class="ref" id="payAccount">—</span>
+      <button type="button" class="icon-mini" id="payReveal" aria-label="Reveal account number"><i class="fas fa-eye"></i> Reveal</button>
+      <button type="button" class="icon-mini" id="payCopyAcct" aria-label="Copy account number"><i class="fas fa-copy"></i> Copy</button></span></div>
+    <div class="detail-row"><span class="d-label">IFSC</span><span class="d-value"><span class="ref" id="payIfsc">—</span><button type="button" class="icon-mini" id="payCopyIfsc" aria-label="Copy IFSC"><i class="fas fa-copy"></i> Copy</button></span></div>
+    <div class="detail-row" id="payUpiRow" hidden><span class="d-label">UPI ID</span><span class="d-value"><span class="ref" id="payUpi">—</span><button type="button" class="icon-mini" id="payCopyUpi" aria-label="Copy UPI ID"><i class="fas fa-copy"></i> Copy</button></span></div>
+    <div class="warn-note" id="payBankWarn" hidden><i class="fas fa-triangle-exclamation"></i> This driver's bank details are not <strong>Approved</strong>. Double-check the account before paying.</div>
+    <form id="payForm" method="POST" action="" data-async>
+      <div class="field" style="margin-top:14px"><label for="payRef">Bank / UPI transaction reference <span class="req" aria-hidden="true">*</span></label>
+        <input type="text" id="payRef" name="bank_reference" maxlength="40" autocomplete="off" placeholder="UTR / UPI ref from your bank statement" style="text-transform:uppercase">
+        <div class="hint">6–40 letters, numbers, - _ or /. Recorded on the payout and the receipt.</div></div>
+      <label class="check-row"><input type="checkbox" id="payConfirm"><span>I have completed this transfer and the reference above comes from my bank. I understand this marks the payout as <strong>Paid</strong> and cannot be undone.</span></label>
+      <div class="modal-actions"><button type="button" class="btn-ghost" data-close>Cancel</button><button type="submit" class="btn-ok" id="paySubmit" disabled><i class="fas fa-check-double"></i> Confirm payment</button></div>
+    </form>
+  </div>
+</div>
 
-            if (!driverId) {
-                document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading">Driver record not found.</div>';
-                return;
-            }
+<!-- ================= DRIVER BANK MODAL ================= -->
+<div class="glass-modal" id="bankModal" role="dialog" aria-modal="true" aria-labelledby="bankTitle">
+  <div class="modal-card sm">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+    <h3 id="bankTitle"><i class="fas fa-building-columns" style="color:var(--teal-700)" aria-hidden="true"></i> Bank details</h3>
+    <p class="modal-sub">Where this driver's payout will be sent.</p>
+    <div class="detail-row"><span class="d-label">Account holder</span><span class="d-value" id="bmHolder">—</span></div>
+    <div class="detail-row"><span class="d-label">Bank</span><span class="d-value" id="bmBank">—</span></div>
+    <div class="detail-row"><span class="d-label">Account number</span><span class="d-value"><span class="ref" id="bmAccount">—</span><button type="button" class="icon-mini" id="bmReveal" aria-label="Reveal account number"><i class="fas fa-eye"></i> Reveal</button></span></div>
+    <div class="detail-row"><span class="d-label">IFSC</span><span class="d-value" id="bmIfsc">—</span></div>
+    <div class="detail-row" id="bmUpiRow" hidden><span class="d-label">UPI ID</span><span class="d-value" id="bmUpi">—</span></div>
+    <div class="detail-row"><span class="d-label">Verification</span><span class="d-value" id="bmStatus">—</span></div>
+  </div>
+</div>
 
-            fetch('/driver-details/' + driverId)
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data.success) {
-                        document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading">Could not load this driver.</div>';
-                        return;
-                    }
-                    const drv = data.driver;
-                    const bookings = data.bookings || [];
-                    const delivered = bookings.filter(function (b) { return b.status === 'Delivered'; }).length;
-                    let html = '';
-                    html += '<div class="profile-row"><span class="pl">Email</span><span class="pv">' + (drv.email || '—') + '</span></div>';
-                    html += '<div class="profile-row"><span class="pl">Phone</span><span class="pv">' + (drv.phone || '—') + '</span></div>';
-                    html += '<div class="profile-row"><span class="pl">Address</span><span class="pv">' + (drv.address || '—') + '</span></div>';
-                    html += '<div class="profile-row"><span class="pl">Truck Number</span><span class="pv">' + (drv.truck_number || '—') + '</span></div>';
-                    html += '<div class="profile-row"><span class="pl">Truck Capacity</span><span class="pv">' + (drv.truck_capacity || '—') + ' L</span></div>';
-                    html += '<div class="profile-row"><span class="pl">Online Status</span><span class="pv">' + (drv.online_status || '—') + '</span></div>';
-                    html += '<div class="profile-row"><span class="pl">Total Bookings</span><span class="pv">' + bookings.length + '</span></div>';
-                    html += '<div class="profile-row"><span class="pl">Delivered</span><span class="pv">' + delivered + '</span></div>';
-                    document.getElementById('profileModalBody').innerHTML = html;
-                })
-                .catch(function () {
-                    document.getElementById('profileModalBody').innerHTML = '<div class="profile-loading">Could not load this driver.</div>';
-                });
-        }
-        function closeProfileModal() {
-            document.getElementById('profileModalOverlay').classList.remove('open');
-        }
+<!-- ================= DRIVER PROFILE MODAL ================= -->
+<div class="glass-modal" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profTitle">
+  <div class="modal-card sm">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+    <h3 id="profTitle"><i class="fas fa-id-badge" style="color:var(--violet-600)" aria-hidden="true"></i> <span id="profName">Driver profile</span></h3>
+    <p class="modal-sub">Live driver details and booking totals.</p>
+    <div id="profBody"></div>
+  </div>
+</div>
 
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') { closePayModal(); closeBankModal(); closeProfileModal(); }
-        });
-    </script>
+<!-- ================= CONFIRM MODAL ================= -->
+<div class="glass-modal" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfMsg">
+  <div class="modal-card sm">
+    <h3 id="cfTitle">Are you sure?</h3>
+    <p class="modal-sub" id="cfMsg" style="margin-bottom:0"></p>
+    <textarea class="confirm-remarks" id="cfRemarks" placeholder="Reason (optional, sent to the driver)" maxlength="300" hidden aria-label="Reason"></textarea>
+    <div class="modal-actions"><button type="button" class="btn-ghost" id="cfCancel">Cancel</button><button type="button" class="btn-ok" id="cfOk">Confirm</button></div>
+  </div>
+</div>
 
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var INITIAL_TAB = {{ initial_tab|tojson }};
+  var HISTORY_PARAMS = ['h_q','h_status','h_sort','h_from','h_to'];
+  var HISTORY_DEFAULTS = { h_status: 'withdrawn', h_sort: 'date_desc' };
+  var HISTORY_BASE = {{ url_for('finance_management')|tojson }};
+  var CASH_EXPORT = {{ url_for('finance_export_cash')|tojson }};
+  var SUMMARY_URL = {{ url_for('finance_summary_api')|tojson }};
+  var COMPANY_REVEAL_URL = {{ url_for('reveal_company_account')|tojson }};
+
+  /* ---------- toasts ---------- */
+  function toast(type, msg) {
+    var box = document.createElement('div');
+    box.className = 'flash-toast flash-' + type;
+    var ic = document.createElement('i');
+    ic.className = 'fas ' + (type === 'success' ? 'fa-circle-check' : type === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-info');
+    var span = document.createElement('span'); span.style.flex = '1'; span.textContent = msg;
+    box.appendChild(ic); box.appendChild(span);
+    $('#toastStack').appendChild(box);
+    setTimeout(function () { box.style.transition = 'opacity .4s'; box.style.opacity = '0'; setTimeout(function () { box.remove(); }, 400); }, 6000);
+  }
+  var fz = $('#flashZone');
+  if (fz) setTimeout(function () { fz.style.transition = 'opacity .4s'; fz.style.opacity = '0'; setTimeout(function () { fz.remove(); }, 400); }, 8000);
+
+  /* ---------- tabs (switching never adds browser-history entries) ---------- */
+  var tabs = $$('[data-tab]'), panels = $$('[data-panel]');
+  function showTab(name, opts) {
+    if (!panels.some(function (p) { return p.dataset.panel === name; })) name = 'overview';
+    panels.forEach(function (p) { p.hidden = p.dataset.panel !== name; });
+    tabs.forEach(function (t) { var on = t.dataset.tab === name; t.classList.toggle('active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; });
+    if (!opts || opts.hash !== false) history.replaceState(null, '', location.pathname + location.search + '#' + name);
+    return name;
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { showTab(t.dataset.tab); });
+    t.addEventListener('keydown', function (e) {
+      var n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
+      if (n === null) return; e.preventDefault();
+      var next = tabs[(n + tabs.length) % tabs.length]; next.focus(); showTab(next.dataset.tab);
+    });
+  });
+  $$('[data-goto-tab]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.preventDefault(); showTab(b.dataset.gotoTab); var bar = $('.control-bar'); if (bar) bar.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+  });
+  var activeTab = showTab((location.hash || '').replace('#', '') || INITIAL_TAB || 'overview', { hash: !!location.hash });
+  function currentTab() { var a = $('[data-tab].active'); return a ? a.dataset.tab : activeTab; }
+
+  /* ---------- client-side search / filter / sort for the pending tables ---------- */
+  function dayStart(input, add) {
+    if (!input || !input.value) return 0;
+    var t = new Date(input.value + 'T00:00:00').getTime() / 1000;
+    return isNaN(t) ? 0 : t + add;
+  }
+  function applyFilter(scope) {
+    var q = (($('[data-f-search]', scope) || {}).value || '').trim().toLowerCase();
+    var st = ($('[data-f-status]', scope) || {}).value || 'all';
+    var from = dayStart($('[data-f-from]', scope), 0), to = dayStart($('[data-f-to]', scope), 86400);
+    var sortSel = $('[data-f-sort]', scope), body = $('[data-rows]', scope);
+    if (!body) return;
+    var rows = $$('tr[data-row]', body);
+    if (sortSel && sortSel.value) {
+      var p = sortSel.value.split(':'), key = p[0], dir = p[1] === 'desc' ? -1 : 1;
+      rows.sort(function (a, b) {
+        var x = key === 'status' ? a.dataset.status.localeCompare(b.dataset.status) : (+a.dataset[key] - +b.dataset[key]);
+        return x * dir;
+      });
+      rows.forEach(function (r) { body.appendChild(r); });
+    }
+    var shown = 0;
+    rows.forEach(function (r) {
+      var ok = (!q || r.dataset.search.indexOf(q) > -1) && (st === 'all' || r.dataset.status === st) &&
+               (!from || +r.dataset.date >= from) && (!to || +r.dataset.date < to);
+      r.hidden = !ok; if (ok) shown++;
+    });
+    var none = $('.fin-noresult', scope); if (none) none.hidden = shown !== 0;
+    var chip = scope.parentNode ? $('[data-f-count]', scope.parentNode) : null;
+    if (chip) chip.textContent = shown + (shown === 1 ? ' entry' : ' entries');
+    if (scope.hasAttribute('data-cod-scope')) updateCodExport(scope);
+  }
+  function updateCodExport(scope) {
+    var a = $('#codExport'); if (!a) return;
+    var p = new URLSearchParams(), st = ($('[data-f-status]', scope) || {}).value;
+    p.set('c_status', st === 'Approved' || st === 'Rejected' ? st : 'decided');
+    var q = ($('[data-f-search]', scope) || {}).value; if (q) p.set('c_q', q.trim());
+    var f = ($('[data-f-from]', scope) || {}).value, t = ($('[data-f-to]', scope) || {}).value;
+    if (f) p.set('c_from', f); if (t) p.set('c_to', t);
+    a.href = CASH_EXPORT + '?' + p.toString();
+  }
+  $$('[data-filter-scope]').forEach(function (scope) {
+    ['input', 'change'].forEach(function (ev) { scope.addEventListener(ev, function (e) { if (e.target.matches('[data-f-search],[data-f-status],[data-f-sort],[data-f-from],[data-f-to]')) applyFilter(scope); }); });
+    applyFilter(scope);
+  });
+  /* ---------- payout history: server-side filters, applied WITHOUT pushing history ---------- */
+  function historyUrl(page) {
+    var p = new URLSearchParams(), f = $('#historyFilters');
+    HISTORY_PARAMS.forEach(function (k) { var el = f.elements[k]; var v = el ? el.value.trim() : ''; if (v && v !== HISTORY_DEFAULTS[k]) p.set(k, v); });
+    if (page > 1) p.set('h_page', page);
+    var qs = p.toString();
+    return { page: HISTORY_BASE + (qs ? '?' + qs : '') + '#history', query: qs };
+  }
+  var hf = $('#historyFilters');
+  if (hf) {
+    hf.addEventListener('submit', function (e) { e.preventDefault(); location.replace(historyUrl(1).page); });
+    $$('select,input[type=date]', hf).forEach(function (el) { el.addEventListener('change', function () { location.replace(historyUrl(1).page); }); });
+    $$('[data-replace-page]').forEach(function (a) {
+      a.addEventListener('click', function (e) { e.preventDefault(); if (a.classList.contains('disabled')) return; location.replace(historyUrl(+a.dataset.hpage).page); });
+    });
+    $$('a[data-replace]').forEach(function (a) {
+      a.addEventListener('click', function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); location.replace(a.href); });
+    });
+  }
+
+  /* ---------- modals ---------- */
+  var lastFocus = null, openStack = [];
+  function openModal(el) { lastFocus = document.activeElement; el.classList.add('open'); openStack.push(el); var f = el.querySelector('input:not([type=hidden]),button:not([data-close]),textarea,[data-close]'); if (f) setTimeout(function () { f.focus(); }, 30); }
+  function closeModal(el) { el.classList.remove('open'); openStack = openStack.filter(function (m) { return m !== el; }); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  $$('.glass-modal').forEach(function (m) {
+    m.addEventListener('mousedown', function (e) { if (e.target === m && m.id !== 'confirmModal') closeModal(m); });
+    $$('[data-close]', m).forEach(function (b) { b.addEventListener('click', function () { closeModal(m); }); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && openStack.length) { var top = openStack[openStack.length - 1]; if (top.id === 'confirmModal') $('#cfCancel').click(); else closeModal(top); }
+    if (e.key === 'Tab' && openStack.length) {   // keep keyboard focus inside the open dialog
+      var m = openStack[openStack.length - 1], f = $$('button:not([disabled]),input:not([disabled]):not([type=hidden]),textarea,select', m).filter(function (x) { return x.offsetParent !== null; });
+      if (!f.length) return; var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  /* ---------- confirm dialog (replaces window.confirm) ---------- */
+  function confirmDialog(o) {
+    return new Promise(function (resolve) {
+      var m = $('#confirmModal'), ok = $('#cfOk'), cancel = $('#cfCancel'), rem = $('#cfRemarks');
+      $('#cfTitle').textContent = o.title || 'Are you sure?'; $('#cfMsg').textContent = o.message || '';
+      ok.textContent = o.okText || 'Confirm'; ok.className = o.tone === 'danger' ? 'btn-danger' : 'btn-ok';
+      rem.hidden = !o.remarks; rem.value = '';
+      function done(v) { ok.removeEventListener('click', yes); cancel.removeEventListener('click', no); closeModal(m); resolve(v); }
+      function yes() { done({ ok: true, remarks: o.remarks ? rem.value.trim() : undefined }); }
+      function no() { done({ ok: false }); }
+      ok.addEventListener('click', yes); cancel.addEventListener('click', no);
+      openModal(m); cancel.focus();
+    });
+  }
+
+  /* ---------- async actions: one submit, no history entry, no double-processing ---------- */
+  function setBusy(form, on) {
+    form.dataset.busy = on ? '1' : '0';
+    $$('button[type=submit]', form).forEach(function (b) {
+      b.disabled = on;
+      if (on) { b.dataset.html = b.innerHTML; b.innerHTML = '<i class="fas fa-spinner spin" aria-hidden="true"></i> Working…'; }
+      else if (b.dataset.html) { b.innerHTML = b.dataset.html; }
+    });
+  }
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest ? e.target.closest('form[data-async]') : null;
+    if (!form) return;
+    e.preventDefault();
+    if (form.dataset.busy === '1') return;
+    var go = function (remarks) {
+      if (remarks) { var h = document.createElement('input'); h.type = 'hidden'; h.name = 'remarks'; h.value = remarks; form.appendChild(h); }
+      setBusy(form, true);
+      // getAttribute: a hidden <input name="action"> (COD forms) shadows the form.action property
+      fetch(form.getAttribute('action'), { method: 'POST', body: new FormData(form), credentials: 'same-origin', redirect: 'manual', headers: { 'X-Requested-With': 'fetch' } })
+        .then(function (res) {
+          // The server answers every action with a redirect (+ a flash message).
+          // Reload in place so the message shows; reload() adds no history entry.
+          if (res.type === 'opaqueredirect' || res.ok) { location.reload(); return; }
+          throw new Error('HTTP ' + res.status);
+        })
+        .catch(function () { setBusy(form, false); toast('danger', 'That action could not be completed. Nothing was changed — please try again.'); });
+    };
+    if (form.dataset.confirmTitle) {
+      confirmDialog({ title: form.dataset.confirmTitle, message: form.dataset.confirmMsg, tone: form.dataset.confirmTone, okText: form.dataset.confirmOk, remarks: form.dataset.confirmRemarks === '1' })
+        .then(function (r) { if (r.ok) go(r.remarks); });
+    } else { go(); }
+  });
+
+  /* ---------- reveal / copy helpers (full numbers are fetched on demand, admin-only) ---------- */
+  function fetchAccount(url) {
+    return fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) { if (!d.ok) throw new Error(); return d.account_number || ''; });
+  }
+  function copyText(t, btn) {
+    var ok = function () { var h = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(function () { btn.innerHTML = h; }, 1400); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, function () { toast('danger', 'Could not copy to the clipboard.'); });
+    else toast('danger', 'Copy is not available in this browser.');
+  }
+  $$('.js-reveal').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var span = b.parentNode.querySelector('.js-acct');
+      if (b.dataset.shown === '1') { span.textContent = span.dataset.masked; b.dataset.shown = '0'; b.innerHTML = '<i class="fas fa-eye"></i> Reveal'; return; }
+      b.disabled = true;
+      fetchAccount(b.dataset.url).then(function (n) { span.textContent = n || 'Not provided'; b.dataset.shown = '1'; b.innerHTML = '<i class="fas fa-eye-slash"></i> Hide'; })
+        .catch(function () { toast('danger', 'Could not reveal the account number.'); }).then(function () { b.disabled = false; });
+    });
+  });
+
+  /* ---------- pay modal ---------- */
+  var pay = { account: null, url: '' };
+  function validRef(v) { return /^[A-Za-z0-9][A-Za-z0-9\-_\/]{5,39}$/.test(v); }
+  function payCheck() { $('#paySubmit').disabled = !(validRef($('#payRef').value.trim()) && $('#payConfirm').checked); }
+  $$('.js-pay').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var d = b.dataset; pay = { account: null, url: d.accountUrl };
+      $('#payLine').textContent = 'Paying ' + d.driver + ' — transfer manually, then record the bank reference below.';
+      $('#payAmount').textContent = d.amount; $('#payHolder').textContent = d.holder; $('#payBank').textContent = d.bank;
+      $('#payAccount').textContent = d.accountMasked; $('#payIfsc').textContent = d.ifsc;
+      $('#payReveal').innerHTML = '<i class="fas fa-eye"></i> Reveal'; $('#payReveal').dataset.shown = '0';
+      $('#payUpiRow').hidden = !d.upi; $('#payUpi').textContent = d.upi;
+      $('#payBankWarn').hidden = d.bankStatus === 'Approved';
+      $('#payForm').action = d.confirmUrl; $('#payRef').value = ''; $('#payConfirm').checked = false; payCheck();
+      openModal($('#payModal'));
+    });
+  });
+  $('#payRef').addEventListener('input', payCheck); $('#payConfirm').addEventListener('change', payCheck);
+  $('#payReveal').addEventListener('click', function () {
+    var b = this;
+    if (b.dataset.shown === '1') { $('#payAccount').textContent = $$('.js-pay').filter(function (x) { return x.dataset.accountUrl === pay.url; })[0].dataset.accountMasked; b.dataset.shown = '0'; b.innerHTML = '<i class="fas fa-eye"></i> Reveal'; return; }
+    fetchAccount(pay.url).then(function (n) { pay.account = n; $('#payAccount').textContent = n || 'Not provided'; b.dataset.shown = '1'; b.innerHTML = '<i class="fas fa-eye-slash"></i> Hide'; }).catch(function () { toast('danger', 'Could not reveal the account number.'); });
+  });
+  $('#payCopyAcct').addEventListener('click', function () {
+    var b = this; if (pay.account !== null) return copyText(pay.account, b);
+    fetchAccount(pay.url).then(function (n) { pay.account = n; copyText(n, b); }).catch(function () { toast('danger', 'Could not copy the account number.'); });
+  });
+  $('#payCopyIfsc').addEventListener('click', function () { copyText($('#payIfsc').textContent, this); });
+  $('#payCopyUpi').addEventListener('click', function () { copyText($('#payUpi').textContent, this); });
+  $('#payForm').addEventListener('submit', function (e) { if (!validRef($('#payRef').value.trim()) || !$('#payConfirm').checked) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+
+  /* ---------- driver bank modal ---------- */
+  var bm = { url: '', masked: '' };
+  $$('.js-bank').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var d = b.dataset; bm = { url: d.accountUrl, masked: d.accountMasked };
+      $('#bmHolder').textContent = d.holder; $('#bmBank').textContent = d.bank; $('#bmAccount').textContent = d.accountMasked;
+      $('#bmIfsc').textContent = d.ifsc; $('#bmStatus').textContent = d.status; $('#bmUpiRow').hidden = !d.upi; $('#bmUpi').textContent = d.upi;
+      $('#bmReveal').innerHTML = '<i class="fas fa-eye"></i> Reveal'; $('#bmReveal').dataset.shown = '0';
+      openModal($('#bankModal'));
+    });
+  });
+  $('#bmReveal').addEventListener('click', function () {
+    var b = this;
+    if (b.dataset.shown === '1') { $('#bmAccount').textContent = bm.masked; b.dataset.shown = '0'; b.innerHTML = '<i class="fas fa-eye"></i> Reveal'; return; }
+    fetchAccount(bm.url).then(function (n) { $('#bmAccount').textContent = n || 'Not provided'; b.dataset.shown = '1'; b.innerHTML = '<i class="fas fa-eye-slash"></i> Hide'; }).catch(function () { toast('danger', 'Could not reveal the account number.'); });
+  });
+
+  /* ---------- driver profile modal (rendered with textContent: no HTML injection) ---------- */
+  $$('.js-profile').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var body = $('#profBody'); $('#profName').textContent = b.dataset.driverName || 'Driver profile';
+      body.textContent = 'Loading driver profile…'; openModal($('#profileModal'));
+      if (!b.dataset.driverId) { body.textContent = 'Driver record not found.'; return; }
+      fetch('/driver-details/' + encodeURIComponent(b.dataset.driverId), { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.success) { body.textContent = 'Could not load this driver.'; return; }
+          var drv = data.driver, bookings = data.bookings || [];
+          var rows = [['Email', drv.email], ['Phone', drv.phone], ['Address', drv.address], ['Truck number', drv.truck_number],
+            ['Truck capacity', drv.truck_capacity ? drv.truck_capacity + ' L' : ''], ['Online status', drv.online_status],
+            ['Total bookings', bookings.length], ['Delivered', bookings.filter(function (x) { return x.status === 'Delivered'; }).length]];
+          body.textContent = '';
+          rows.forEach(function (r) {
+            var row = document.createElement('div'); row.className = 'detail-row';
+            var l = document.createElement('span'); l.className = 'd-label'; l.textContent = r[0];
+            var v = document.createElement('span'); v.className = 'd-value'; v.textContent = (r[1] === undefined || r[1] === null || r[1] === '') ? '—' : r[1];
+            row.appendChild(l); row.appendChild(v); body.appendChild(row);
+          });
+        }).catch(function () { body.textContent = 'Could not load this driver.'; });
+    });
+  });
+
+  /* ---------- company bank form ---------- */
+  var bankForm = $('#bankForm');
+  if (bankForm) {
+    var rx = { ifsc: /^[A-Z]{4}0[A-Z0-9]{6}$/, upi: /^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/, acct: /^\d{9,18}$/ };
+    var F = { name: $('#f_bank_name'), holder: $('#f_holder'), acct: $('#f_account'), ifsc: $('#f_ifsc'), upi: $('#f_upi'), qr: $('#f_qr') };
+    var hasSaved = !$('#acctSaved').hidden;
+    function mark(el, bad, msg) { el.classList.toggle('invalid', !!bad); var e = el.parentNode.querySelector('.err'); if (e && msg) e.textContent = msg; return !bad; }
+    function validate() {
+      var typed = F.acct.value.replace(/[\s-]/g, ''), ifsc = F.ifsc.value.trim().toUpperCase(), upi = F.upi.value.trim(), name = F.name.value.trim();
+      var haveAcct = !!typed || hasSaved, bankGiven = haveAcct || !!ifsc, ok = true;
+      ok = mark(F.holder, !F.holder.value.trim()) && ok;
+      var acctErr = typed ? !rx.acct.test(typed) : (bankGiven && !haveAcct);
+      ok = mark(F.acct, acctErr, typed ? 'Account number should be 9–18 digits.' : 'Account number is required together with the IFSC code.') && ok;
+      ok = mark(F.ifsc, ifsc ? !rx.ifsc.test(ifsc) : bankGiven, ifsc ? 'IFSC looks invalid (format: CNRB0001234).' : 'IFSC code is required together with the account number.') && ok;
+      ok = mark(F.upi, upi && !rx.upi.test(upi)) && ok;
+      ok = mark(F.name, bankGiven && !name, 'Bank name is required with bank account details.') && ok;
+      if (!bankGiven && !upi) { ok = false; showStatus(false, 'Enter bank account details, a UPI ID, or both.'); }
+      return ok;
+    }
+    function showStatus(good, msg) { var s = $('#bankStatus'); s.className = 'form-status ' + (good ? 'ok' : 'bad'); s.textContent = ''; var i = document.createElement('i'); i.className = 'fas ' + (good ? 'fa-circle-check' : 'fa-triangle-exclamation'); s.appendChild(i); s.appendChild(document.createTextNode(' ' + msg)); }
+    ['blur', 'input'].forEach(function (ev) { [F.holder, F.acct, F.ifsc, F.upi].forEach(function (el) { el.addEventListener(ev, function () { if (el.classList.contains('invalid') || ev === 'blur') validate(); }); }); });
+    F.qr.addEventListener('change', function () {
+      var f = F.qr.files[0], err = $('#e_qr'); err.style.display = 'none';
+      if (!f) return;
+      if (!/\.(png|jpe?g|webp)$/i.test(f.name) || f.size > 5 * 1024 * 1024) { err.textContent = !/\.(png|jpe?g|webp)$/i.test(f.name) ? 'QR must be a PNG, JPG or WEBP image.' : 'QR image must be 5 MB or smaller.'; err.style.display = 'block'; F.qr.value = ''; return; }
+      var frame = $('#qrFrame'), img = $('#qrPreview');
+      if (!img) { frame.textContent = ''; img = document.createElement('img'); img.id = 'qrPreview'; img.alt = 'Selected QR code preview'; frame.appendChild(img); }
+      img.src = URL.createObjectURL(f);
+    });
+    $('.js-reveal-company').addEventListener('click', function () {
+      var b = this, chip = $('#acctMasked');
+      if (b.dataset.shown === '1') { chip.textContent = chip.dataset.masked; b.dataset.shown = '0'; b.innerHTML = '<i class="fas fa-eye"></i> Reveal'; return; }
+      chip.dataset.masked = chip.textContent;
+      fetchAccount(COMPANY_REVEAL_URL).then(function (n) { chip.textContent = n || 'Not set'; b.dataset.shown = '1'; b.innerHTML = '<i class="fas fa-eye-slash"></i> Hide'; }).catch(function () { toast('danger', 'Could not reveal the account number.'); });
+    });
+    bankForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (bankForm.dataset.busy === '1') return;
+      $('#bankStatus').className = 'form-status';
+      if (!validate()) { var bad = $('.invalid', bankForm); if (bad) bad.focus(); return; }
+      var btn = $('#bankSave'), html = btn.innerHTML; bankForm.dataset.busy = '1'; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner spin"></i> Saving…';
+      var fd = new FormData(bankForm);
+      fd.set('keep_account_number', F.acct.value.trim() ? '0' : '1');
+      fetch(bankForm.action, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Accept': 'application/json' } })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, message: 'Unexpected server response (HTTP ' + r.status + ').' }; }); })
+        .then(function (d) {
+          if (!d.ok) { showStatus(false, d.message || 'Could not save.'); toast('danger', d.message || 'Could not save.'); return; }
+          var b = d.bank;
+          showStatus(true, d.message); toast('success', d.message);
+          $('#acctMasked').textContent = b.account_number_masked; $('#acctMasked').dataset.masked = b.account_number_masked;
+          $('#acctSaved').hidden = !b.has_account_number; hasSaved = b.has_account_number;
+          var rv = $('.js-reveal-company'); rv.dataset.shown = '0'; rv.innerHTML = '<i class="fas fa-eye"></i> Reveal';
+          F.acct.value = ''; F.acct.placeholder = 'Enter a new number to replace the saved one'; F.ifsc.value = b.ifsc; F.upi.value = b.upi_id; F.qr.value = '';
+          if (b.qr_url) { var frame = $('#qrFrame'), img = $('#qrPreview'); if (!img) { frame.textContent = ''; img = document.createElement('img'); img.id = 'qrPreview'; img.alt = 'Current company payment QR code'; frame.appendChild(img); } img.src = b.qr_url; }
+          $('#bankMeta').textContent = 'Last updated ' + b.updated_at + (b.updated_by ? ' by ' + b.updated_by : '');
+        })
+        .catch(function () { showStatus(false, 'Network problem — nothing was saved. Please try again.'); })
+        .then(function () { bankForm.dataset.busy = '0'; btn.disabled = false; btn.innerHTML = html; });
+    });
+  }
+
+  /* ---------- summary refresh (loading + error states) ---------- */
+  $('#kpiRefresh').addEventListener('click', function () {
+    var btn = this, cards = $$('.kpi'); btn.disabled = true; btn.firstElementChild.classList.add('spin');
+    cards.forEach(function (c) { c.classList.add('is-loading'); c.classList.remove('is-error'); });
+    fetch(SUMMARY_URL, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) {
+        if (!d.ok) throw new Error();
+        Object.keys(d.values).forEach(function (k) { var c = $('[data-kpi="' + k + '"] .kpi-value'); if (c) { c.textContent = d.values[k]; c.title = d.values[k]; } });
+        $('#kpiUpdated').textContent = d.updated;
+      })
+      .catch(function () { cards.forEach(function (c) { c.classList.add('is-error'); }); toast('danger', 'Could not refresh the figures. The values shown may be out of date.'); })
+      .then(function () { cards.forEach(function (c) { c.classList.remove('is-loading'); }); btn.disabled = false; btn.firstElementChild.classList.remove('spin'); });
+  });
+})();
+</script>
 </body>
-
 </html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#EEF3F4">
+{# OpenStreetMap's tile policy requires the browser to send a Referer. #}
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>AquaFlow Console | {% block title %}Live Fleet Command Center{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+{# static files are served with a 1-year immutable cache, so bump ?v= when they change #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fleet-center.css') }}?v=fleet2">
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+    {% include "_fleet_header.html" %}
+    {% block crumbs %}{% endblock %}
+    {% block strip %}{% endblock %}
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+<script src="{{ url_for('static', filename='js/fleet-map.js') }}?v=fleet2"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

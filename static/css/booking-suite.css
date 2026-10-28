@@ -448,3 +448,93 @@ button{ font-family:inherit; }
   .header-actions{ width:100%; }
   .header-actions .btn{ flex:1; }
 }
+
+/* =====================================================================
+   BOOKING HISTORY · first-screen fit
+   Goal: on a normal laptop viewport the first row of booking cards
+   (including the full "Track Booking" button and the card's bottom edge)
+   is visible without scrolling. Scoped to body.history-page so Quick
+   Rebook, My Payments, Notifications and Admin Users are untouched.
+   ===================================================================== */
+body.history-page{ padding-top:18px; }
+body.history-page .util-bar{ margin-bottom:12px; }
+
+/* header panel: tighter padding, subtitle on a single line */
+body.history-page .top-panel{ padding:22px 30px; margin-bottom:16px; }
+body.history-page .title-box p{ max-width:680px; margin-top:4px; }
+body.history-page .premium-badge{ margin-top:9px; }
+
+/* stat tiles */
+body.history-page .stats-grid{ margin-bottom:14px; }
+body.history-page .stat-tile{ padding:13px 18px; gap:10px; }
+
+/* search / filter bar */
+body.history-page .toolbar{ margin-bottom:14px; padding:10px 14px; }
+
+/* booking cards */
+body.history-page .card-head{ padding:14px 20px 10px 24px; }
+body.history-page .field-row{ padding:7px 0; }
+body.history-page .card-foot{ padding:10px 18px 14px 20px; }
+
+/* when the first row is stretched to the bottom of the first screen (see fitFirstRow in
+   history.html), spread the extra height evenly between the fields; Track Booking stays
+   pinned to the card's bottom edge */
+body.history-page .card-body{ display:flex; flex-direction:column; justify-content:space-evenly; }
+
+@media (max-width:760px){
+  body.history-page{ padding-top:16px; }
+  body.history-page .top-panel{ padding:20px 18px; }
+}
+
+/* =====================================================================
+   QUICK REBOOK · first-screen fit
+   Goal: the first row of Quick Rebook cards (address, fields, the full
+   "Rebook this delivery" button AND "Remove from quick list") is fully
+   visible in the first screen and ends exactly at the bottom edge of
+   that screen; the next row only appears after scrolling. Scoped to
+   body.rebook-page so every other page is untouched. The script in
+   quick_rebook.html (fitFirstRow) measures the real window height and
+   stretches/tightens the first row; the classes below are its levers.
+   ===================================================================== */
+body.rebook-page{ padding-top:18px; }
+body.rebook-page .util-bar{ margin-bottom:12px; }
+
+body.rebook-page .top-panel{ padding:22px 30px; margin-bottom:16px; }
+body.rebook-page .title-box p{ max-width:680px; margin-top:4px; }
+body.rebook-page .premium-badge{ margin-top:9px; }
+
+body.rebook-page .stats-grid{ margin-bottom:14px; }
+body.rebook-page .stat-tile{ padding:13px 18px; gap:10px; }
+
+body.rebook-page .toolbar{ margin-bottom:14px; padding:10px 14px; }
+
+body.rebook-page .card-head-top{ padding:12px 20px 0 20px; }
+body.rebook-page .card-address-title{ padding:6px 20px 0 20px; }
+body.rebook-page .field-row{ padding:7px 0; }
+body.rebook-page .card-foot{ padding:8px 18px 12px 20px; }
+
+/* extra height (when the first row is stretched) is spread evenly between
+   the fields; the Rebook button + Remove link stay pinned to the bottom edge */
+body.rebook-page .card-body{ display:flex; flex-direction:column; justify-content:space-evenly; }
+
+/* small screens that cannot hold the card at its normal size: the script adds
+   these classes step by step until the whole card fits above the fold */
+body.rebook-page.fit-tight .top-panel{ padding:16px 26px; margin-bottom:12px; }
+body.rebook-page.fit-tight .util-bar{ margin-bottom:8px; }
+body.rebook-page.fit-tight .stat-tile{ padding:9px 16px; gap:6px; }
+body.rebook-page.fit-tight .stat-value{ font-size:22px; }
+body.rebook-page.fit-tight .stats-grid,
+body.rebook-page.fit-tight .toolbar{ margin-bottom:10px; }
+body.rebook-page.fit-tight .toolbar{ padding:7px 12px; }
+body.rebook-page.fit-tight .field-row{ padding:5px 0; }
+
+body.rebook-page.fit-tighter{ padding-top:12px; }
+body.rebook-page.fit-tighter .title-box p{ display:none; }
+body.rebook-page.fit-tighter .premium-badge{ margin-top:6px; }
+body.rebook-page.fit-tighter .top-panel{ padding:12px 24px; margin-bottom:10px; }
+body.rebook-page.fit-tighter .card-foot .btn-block{ height:40px; }
+
+@media (max-width:760px){
+  body.rebook-page{ padding-top:16px; }
+  body.rebook-page .top-panel{ padding:20px 18px; }
+}

@@ -1,202 +1,307 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Earnings & Wallet | AquaFlow Driver</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-        body{background:#eef3f9;padding:20px;color:#1f2d3d;}
-        .container{max-width:1000px;margin:auto;}
-        h1{font-size:1.5rem;margin-bottom:18px;}
-        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
-        .stat{background:#fff;border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(0,0,0,.06);}
-        .stat .label{font-size:.82rem;color:#6b7684;margin-bottom:6px;}
-        .stat .value{font-size:1.5rem;font-weight:700;}
-        .value.green{color:#1e9e5a;}
-        .value.orange{color:#d68a1f;}
-        .value.blue{color:#2d7aff;}
-        .card{background:#fff;border-radius:16px;padding:22px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:20px;}
-        .card h2{font-size:1.1rem;margin-bottom:14px;}
-        .withdraw-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
-        .withdraw-form label{font-size:.82rem;font-weight:600;color:#495057;display:block;margin-bottom:6px;}
-        .withdraw-form input{padding:10px 12px;border-radius:10px;border:1.5px solid #dee2e6;font-size:.95rem;width:180px;}
-        .withdraw-form button{background:linear-gradient(135deg,#2d7aff,#1a5fd6);color:#fff;border:none;padding:11px 20px;border-radius:10px;font-weight:600;cursor:pointer;}
-        .withdraw-form button:disabled{opacity:.5;cursor:not-allowed;}
-        table{width:100%;border-collapse:collapse;font-size:.9rem;}
-        th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #eef1f4;}
-        th{color:#6b7684;font-weight:600;font-size:.8rem;text-transform:uppercase;}
-        .badge{padding:4px 10px;border-radius:999px;font-size:.78rem;font-weight:600;}
-        .badge-pending{background:#fff3cd;color:#8a6d1f;}
-        .badge-processing{background:#dbe9ff;color:#1a5fd6;}
-        .badge-completed{background:#d4f4e2;color:#1e9e5a;}
-        .badge-rejected{background:#fbdada;color:#c0392b;}
-        .empty{color:#9aa5b1;font-size:.9rem;padding:14px 0;text-align:center;}
-        .back-link{display:inline-block;margin-bottom:14px;color:#2d7aff;text-decoration:none;font-size:.9rem;}
-    </style>
-</head>
-<body>
-<div class="container">
-    <a href="{{ url_for('driver_dashboard') }}" class="back-link"><i class="fa-solid fa-arrow-left me-1"></i> Back to dashboard</a>
-    <h1><i class="fa-solid fa-wallet me-2"></i>My Earnings &amp; Wallet</h1>
+{% extends "driver_base.html" %}
+{% from "_driver_macros.html" import tag, empty %}
 
-    <div class="grid">
-        <div class="stat">
-            <div class="label">Today's Earnings</div>
-            <div class="value green">₹{{ "{:,.0f}".format(settlement.todays_earnings) }}</div>
-        </div>
-        <div class="stat">
-            <div class="label">This Month's Earnings</div>
-            <div class="value green">₹{{ "{:,.0f}".format(settlement.monthly_earnings_total) }}</div>
-        </div>
-        <div class="stat">
-            <div class="label">Total Earned (all time)</div>
-            <div class="value">₹{{ "{:,.0f}".format(settlement.driver_earned_total) }}</div>
-        </div>
-        <div class="stat">
-            <div class="label">Pending Settlement</div>
-            <div class="value orange">₹{{ "{:,.0f}".format(settlement.pending_settlement_total) }}</div>
-        </div>
-        <div class="stat">
-            <div class="label">Withdrawable Now</div>
-            <div class="value blue">₹{{ "{:,.0f}".format(settlement.withdrawable) }}</div>
-        </div>
-        <div class="stat">
-            <div class="label">Total Withdrawn</div>
-            <div class="value">₹{{ "{:,.0f}".format(settlement.settled_total) }}</div>
-        </div>
-        {% if settlement.rejected_total %}
-        <div class="stat">
-            <div class="label">Rejected Withdrawals</div>
-            <div class="value" style="color:#dc2626;">₹{{ "{:,.0f}".format(settlement.rejected_total) }}</div>
-        </div>
-        {% endif %}
-        <div class="stat">
-            <div class="label">Current Bonus <span style="font-weight:400;">(every 25 deliveries)</span></div>
-            <div class="value green">₹{{ "{:,.0f}".format(current_bonus) }}</div>
-        </div>
-    </div>
+{% block content %}
+{% set payout_tone = {'Pending': 'warning', 'Processing': 'info', 'Completed': 'success', 'Rejected': 'danger'} %}
+{% set payout_label = {'Processing': 'Approved', 'Completed': 'Paid'} %}
 
-    <p class="empty" style="text-align:left; padding:0 0 20px;">
-        {{ completed_deliveries_count }} deliveries completed &middot;
-        {{ deliveries_to_next_bonus }} more to your next ₹500 bonus
-    </p>
+<div class="af-earn">
 
-    <div class="card">
-        <h2><i class="fa-solid fa-building-columns me-2"></i>Bank Account for Payouts</h2>
-        {% set bank = driver.get('bank_details') if driver else None %}
-        {% if bank %}
-        <p style="margin:0 0 10px;">
-            <strong>{{ bank.account_holder_name }}</strong> &middot; A/C ending {{ bank.account_number[-4:] }} &middot; {{ bank.ifsc }}
-            {% if bank.approval_status == 'Approved' %}
-            <span style="background:#d4f4e2; color:#1e9e5a; padding:3px 10px; border-radius:20px; font-size:0.8rem; margin-left:6px;">Approved</span>
-            {% elif bank.approval_status == 'Rejected' %}
-            <span style="background:#fbdada; color:#c0392b; padding:3px 10px; border-radius:20px; font-size:0.8rem; margin-left:6px;">Rejected — please resubmit</span>
-            {% else %}
-            <span style="background:#fef3c7; color:#92400e; padding:3px 10px; border-radius:20px; font-size:0.8rem; margin-left:6px;">Pending admin approval</span>
-            {% endif %}
-        </p>
-        {% else %}
-        <p class="empty" style="text-align:left; padding:0 0 12px;">No bank details on file yet — add them below. Withdrawals stay locked until admin approves them.</p>
-        {% endif %}
-        <form method="POST" action="{{ url_for('submit_driver_bank_details') }}" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-            <div>
-                <label for="account_holder_name" style="display:block; font-size:0.8rem; margin-bottom:4px;">Account Holder Name</label>
-                <input type="text" id="account_holder_name" name="account_holder_name" value="{{ bank.account_holder_name if bank else '' }}" required>
-            </div>
-            <div>
-                <label for="account_number" style="display:block; font-size:0.8rem; margin-bottom:4px;">Account Number</label>
-                <input type="text" id="account_number" name="account_number" value="{{ bank.account_number if bank else '' }}" required>
-            </div>
-            <div>
-                <label for="ifsc" style="display:block; font-size:0.8rem; margin-bottom:4px;">IFSC Code</label>
-                <input type="text" id="ifsc" name="ifsc" value="{{ bank.ifsc if bank else '' }}" placeholder="HDFC0001234" required>
-            </div>
-            <button type="submit"><i class="fa-solid fa-floppy-disk me-1"></i> {{ 'Update' if bank else 'Submit' }}</button>
-        </form>
-        {% if bank %}
-        <p class="empty" style="text-align:left; padding-top:8px;">Editing these resets approval to Pending — admin will re-check before withdrawals unlock again.</p>
-        {% endif %}
-    </div>
+    {# ---------------------------------------------------------------- summary: 7 equal cards #}
+    <section class="earn-kpis" aria-label="Earnings summary">
+        <div class="earn-kpi">
+            <span class="earn-kpi-ico"><i class="fa-solid fa-sack-dollar" aria-hidden="true"></i></span>
+            <div class="earn-kpi-label">Lifetime earnings</div>
+            <div class="earn-kpi-value is-money">&#8377;{{ settlement.driver_earned_total|af_inr }}</div>
+            <div class="earn-kpi-note">{{ completed_count }} deliveries</div>
+        </div>
+        <div class="earn-kpi">
+            <span class="earn-kpi-ico"><i class="fa-solid fa-sun" aria-hidden="true"></i></span>
+            <div class="earn-kpi-label">Today</div>
+            <div class="earn-kpi-value">&#8377;{{ settlement.todays_earnings|af_inr }}</div>
+            <div class="earn-kpi-note">Delivered today</div>
+        </div>
+        <div class="earn-kpi">
+            <span class="earn-kpi-ico"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i></span>
+            <div class="earn-kpi-label">This week</div>
+            <div class="earn-kpi-value">&#8377;{{ settlement.weekly_earnings_total|af_inr }}</div>
+            <div class="earn-kpi-note">Since Monday</div>
+        </div>
+        <div class="earn-kpi">
+            <span class="earn-kpi-ico"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
+            <div class="earn-kpi-label">This month</div>
+            <div class="earn-kpi-value">&#8377;{{ settlement.monthly_earnings_total|af_inr }}</div>
+            <div class="earn-kpi-note">Since the 1st</div>
+        </div>
+        <div class="earn-kpi">
+            <span class="earn-kpi-ico"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span>
+            <div class="earn-kpi-label">Pending payouts</div>
+            <div class="earn-kpi-value">&#8377;{{ settlement.pending_settlement_total|af_inr }}</div>
+            <div class="earn-kpi-note">Requested, not yet paid</div>
+        </div>
+        <div class="earn-kpi">
+            <span class="earn-kpi-ico"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+            <div class="earn-kpi-label">Paid out</div>
+            <div class="earn-kpi-value">&#8377;{{ settlement.settled_total|af_inr }}</div>
+            <div class="earn-kpi-note">Bank transfer recorded</div>
+        </div>
+        <div class="earn-kpi">
+            <span class="earn-kpi-ico"><i class="fa-solid fa-wallet" aria-hidden="true"></i></span>
+            <div class="earn-kpi-label">Available to withdraw</div>
+            <div class="earn-kpi-value is-money">&#8377;{{ settlement.withdrawable|af_inr }}</div>
+            <div class="earn-kpi-note">{% if settlement.unremitted_cash_held %}After &#8377;{{ settlement.unremitted_cash_held|af_inr }} cash is sent{% else %}Ready now{% endif %}</div>
+        </div>
+    </section>
 
-    <div class="card">
-        <h2><i class="fa-solid fa-money-bill-transfer me-2"></i>Withdraw Earnings</h2>
-        {% set bank_approved = driver and driver.get('bank_details', {}).get('approval_status') == 'Approved' %}
-        <form class="withdraw-form" method="POST" action="{{ url_for('request_driver_withdrawal') }}">
-            <div>
-                <label for="amount">Amount (₹)</label>
-                <input type="number" id="amount" name="amount" min="1" max="{{ settlement.withdrawable }}" step="1" required>
-            </div>
-            <button type="submit" {{ 'disabled' if (settlement.withdrawable <= 0 or not bank_approved) else '' }}>
-                <i class="fa-solid fa-paper-plane me-1"></i> Request Withdrawal
-            </button>
-        </form>
-        {% if not bank_approved %}
-        <p class="empty">Add and get your bank details approved above before you can request a withdrawal.</p>
-        {% elif settlement.withdrawable <= 0 %}
-        <p class="empty">Nothing to withdraw right now — complete more deliveries to build up your balance.</p>
-        {% endif %}
-        {% if settlement.unremitted_cash_held > 0 %}
-        <p class="empty" style="color:#b45309;">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            ₹{{ "{:,.0f}".format(settlement.unremitted_cash_held) }} of your commission is on hold because you're still holding that much cash from customers — submit it under "Payment Collection" and get it admin-approved to unlock it.
-        </p>
-        {% endif %}
-    </div>
+    {# ---------------------------------------------------------------- three rows of paired cards.
+         Each .earn-row is one grid row: both cards stretch to the row height, so their tops and bottoms line up. #}
+    <div class="earn-rows">
 
-    <div class="card">
-        <h2><i class="fa-solid fa-clock-rotate-left me-2"></i>Withdrawal History</h2>
-        {% if settlement.requests %}
-        <table>
-            <thead>
-                <tr><th>Date</th><th>Amount</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-                {% for r in settlement.requests %}
-                <tr>
-                    <td>{{ r.requested_at.strftime('%d %b %Y') if r.requested_at else '-' }}</td>
-                    <td>₹{{ "{:,.0f}".format(r.amount) }}</td>
-                    <td>
-                        <span class="badge badge-{{ r.status|lower }}">{{ r.status }}</span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="empty">No withdrawal requests yet.</p>
-        {% endif %}
-    </div>
+        <div class="earn-row">
+            <section class="panel earn-card" aria-labelledby="chart-h">
+                <div class="panel-head"><div><h2 id="chart-h">Earnings over time</h2>
+                    <p>{{ 'Filtered range' if date_from or date_to else 'Last 14 days' }}, by {{ chart.bucket }}: &#8377;{{ chart_total|af_inr }}</p></div></div>
+                <div class="panel-body earn-chart-body"><div class="chart earn-chart" id="af-earn-chart"></div></div>
+            </section>
 
-    <div class="card">
-        <h2><i class="fa-solid fa-list-check me-2"></i>Order Payment History</h2>
-        {% if earnings_history %}
-        <table>
-            <thead>
-                <tr><th>Order</th><th>Date</th><th>Amount</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-                {% for e in earnings_history %}
-                <tr>
-                    <td>#{{ e.booking_id[-6:] if e.booking_id else '—' }}</td>
-                    <td>{{ e.created_at.strftime('%d %b %Y') if e.created_at else '-' }}</td>
-                    <td>₹{{ "{:,.0f}".format(e.amount) }}</td>
-                    <td>
-                        {% set st = (e.status or 'pending')|lower %}
-                        <span class="badge badge-{{ 'completed' if st in ['paid','completed'] else st }}">
-                            {{ 'Paid' if st in ['paid','completed'] else e.status|title }}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="empty">No completed orders yet.</p>
-        {% endif %}
+            <section class="panel earn-card" aria-labelledby="split-h">
+                <div class="panel-head"><h2 id="split-h">How your pay is calculated</h2></div>
+                <div class="panel-body earn-body">
+                    <dl class="earn-kv">
+                        <div><dt>Your share</dt><dd>{{ DRIVER_SHARE_PCT }}% of each delivery fee</dd></div>
+                        <div><dt>Platform commission</dt><dd>{{ 100 - DRIVER_SHARE_PCT }}%</dd></div>
+                    </dl>
+                    <h3 class="earn-sub earn-sub-spaced">{{ 'In this filter' if filtered else 'All deliveries' }}</h3>
+                    <dl class="earn-kv">
+                        <div><dt>Delivery fees</dt><dd>&#8377;{{ filtered_fees|af_inr }}</dd></div>
+                        <div><dt>Commission</dt><dd>&#8377;{{ filtered_commission|af_inr }}</dd></div>
+                        <div class="is-total"><dt>You earn</dt><dd>&#8377;{{ filtered_total|af_inr }}</dd></div>
+                    </dl>
+                    <p class="earn-note">Tips are not part of AquaFlow payouts. These figures use the same calculation as the admin finance dashboard.</p>
+                </div>
+            </section>
+
+        </div>
+
+        <div class="earn-row">
+            <section class="panel earn-card earn-table-panel" aria-labelledby="ded-h" id="deliveries">
+                <div class="panel-head"><div><h2 id="ded-h">Delivery earnings</h2><p>Each completed delivery and your {{ DRIVER_SHARE_PCT }}% share.</p></div>
+                    <a class="btn btn-sm" href="{{ csv_url }}" download><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>Download CSV statement</a></div>
+
+                <form class="earn-filters" method="get" action="{{ url_for('driver_earnings') }}">
+                    <div class="field earn-f-q"><label for="e-q">Booking or payout reference</label>
+                        <input class="input" id="e-q" type="search" name="q" value="{{ query }}" placeholder="Search" autocomplete="off"></div>
+                    <div class="field"><label for="e-from">From</label><input class="input" id="e-from" type="date" name="from" value="{{ date_from.isoformat() if date_from else '' }}"></div>
+                    <div class="field"><label for="e-to">To</label><input class="input" id="e-to" type="date" name="to" value="{{ date_to.isoformat() if date_to else '' }}"></div>
+                    <div class="earn-f-actions"><button class="btn btn-primary" type="submit">Apply</button>{% if filtered %}<a class="btn" href="{{ clear_url }}">Clear</a>{% endif %}</div>
+                </form>
+
+                {% if rows %}
+                <div class="table-wrap">
+                    <table class="table earn-table earn-table-deliveries">
+                        <thead><tr><th>Reference</th><th>Delivered</th><th class="num c-water">Water</th><th class="num">Delivery fee</th><th class="num">Platform ({{ 100 - DRIVER_SHARE_PCT }}%)</th><th class="num">Your share</th><th>Customer cash</th></tr></thead>
+                        <tbody>
+                        {% for r in rows %}
+                            <tr>
+                                <td class="ref c-ref">{{ r.ref }}<span class="ref-sub">{{ r.litres|af_inr }} L</span></td>
+                                <td class="c-when" data-label="Delivered"><span class="when-date">{{ r.at|af_date }}</span>{% if r.at|af_date('%I:%M %p') != r.at|af_date %} <span class="when-time">{{ r.at|af_date('%I:%M %p') }}</span>{% endif %}</td>
+                                <td class="num c-water" data-label="Water">{{ r.litres|af_inr }} L</td>
+                                <td class="num c-fee" data-label="Fee">&#8377;{{ r.fee|af_inr }}</td>
+                                <td class="num c-plat" data-label="Platform">&#8377;{{ r.commission|af_inr }}</td>
+                                <td class="num strong c-share" data-label="Your share">&#8377;{{ r.share|af_inr }}</td>
+                                <td class="c-cash" data-label="Cash status">{{ tag(r.cash_label, r.cash_tone) }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pager">
+                    <span>{{ total_rows }} deliver{{ 'y' if total_rows == 1 else 'ies' }}{% if filtered %} in this filter: fees &#8377;{{ filtered_fees|af_inr }}, your share &#8377;{{ filtered_total|af_inr }}{% endif %}</span>
+                    {% if pages > 1 %}<span class="btns">
+                        {% if prev_url %}<a class="btn btn-sm" href="{{ prev_url }}">Previous</a>{% endif %}
+                        <span class="pager-page">Page {{ cur_page }} of {{ pages }}</span>
+                        {% if next_url %}<a class="btn btn-sm" href="{{ next_url }}">Next</a>{% endif %}
+                    </span>{% endif %}
+                </div>
+                {% else %}
+                <div class="earn-fill">
+                    {% if filtered %}{{ empty('fa-filter-circle-xmark', 'No earnings match these filters', 'Try another date range or reference.', clear_url, 'Clear filters') }}
+                    {% else %}{{ empty('fa-wallet', 'No earnings yet', 'You earn ' ~ DRIVER_SHARE_PCT ~ '% of the delivery fee each time a delivery is completed with the customer’s OTP.', url_for('driver_trips'), 'View my trips') }}{% endif %}
+                </div>
+                {% endif %}
+            </section>
+            <section class="panel earn-card" id="cash-due" aria-labelledby="cash-h">
+                <div class="panel-head"><div><h2 id="cash-h">Cash to send to AquaFlow</h2><p>Money you collected from customers belongs to the company.</p></div></div>
+                <div class="panel-body earn-body">
+                    <dl class="earn-kv">
+                        <div><dt>Collected in cash</dt><dd>&#8377;{{ wallet.collected_total|af_inr }}</dd></div>
+                        <div><dt>Awaiting admin check</dt><dd>&#8377;{{ wallet.pending_verification_total|af_inr }}</dd></div>
+                        <div><dt>Verified by admin</dt><dd>&#8377;{{ wallet.approved_total|af_inr }}</dd></div>
+                        <div class="is-total"><dt>Still to send</dt><dd>&#8377;{{ wallet.pending_deposit|af_inr }}</dd></div>
+                    </dl>
+
+                    {% if wallet.pending_deposit > 0 %}
+                    <div class="earn-callout">
+                        <h3 class="earn-sub">Send it to this account</h3>
+                        <dl class="earn-kv is-compact">
+                            <div><dt>Bank</dt><dd>{{ company_bank.bank_name }}</dd></div>
+                            <div><dt>Account name</dt><dd>{{ company_bank.account_holder }}</dd></div>
+                            <div><dt>Account no.</dt><dd>{{ company_bank.account_number or '-' }}</dd></div>
+                            <div><dt>IFSC</dt><dd>{{ company_bank.ifsc or '-' }}</dd></div>
+                            {% if company_bank.upi_id %}<div><dt>UPI</dt><dd>{{ company_bank.upi_id }}</dd></div>{% endif %}
+                        </dl>
+                        {% if company_bank.qr_image %}<img class="earn-qr" src="{{ url_for('static', filename=company_bank.qr_image) }}" alt="AquaFlow payment QR code">{% endif %}
+                        {% if company_bank.bank_name == 'Not set up yet' %}<p class="earn-note">The company account has not been set up by the admin yet.</p>{% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if cash_due_rows %}
+                    <h3 class="earn-sub earn-sub-spaced">Deliveries to report <span class="earn-count">{{ cash_due_rows|length }}</span></h3>
+                    <div class="earn-cash-list">
+                        {% for r in cash_due_rows %}
+                        <div class="earn-cash-row">
+                            <div class="grow"><div class="title">{{ r.ref }}</div><div class="sub">&#8377;{{ r.cash_amount|af_inr }}, delivered {{ r.date|af_date }}</div></div>
+                            <button type="button" class="btn btn-sm btn-primary" data-cash="{{ r.id }}" data-ref="{{ r.ref }}" data-amount="{{ r.cash_amount }}">Submit</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="earn-grow">
+                    <h3 class="earn-sub earn-sub-spaced">How cash settlement works</h3>
+                    <ol class="earn-steps">
+                        <li><span class="n">1</span><div><b>Collect cash on delivery</b><span>Cash you take from a customer belongs to AquaFlow, not to you.</span></div></li>
+                        <li><span class="n">2</span><div><b>Send it to the company account</b><span>Pay by UPI or bank transfer. The account details appear here once you hold cash.</span></div></li>
+                        <li><span class="n">3</span><div><b>Report the transfer</b><span>Submit the UTR / UPI reference so an admin can match it with the bank statement.</span></div></li>
+                        <li><span class="n">4</span><div><b>Admin verifies it</b><span>Once checked, the amount moves to &ldquo;Verified by admin&rdquo; and your balance is clear.</span></div></li>
+                    </ol>
+                    </div>
+                    <p class="earn-note earn-note-tip"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Report each transfer the same day you send it, so an admin can match it quickly.</p>
+                    <p class="earn-note">{{ 'Nothing to report right now.' if wallet.pending_deposit == 0 else 'Every delivery is already reported. Waiting for the admin to check the transfers.' }}</p>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div>
+
+        <div class="earn-row">
+            <section class="panel earn-card earn-table-panel earn-payouts" id="payouts" aria-labelledby="pay-h">
+                <div class="panel-head"><div><h2 id="pay-h">Payouts</h2><p>Withdraw your earnings to your bank account.</p></div></div>
+
+                {% if bank %}
+                <div class="earn-block">
+                    <dl class="earn-kv">
+                        <div><dt>Account holder</dt><dd>{{ bank.holder }}</dd></div>
+                        <div><dt>Account number</dt><dd class="af-num">{{ bank.account }}</dd></div>
+                        <div><dt>IFSC</dt><dd>{{ bank.ifsc }}</dd></div>
+                        <div><dt>Status</dt><dd>{{ tag('Approved by admin' if bank_approved else ('Rejected' if bank.status == 'Rejected' else 'Waiting for admin approval'), 'success' if bank_approved else ('danger' if bank.status == 'Rejected' else 'warning')) }}</dd></div>
+                    </dl>
+                </div>
+                {% endif %}
+
+                <div class="earn-block earn-actions">
+                {% if bank_approved %}
+                    <form class="earn-withdraw" method="post" action="{{ url_for('request_driver_withdrawal') }}">
+                        <input type="hidden" name="csrf_token" value="{{ driver_csrf_token() }}">
+                        <div class="field"><label for="w-amount">Amount to withdraw (&#8377;)</label>
+                            <input class="input" id="w-amount" name="amount" type="number" min="1" max="{{ settlement.withdrawable }}" step="1" required {{ 'disabled' if settlement.withdrawable <= 0 }} placeholder="Up to {{ settlement.withdrawable|af_inr }}">
+                            <span class="hint">A payout is marked paid only after an admin records the real bank transfer.</span></div>
+                        <button class="btn btn-primary earn-btn" type="submit" {{ 'disabled' if settlement.withdrawable <= 0 }}>Request withdrawal</button>
+                    </form>
+                {% endif %}
+                    <details class="earn-details" {{ 'open' if not bank }}>
+                        <summary class="btn earn-btn">{{ 'Change bank details' if bank else 'Add bank details' }}</summary>
+                        <form method="post" action="{{ url_for('submit_driver_bank_details') }}">
+                            <input type="hidden" name="csrf_token" value="{{ driver_csrf_token() }}">
+                            <div class="field"><label for="b-name">Account holder name</label><input class="input" id="b-name" name="account_holder_name" required autocomplete="off"></div>
+                            <div class="field"><label for="b-acc">Account number</label><input class="input" id="b-acc" name="account_number" inputmode="numeric" pattern="\d{9,18}" required autocomplete="off"><span class="hint">9 to 18 digits. Re-enter the full number each time; it is never shown back.</span></div>
+                            <div class="field"><label for="b-ifsc">IFSC code</label><input class="input" id="b-ifsc" name="ifsc" pattern="[A-Za-z]{4}0[A-Za-z0-9]{6}" required autocomplete="off" placeholder="HDFC0001234" style="text-transform:uppercase"></div>
+                            <p class="earn-note">Changed details go back to the admin for approval before you can withdraw.</p>
+                            <button class="btn btn-primary earn-btn" type="submit">Save bank details</button>
+                        </form>
+                    </details>
+                </div>
+
+                <div class="earn-block is-flush earn-history">
+                    {% if payouts %}
+                    <h3 class="earn-sub earn-sub-pad">Payout history</h3>
+                    <div class="table-wrap">
+                        <table class="table earn-table earn-table-payouts">
+                            <thead><tr><th>Requested</th><th class="num">Amount</th><th>Status</th><th>Bank reference</th><th>Paid on</th></tr></thead>
+                            <tbody>
+                            {% for p in payouts %}
+                            <tr>
+                                <td class="p-when" data-label="Requested">{{ p.at|af_datetime }}</td>
+                                <td class="num strong p-amt" data-label="Amount">&#8377;{{ p.amount|af_inr }}</td>
+                                <td class="p-status" data-label="Status">{{ tag(payout_label.get(p.status, p.status), payout_tone.get(p.status, 'muted')) }}</td>
+                                <td class="p-ref" data-label="Reference">{{ p.reference or '-' }}</td>
+                                <td class="p-paid" data-label="Paid on">{{ p.paid_at|af_date if p.paid_at else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    {{ empty('fa-building-columns', 'No payout requests' ~ (' match' if filtered else ' yet'), 'Your withdrawal requests and their bank references will be listed here.', compact=True) }}
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="panel earn-card earn-milestone" aria-labelledby="bonus-h">
+                <div class="panel-head"><div><h2 id="bonus-h">Milestone progress</h2>
+                    <p>Every {{ bonus.every }} deliveries completed is a milestone.</p></div>
+                    <span class="tag tone-accent">{{ bonus.reached }} reached</span></div>
+                <div class="panel-body earn-body">
+                    <div class="earn-meter-head"><span>{{ bonus.remaining }} deliver{{ 'y' if bonus.remaining == 1 else 'ies' }} to the next milestone</span><b>{{ bonus.progress_pct }}%</b></div>
+                    <div class="meter" role="progressbar" aria-label="Progress to next milestone" aria-valuenow="{{ bonus.progress_pct }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ bonus.progress_pct }}%"></span></div>
+                    <dl class="earn-kv earn-kv-stats">
+                        <div><dt>Completed deliveries</dt><dd>{{ completed_count }}</dd></div>
+                        <div><dt>Next milestone</dt><dd>{{ (bonus.reached + 1) * bonus.every }} deliveries</dd></div>
+                        <div><dt>Remaining</dt><dd>{{ bonus.remaining }}</dd></div>
+                        <div><dt>Completed</dt><dd>{{ bonus.progress_pct }}%</dd></div>
+                        {% if bonus.amount %}<div><dt>Milestone reward</dt><dd>&#8377;{{ bonus.amount|af_inr }}</dd></div>{% endif %}
+                    </dl>
+                    <div class="earn-grow">
+                    <h3 class="earn-sub earn-sub-spaced">Upcoming milestones</h3>
+                    <ul class="earn-steps earn-miles">
+                        {% for i in range(1, 4) %}
+                        {% set target = (bonus.reached + i) * bonus.every %}
+                        <li><span class="n"><i class="fa-solid {{ 'fa-flag-checkered' if i == 1 else 'fa-flag' }}" aria-hidden="true"></i></span>
+                            <div><b>{{ target }} deliveries</b><span>{{ (target - completed_count) }} more to go{% if i == 1 %} &middot; next up{% endif %}</span></div>
+                            {% if bonus.amount %}<em>&#8377;{{ bonus.amount|af_inr }}</em>{% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                    </div>
+                    <p class="earn-note earn-note-tip"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Only deliveries completed with the customer&rsquo;s OTP count towards a milestone.</p>
+                    <p class="earn-note">{% if bonus.amount %}Eligibility: complete {{ bonus.every }} deliveries with the customer&rsquo;s OTP. Any reward is paid by an admin and is not included in the totals above.{% else %}This is a delivery progress tracker. No reward is configured for milestones right now.{% endif %}</p>
+                    <div class="earn-card-foot"><a class="btn earn-btn" href="{{ url_for('driver_trips') }}">View my trips</a></div>
+                </div>
+            </section>
+        </div>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}
+
+{% block dialogs %}
+<dialog class="af-dialog" id="af-cash-dialog" aria-labelledby="af-cash-title">
+    <form id="af-cash-form" novalidate>
+        <div class="af-dialog-head"><h2 id="af-cash-title">Report cash sent for <span data-ref></span></h2>
+            <p>Enter the real UPI or bank transfer details. An admin checks them against the bank statement.</p></div>
+        <div class="af-dialog-body">
+            <input type="hidden" name="booking_id">
+            <div class="form-grid">
+                <div class="field"><label for="c-amount">Amount sent (&#8377;)</label><input class="input" id="c-amount" name="amount" type="number" min="0" step="0.01" required></div>
+                <div class="field"><label for="c-method">Sent by</label><select class="select" id="c-method" name="method"><option>UPI</option><option>Bank Transfer</option><option>Other</option></select></div>
+            </div>
+            <div class="field"><label for="c-ref">Transaction reference</label><input class="input" id="c-ref" name="transaction_ref" required autocomplete="off" placeholder="UTR / UPI reference"><div class="field-error" role="alert"></div></div>
+            <div class="field"><label for="c-note">Note (optional)</label><input class="input" id="c-note" name="note" maxlength="200"></div>
+            <div class="field" style="margin:0"><label for="c-shot">Payment screenshot (optional)</label><input class="input" id="c-shot" name="screenshot" type="file" accept="image/png,image/jpeg,image/webp"><div class="field-error" id="c-form-error" role="alert"></div></div>
+        </div>
+        <div class="af-dialog-foot"><button type="button" class="btn" data-dialog-close>Cancel</button><button type="submit" class="btn btn-primary">Submit for checking</button></div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script id="af-earn-data" type="application/json">{{ chart|tojson }}</script>
+<script src="{{ driver_asset('js/driver-earnings.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{#- Shared header for EVERY Live Fleet Command Center page.
+    "Back to Admin Dashboard" is a normal link to the admin_dashboard endpoint:
+    no history.back(), no document.referrer - one click always lands on the dashboard
+    regardless of how many fleet pages were visited. Browser Back is untouched. -#}
+<header class="topbar">
+    <div class="brand">
+        <div class="brand-mark"><i class="fas fa-satellite-dish"></i></div>
+        <div class="brand-text">
+            <h1>AquaFlow <span class="tag">Ops Console</span></h1>
+            <p>Live fleet command center</p>
+        </div>
+    </div>
+    <nav class="topbar-actions" aria-label="Fleet navigation">
+        {% if not is_fleet_home %}
+        <a href="{{ url_for('admin_live_tracking') }}" class="dispatch-link"><i class="fas fa-map-marked-alt"></i>Fleet Map</a>
+        {% endif %}
+        <a href="{{ url_for('admin_dashboard') }}" class="back-dashboard" data-testid="back-to-admin-dashboard"><i class="fas fa-arrow-left"></i>Back to Admin Dashboard</a>
+    </nav>
+</header>
+<div class="flow-line"></div>

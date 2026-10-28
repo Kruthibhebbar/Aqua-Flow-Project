@@ -1,0 +1,25 @@
+{#-
+  Reusable Finance navigation (include inside any finance-related page's header).
+
+  The Dashboard control is a plain <a> pointing at the admin_dashboard endpoint.
+  It deliberately does NOT use history.back(), history.go(), document.referrer or
+  any JavaScript, so it takes the admin to the Dashboard in ONE click no matter
+  how many finance pages were opened before it, how they were reached (link, form
+  post, redirect) or whether the page was refreshed.
+
+  Optional variables set by the including page:
+    finance_nav_current : 'finance' | 'transactions' | 'receipt' | ''   (hides the self-link)
+    finance_nav_extra   : false to show only Dashboard + Finance Management
+-#}
+{%- set _cur = finance_nav_current|default('') -%}
+{%- set _extra = finance_nav_extra|default(true) -%}
+<a href="{{ url_for('admin_dashboard') }}" class="dispatch-link fin-nav-dashboard" id="finDashboardLink" data-fin-nav="dashboard" title="Go to the Admin Dashboard" aria-label="Go to Admin Dashboard"><i class="fas fa-tachometer-alt" aria-hidden="true"></i><span class="fin-nav-label">Dashboard</span></a>
+{%- if _cur != 'finance' %}
+<a href="{{ url_for('finance_management') }}" class="dispatch-link" data-fin-nav="finance" title="Finance Management"><i class="fas fa-wallet" aria-hidden="true"></i><span class="fin-nav-label">Finance Management</span></a>
+{%- endif %}
+{%- if _extra %}
+<a href="{{ url_for('driver_management') }}" class="dispatch-link" data-fin-nav="drivers" title="Driver Management"><i class="fas fa-id-card" aria-hidden="true"></i><span class="fin-nav-label">Driver Management</span></a>
+{%- if _cur != 'transactions' %}
+<a href="{{ url_for('transaction_table') }}" class="dispatch-link" data-fin-nav="transactions" title="Transaction Table"><i class="fas fa-table-list" aria-hidden="true"></i><span class="fin-nav-label">Transactions</span></a>
+{%- endif %}
+{%- endif %}

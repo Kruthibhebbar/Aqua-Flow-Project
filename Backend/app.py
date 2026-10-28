@@ -27,9 +27,12 @@ from wallet_recharge import init_wallet_recharge
 from payment_management import init_payment_management
 from coupon_management import init_coupon_management, validate_coupon, record_redemption
 from business_insights import init_business_insights
+from dashboard_stats import build_dashboard, build_booking_summary
+from driver_portal import init_driver_portal
 from pricing_engine import calculate_booking_price
 from quickrebook import init_quickrebook
 from gps_engine import init_gps_engine
+from fleet_center import init_fleet_center
 from mail_utils import send_mail_capped
 from admin_user_management import init_admin_user_management
 
@@ -164,6 +167,11 @@ wallet_topups_collection = db["wallet_topups"]
 counters_collection = db["counters"]
 documents_collection = db["driver_documents"]
 driver_activity_collection = db["driver_activity"]
+# Optional sensor feed for the customer dashboard (see dashboard_stats.py)
+water_quality_readings_collection = db["water_quality_readings"]
+
+# Driver help & support requests + emergency alerts (see driver_portal_secondary.py)
+driver_support_requests_collection = db["driver_support_requests"]
 from payment_ledger import init_payment_ledger, log_transaction
 payment_transactions_collection = init_payment_ledger(db)
 
@@ -203,6 +211,8 @@ try:
     bookings_collection.create_index("status")
     bookings_collection.create_index("payment_status")
     bookings_collection.create_index("created_at")
+    # "Declined" trips on the driver's My Trips page query this array field
+    bookings_collection.create_index("rejected_by_drivers")
     drivers_collection.create_index("email")
     drivers_collection.create_index("phone")
     notifications_collection.create_index("user_email")
@@ -214,6 +224,9 @@ try:
     transactions_collection.create_index("driver_email")
     transactions_collection.create_index("status")
     coupons_collection.create_index("code")
+    documents_collection.create_index([("driver_email", 1), ("document_type", 1)])
+    driver_support_requests_collection.create_index([("driver_email", 1), ("created_at", -1)])
+    driver_support_requests_collection.create_index("status")
 except Exception as e:
     print("Index creation skipped (non-fatal):", e)
 
@@ -248,13 +261,28 @@ init_driver_dashboard(
     transactions_collection=transactions_collection,
     payment_transactions_collection=payment_transactions_collection
 )
+# Driver Operations Suite pages (dashboard, trips, earnings, analytics,
+# profile, notifications, support, documents)
+init_driver_portal(
+    app,
+    drivers_collection,
+    bookings_collection,
+    notifications_collection,
+    documents_collection=documents_collection,
+    activity_collection=driver_activity_collection,
+    settings_collection=settings_collection,
+    transactions_collection=transactions_collection,
+    support_collection=driver_support_requests_collection,
+    mail=mail
+)
 init_driver_management(
     app,
     drivers_collection,
     bookings_collection,
     settings_collection=settings_collection,
     transactions_collection=transactions_collection,
-    documents_collection=documents_collection
+    documents_collection=documents_collection,
+    support_collection=driver_support_requests_collection
 )
 init_finance_management(
     app,
@@ -335,6 +363,12 @@ init_gps_engine(
     tracking_history_collection,
     notifications_collection
 )
+init_fleet_center(
+    app,
+    drivers_collection,
+    bookings_collection,
+    tracking_history_collection
+)
 init_quickrebook(
     app,
     bookings_collection,
@@ -349,9 +383,41 @@ init_admin_user_management(
 )
 
 # ================= HOME =================
+def _contact_settings():
+    """Public contact details come from settings (never hardcoded in the
+    template). Leave a CONTACT_* variable empty to hide that card."""
+    phone = os.environ.get("CONTACT_PHONE", "+91 63619 62280").strip()
+    return {
+        "phone": phone,
+        "phone_href": re.sub(r"[^0-9+]", "", phone),
+        "email": os.environ.get("CONTACT_EMAIL", "aquaflowproject@gmail.com").strip(),
+        "address": os.environ.get("CONTACT_ADDRESS", "").strip(),
+    }
+
+
 @app.route('/')
 def home():
-    return render_template('index.html')
+    # Logged-out visitors get the public page with no database work.
+    # Logged-in customers get a small summary of THEIR OWN bookings.
+    home_summary = None
+    if session.get("user_email"):
+        home_summary = {"total": 0, "current": 0, "next": None, "latest": None}
+        try:
+            data = build_booking_summary(bookings_collection, session["user_email"])
+            home_summary = {
+                "total": data["stats"]["total_bookings"],
+                "current": data["stats"]["pending"] + data["stats"]["active"],
+                "next": data["upcoming"],
+                "latest": data["activity"][0] if data["activity"] else None,
+            }
+        except Exception:
+            app.logger.exception("home summary failed")
+    return render_template(
+        'index.html',
+        home_summary=home_summary,
+        contact=_contact_settings(),
+        current_year=datetime.now().year,
+    )
 
 # ================= HEALTH CHECK =================
 # Pings both the web process AND the actual database connection - the
@@ -599,167 +665,56 @@ def dashboard():
     if "user_email" not in session:
         return redirect(url_for("login"))
 
-    # CURRENT LOGGED IN USER
-    user_email = session["user_email"]
-
     expire_stale_awaiting_payment_bookings()
 
-    user = users_collection.find_one({
-        "email": user_email
-    })
+    user = users_collection.find_one({"email": session["user_email"]})
 
-    # TOTAL BOOKINGS (an unpaid "Pay Now" attempt that never went
-    # through isn't a real booking - excluded here the same way it's
-    # excluded from the customer's own history and the admin queue)
-    total_bookings = bookings_collection.count_documents({
-        "user_email": user_email,
-        "status": {"$ne": "Awaiting Payment"}
-    })
-
-    # PENDING ORDERS
-    pending_orders = bookings_collection.count_documents({
-        "user_email": user_email,
-        "status": "Pending"
-    })
-
-    # DELIVERED ORDERS
-    delivered_orders = bookings_collection.count_documents({
-        "user_email": user_email,
-        "status": "Delivered"
-    })
-
-    # ACTIVE DELIVERIES
-    active_deliveries = bookings_collection.count_documents({
-        "user_email": user_email,
-        "status": "On The Way"
-    })
-
-    # TODAY DELIVERIES
-    today_deliveries = bookings_collection.count_documents({
-        "user_email": user_email,
-        "status": "Delivered"
-    })
-
-    # RECENT BOOKINGS
-    recent_bookings = list(
-        bookings_collection.find({
-            "user_email": user_email,
-            "status": {"$ne": "Awaiting Payment"}
-        }).sort("created_at", -1).limit(5)
+    # Every number, the feed, the chart and the water-quality card come
+    # from dashboard_stats (real bookings only - see that file for the
+    # exact counting rules). The same payload is embedded here for the
+    # first paint and re-fetched from /api/dashboard/summary to refresh.
+    data = build_dashboard(
+        bookings_collection,
+        water_quality_readings_collection,
+        session["user_email"],
     )
 
-    # LIVE ACTIVITIES
-    live_activities = list(
-        bookings_collection.find({
-            "user_email": user_email,
-            "status": {"$ne": "Awaiting Payment"}
-        }).sort("created_at", -1).limit(10)
-    )
-
-    # TOTAL WATER
-    total_water = 0
-
-    all_bookings = bookings_collection.find({
-        "user_email": user_email,
-        "status": {"$ne": "Awaiting Payment"}
+    # Unread count for the top-bar bell / sidebar badge (same query the
+    # /notification page uses; scoped to the logged-in customer only).
+    unread_notifications = notifications_collection.count_documents({
+        "user_email": session["user_email"],
+        "read": False,
     })
-
-    for booking in all_bookings:
-
-        try:
-            quantity = int(
-                booking.get("quantity", 0)
-            )
-
-            total_water += quantity
-
-        except:
-            pass
-
-    # ASSIGNED DRIVERS
-    assigned_drivers = bookings_collection.count_documents({
-        "user_email": user_email,
-        "driver_name": {
-            "$ne": ""
-        }
-    })
-
-    # PAYMENTS
-    successful_payments = bookings_collection.count_documents({
-        "user_email": user_email,
-        "payment_status": "Paid"
-    })
-
-    pending_payments = bookings_collection.count_documents({
-        "user_email": user_email,
-        "payment_status": "Pending"
-    })
-
-    # NOTIFICATIONS
-    notification_count = bookings_collection.count_documents({
-        "user_email": user_email,
-        "status": "Pending"
-    })
-
-    # LIVE CHART DATA
-    chart_labels = []
-
-    chart_values = []
-
-    bookings = bookings_collection.find({
-        "user_email": user_email
-    }).sort("created_at", 1)
-
-    for booking in bookings:
-
-        chart_labels.append(
-            booking.get("delivery_date", "")
-        )
-
-        try:
-
-            chart_values.append(
-                int(booking.get("quantity", 0))
-            )
-
-        except:
-
-            chart_values.append(0)
 
     return render_template(
-
         "dashboard.html",
-
         user=user,
-
-        total_bookings=total_bookings,
-
-        pending_orders=pending_orders,
-
-        delivered_orders=delivered_orders,
-
-        active_deliveries=active_deliveries,
-
-        today_deliveries=today_deliveries,
-
-        recent_bookings=recent_bookings,
-
-        live_activities=live_activities,
-
-        total_water=total_water,
-
-        assigned_drivers=assigned_drivers,
-
-        successful_payments=successful_payments,
-
-        pending_payments=pending_payments,
-
-        notification_count=notification_count,
-
-        chart_labels=chart_labels,
-
-        chart_values=chart_values
+        dash=data,
+        unread_notifications=unread_notifications,
     )
+
+
+@app.route("/api/dashboard/summary")
+def dashboard_summary_api():
+    # Same session login as the page; JSON 401 instead of a redirect so
+    # the page's refresh code can show a proper message.
+    if "user_email" not in session:
+        return jsonify({"error": "Please log in again."}), 401
+
+    try:
+        expire_stale_awaiting_payment_bookings()
+        data = build_dashboard(
+            bookings_collection,
+            water_quality_readings_collection,
+            session["user_email"],
+        )
+    except Exception:
+        app.logger.exception("dashboard summary failed")
+        return jsonify({"error": "Could not load dashboard data right now."}), 500
+
+    resp = jsonify(data)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 #==================payment_system=====================================
 @app.route("/payment_system")
@@ -782,6 +737,10 @@ def profile_system():
 #=========live_ETA_tracking============================================
 @app.route("/admin/live_tracking")
 def admin_live_tracking():
+
+    # Admin-only (the data API was already protected; the page itself was not).
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
 
     return render_template("live_ETA_tracking.html")
 # ================= PROFILE =================
@@ -841,15 +800,53 @@ def profile():
         sort=[("delivery_date", 1)]
     )
 
+    # Unread count for the navigation bell (same query the /notification page uses).
+    unread_notifications = notifications_collection.count_documents({
+        "user_email": session['user_email'],
+        "read": False
+    })
+
     return render_template(
         'profile.html',
         user=user,
+        unread_notifications=unread_notifications,
         total_orders=total_orders,
         completed_orders=completed_orders,
         cancelled_orders=cancelled_orders,
         active_orders=active_orders,
         total_liters=total_liters,
         next_delivery=next_delivery
+    )
+
+# ================= ACCOUNT INFORMATION =================
+# Read-only companion to /profile: the Personal Information and Water
+# Booking Preferences cards live here so the main profile page can stay a
+# compact, above-the-fold summary. Editing is unchanged - the cards link to
+# the existing /edit_profile form (GET to open it, POST to save).
+@app.route('/account-information')
+def account_information():
+
+    # Same session check as /profile
+    if 'user_id' not in session:
+        return redirect(url_for('home'))
+
+    user = users_collection.find_one({
+        "email": session['user_email']
+    })
+
+    if not user:
+        return redirect(url_for('home'))
+
+    # Unread count for the navigation bell (same query /profile uses).
+    unread_notifications = notifications_collection.count_documents({
+        "user_email": session['user_email'],
+        "read": False
+    })
+
+    return render_template(
+        'account_information.html',
+        user=user,
+        unread_notifications=unread_notifications
     )
 
 # ================= PROFILE PHOTO UPLOAD =================

@@ -162,3 +162,7 @@ as production-grade:
 ## License
 
 This project is for educational/portfolio purposes.
+
+## Finance Management
+
+Admin → Dashboard → **Finance Management** (`/finance-management`). Every finance page has a Dashboard button that links straight to `/admin-dashboard`. See `CHANGELOG-finance.md` for details and the safety rules around payouts (a bank/UPI transaction reference is required to mark a payout as paid).

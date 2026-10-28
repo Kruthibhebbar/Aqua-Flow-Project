@@ -41,12 +41,16 @@ from flask import (
     redirect,
     url_for,
     session,
-    flash
+    flash,
+    jsonify
 )
 
 from bson.objectid import ObjectId
 
-from payment_ledger import log_transaction, update_transaction_status
+from payment_ledger import (
+    log_transaction, update_transaction_status, resolve_cod_collection,
+    COD_VERIFIED, COD_REJECTED
+)
 
 
 # =====================================================
@@ -64,6 +68,23 @@ _DEFAULT_BANK_DETAILS = {
 }
 
 _SETTINGS_ID = "company_bank_details"
+
+# Input formats shared by the company bank form (and unit-testable on their own).
+_ACCOUNT_RE = re.compile(r"\d{9,18}")
+_IFSC_RE = re.compile(r"[A-Z]{4}0[A-Z0-9]{6}")
+_UPI_RE = re.compile(r"[\w.\-]{2,256}@[a-zA-Z]{2,64}")
+
+# A payout can only be marked Completed (paid) with the bank/UPI reference
+# of the transfer the admin actually made (UTR / UPI ref / IMPS ref ...) -
+# the same kind of proof drivers must give when they remit COD cash.
+# Set to False only if you deliberately want the old "one click = paid"
+# behaviour back.
+REQUIRE_PAYOUT_REFERENCE = True
+_BANK_REF_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9\-_/]{5,39}")  # 6-40 chars
+
+# Company payment QR upload limits (admin-only form).
+_QR_ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".webp"}
+_QR_MAX_BYTES = 5 * 1024 * 1024
 
 # Driver's share of each delivery fee. The rest is platform commission.
 # (₹800 booking -> driver gets ₹720, platform keeps ₹80, per the
@@ -102,10 +123,42 @@ def get_bank_details_masked(settings_collection):
     shown to drivers - only the admin-facing edit form should ever see
     the full number."""
     details = get_bank_details(settings_collection)
-    acct = details.get("account_number") or ""
-    if len(acct) > 4:
-        details["account_number"] = "X" * (len(acct) - 4) + acct[-4:]
+    details["account_number"] = mask_account_number(details.get("account_number"))
     return details
+
+
+def mask_account_number(account_number):
+    """Hide everything except the last 4 digits (XXXXXXXX1234)."""
+    acct = str(account_number or "")
+    if len(acct) > 4:
+        return "X" * (len(acct) - 4) + acct[-4:]
+    return acct
+
+
+def _upload_size(file_storage):
+    """Size in bytes of an uploaded file without consuming it (0 if unknown)."""
+    try:
+        stream = file_storage.stream
+        pos = stream.tell()
+        stream.seek(0, os.SEEK_END)
+        size = stream.tell()
+        stream.seek(pos)
+        return size
+    except Exception:
+        return 0
+
+
+def _is_real_image(file_storage):
+    """True if Pillow can open the upload as an image (not just a renamed file)."""
+    try:
+        from PIL import Image
+        stream = file_storage.stream
+        stream.seek(0)
+        Image.open(stream).verify()
+        stream.seek(0)
+        return True
+    except Exception:
+        return False
 
 
 def get_driver_wallet_summary(bookings_collection, driver_email):
@@ -484,6 +537,35 @@ def init_payment_admin(
     def _admin_only():
         return "admin" in session or "admin_email" in session
 
+    def _json_requested():
+        """The finance page's inline forms send this header; plain browser
+        form posts (no JS) keep the original redirect + flash behaviour."""
+        return request.headers.get("X-Requested-With") == "fetch"
+
+    def _admin_denied():
+        if _json_requested():
+            return jsonify({
+                "ok": False,
+                "message": "Your admin session has expired. Please sign in again."
+            }), 401
+        return redirect(url_for("admin_login"))
+
+    def _bank_payload(details):
+        """Browser-safe view of the company bank details (account number masked)."""
+        qr = details.get("qr_image") or ""
+        updated_at = details.get("updated_at")
+        return {
+            "bank_name": "" if details.get("bank_name") == "Not set up yet" else details.get("bank_name", ""),
+            "account_holder": "" if details.get("account_holder") == "Not set up yet" else details.get("account_holder", ""),
+            "account_number_masked": mask_account_number(details.get("account_number")),
+            "has_account_number": bool(details.get("account_number")),
+            "ifsc": details.get("ifsc", ""),
+            "upi_id": details.get("upi_id", ""),
+            "qr_url": url_for("static", filename=qr) if qr else "",
+            "updated_at": updated_at.strftime("%d %b %Y, %I:%M %p") if isinstance(updated_at, datetime) else "",
+            "updated_by": details.get("updated_by", ""),
+        }
+
     # =====================================================
     # UPDATE COMPANY BANK / UPI DETAILS
     # =====================================================
@@ -491,29 +573,65 @@ def init_payment_admin(
     @app.route("/admin/bank-details", methods=["POST"])
     def update_bank_details():
         if not _admin_only():
-            return redirect(url_for("admin_login"))
+            return _admin_denied()
+
+        existing = get_bank_details(settings_collection)
 
         bank_name = request.form.get("bank_name", "").strip()
         account_holder = request.form.get("account_holder", "").strip()
-        account_number = request.form.get("account_number", "").strip()
+        account_number = re.sub(r"[\s-]", "", request.form.get("account_number", ""))
         ifsc = request.form.get("ifsc", "").strip().upper()
         upi_id = request.form.get("upi_id", "").strip()
+
+        # The form never sends the saved account number back to the browser
+        # (it only shows the masked version), so a blank box means "keep it".
+        if not account_number and request.form.get("keep_account_number") == "1":
+            account_number = existing.get("account_number") or ""
 
         # =====================================================
         # SERVER-SIDE VALIDATION
         # =====================================================
         errors = []
 
-        if ifsc and not re.fullmatch(r"[A-Z]{4}0[A-Z0-9]{6}", ifsc):
+        if not account_holder:
+            errors.append("Account holder name is required")
+        if len(bank_name) > 100 or len(account_holder) > 100:
+            errors.append("Bank name and account holder name must be 100 characters or fewer")
+
+        if ifsc and not _IFSC_RE.fullmatch(ifsc):
             errors.append("IFSC code looks invalid (expected format e.g. CNRB0001234)")
 
-        if account_number and not re.fullmatch(r"\d{9,18}", account_number):
+        if account_number and not _ACCOUNT_RE.fullmatch(account_number):
             errors.append("Account number should be 9-18 digits")
 
-        if upi_id and not re.fullmatch(r"[\w.\-]{2,256}@[a-zA-Z]{2,64}", upi_id):
+        if upi_id and not _UPI_RE.fullmatch(upi_id):
             errors.append("UPI ID looks invalid (expected format e.g. name@bank)")
 
+        # Drivers need somewhere to send cash: a full bank account, a UPI ID, or both.
+        if account_number or ifsc:
+            if not bank_name:
+                errors.append("Bank name is required when bank account details are given")
+            if not account_number:
+                errors.append("Account number is required together with the IFSC code")
+            if not ifsc:
+                errors.append("IFSC code is required together with the account number")
+        elif not upi_id:
+            errors.append("Enter bank account details, a UPI ID, or both")
+
+        qr_file = request.files.get("qr_image")
+        has_new_qr = bool(qr_file and qr_file.filename)
+        if has_new_qr:
+            ext = os.path.splitext(qr_file.filename)[1].lower()
+            if ext not in _QR_ALLOWED_EXT:
+                errors.append("QR code must be a PNG, JPG or WEBP image")
+            elif _upload_size(qr_file) > _QR_MAX_BYTES:
+                errors.append("QR code image must be 5 MB or smaller")
+            elif not _is_real_image(qr_file):
+                errors.append("The QR code file is not a valid image")
+
         if errors:
+            if _json_requested():
+                return jsonify({"ok": False, "errors": errors, "message": " | ".join(errors)}), 400
             flash(" | ".join(errors), "danger")
             return redirect(url_for("finance_management"))
 
@@ -527,11 +645,15 @@ def init_payment_admin(
             "updated_by": session.get("admin_email", "admin")
         }
 
-        qr_file = request.files.get("qr_image")
-        if qr_file and qr_file.filename:
+        if has_new_qr:
             saved_path = save_payment_screenshot(app, qr_file)
-            if saved_path:
-                update_fields["qr_image"] = saved_path
+            if not saved_path:
+                message = "The QR code could not be saved. Nothing was changed."
+                if _json_requested():
+                    return jsonify({"ok": False, "errors": [message], "message": message}), 400
+                flash(message, "danger")
+                return redirect(url_for("finance_management"))
+            update_fields["qr_image"] = saved_path
 
         settings_collection.update_one(
             {"_id": _SETTINGS_ID},
@@ -539,8 +661,50 @@ def init_payment_admin(
             upsert=True
         )
 
-        flash("Company bank / UPI details updated. Drivers will see this immediately.", "success")
+        message = "Company bank / UPI details updated. Drivers will see this immediately."
+        if _json_requested():
+            return jsonify({
+                "ok": True,
+                "message": message,
+                "bank": _bank_payload(get_bank_details(settings_collection))
+            })
+
+        flash(message, "success")
         return redirect(url_for("finance_management"))
+
+    # =====================================================
+    # REVEAL A FULL ACCOUNT NUMBER (admin-only, on demand)
+    # =====================================================
+    # Finance pages only ever render the masked number (XXXXXXXX1234); the
+    # full number is fetched from here when an admin explicitly asks for it,
+    # so it is never sitting in the page source.
+
+    @app.route("/admin/finance/reveal-company-account")
+    def reveal_company_account():
+        if not _admin_only():
+            return jsonify({"ok": False, "message": "Unauthorized"}), 401
+
+        app.logger.info(
+            "Company account number revealed by %s", session.get("admin_email", "admin")
+        )
+        details = get_bank_details(settings_collection)
+        return jsonify({"ok": True, "account_number": details.get("account_number") or ""})
+
+    @app.route("/admin/finance/reveal-driver-account/<driver_email>")
+    def reveal_driver_account(driver_email):
+        if not _admin_only():
+            return jsonify({"ok": False, "message": "Unauthorized"}), 401
+
+        driver = drivers_collection.find_one({"email": driver_email}) if drivers_collection is not None else None
+        if not driver:
+            return jsonify({"ok": False, "message": "Driver not found"}), 404
+
+        app.logger.info(
+            "Driver account number revealed by %s for %s",
+            session.get("admin_email", "admin"), driver_email
+        )
+        bank = driver.get("bank_details") or {}
+        return jsonify({"ok": True, "account_number": bank.get("account_number") or ""})
 
     # =====================================================
     # VERIFY / REJECT A DRIVER'S SUBMITTED PAYMENT
@@ -552,7 +716,11 @@ def init_payment_admin(
             return redirect(url_for("admin_login"))
 
         action = request.form.get("action", "approve")
-        remarks = request.form.get("remarks", "").strip()
+        remarks = request.form.get("remarks", "").strip()[:300]
+
+        if action not in ("approve", "reject"):
+            flash("Unknown action.", "danger")
+            return redirect(url_for("finance_management"))
 
         try:
             booking = bookings_collection.find_one({"_id": ObjectId(booking_id)})
@@ -568,12 +736,23 @@ def init_payment_admin(
             flash("No payment submission found for this booking", "warning")
             return redirect(url_for("finance_management"))
 
+        # A submission can only be decided ONCE. Without this a second
+        # "approve" (double click, refresh-and-resubmit, two admins) would
+        # add the amount to the driver's remitted total and the ledger again.
+        if booking.get("payment_submission_status") != "Pending Verification":
+            flash(
+                f"This payment submission was already {str(booking.get('payment_submission_status') or 'processed').lower()}. "
+                "No changes were made.",
+                "warning"
+            )
+            return redirect(url_for("finance_management"))
+
         driver_email = booking.get("driver_email")
         amount = booking.get("cash_submitted_amount") or booking.get("delivery_fee", 500)
 
         if action == "approve":
-            bookings_collection.update_one(
-                {"_id": ObjectId(booking_id)},
+            claimed = bookings_collection.update_one(
+                {"_id": ObjectId(booking_id), "payment_submission_status": "Pending Verification"},
                 {
                     "$set": {
                         "payment_submission_status": "Approved",
@@ -585,6 +764,10 @@ def init_payment_admin(
                     }
                 }
             )
+
+            if claimed.matched_count == 0:
+                flash("This payment was just processed in another session. No changes were made.", "warning")
+                return redirect(url_for("finance_management"))
 
             if driver_email:
                 drivers_collection.update_one(
@@ -607,15 +790,16 @@ def init_payment_admin(
                     "created_at": datetime.now()
                 })
 
-            log_transaction(
+            # Update the submission's EXISTING ledger row to Settled ("Verified")
+            # instead of inserting a second one.
+            resolve_cod_collection(
                 payment_transactions_collection,
-                type="cod_collection",
-                status="Settled",
+                booking_id,
+                booking.get("payment_submission_attempt"),
+                COD_VERIFIED,
                 amount=amount,
-                booking_id=booking_id,
                 user_email=booking.get("user_email"),
                 driver_email=driver_email,
-                gateway="cash",
                 payment_screenshot=booking.get("payment_screenshot"),
                 admin_remarks=remarks or session.get("admin_email", "admin"),
             )
@@ -623,8 +807,8 @@ def init_payment_admin(
             flash(f"Payment of ₹{amount:,.0f} approved and marked as received.", "success")
 
         else:
-            bookings_collection.update_one(
-                {"_id": ObjectId(booking_id)},
+            claimed = bookings_collection.update_one(
+                {"_id": ObjectId(booking_id), "payment_submission_status": "Pending Verification"},
                 {
                     "$set": {
                         "payment_submission_status": "Rejected",
@@ -635,6 +819,10 @@ def init_payment_admin(
                     }
                 }
             )
+
+            if claimed.matched_count == 0:
+                flash("This payment was just processed in another session. No changes were made.", "warning")
+                return redirect(url_for("finance_management"))
 
             if notifications_collection is not None and driver_email:
                 notifications_collection.insert_one({
@@ -650,15 +838,14 @@ def init_payment_admin(
                     "created_at": datetime.now()
                 })
 
-            log_transaction(
+            resolve_cod_collection(
                 payment_transactions_collection,
-                type="cod_collection",
-                status="Rejected",
+                booking_id,
+                booking.get("payment_submission_attempt"),
+                COD_REJECTED,
                 amount=amount,
-                booking_id=booking_id,
                 user_email=booking.get("user_email"),
                 driver_email=driver_email,
-                gateway="cash",
                 payment_screenshot=booking.get("payment_screenshot"),
                 admin_remarks=remarks or session.get("admin_email", "admin"),
             )
@@ -743,6 +930,15 @@ def init_payment_admin(
     # ADMIN APPROVES / REJECTS A DRIVER'S SETTLEMENT REQUEST
     # =====================================================
 
+    # Allowed status moves. Completed and Rejected are final - once a payout
+    # is paid (or refused) it can never be paid/rejected/approved again, so a
+    # double click, a stale tab or a second admin can't pay a driver twice.
+    _SETTLEMENT_RULES = {
+        "approve": ({"Pending"}, "Processing"),
+        "complete": ({"Pending", "Processing"}, "Completed"),
+        "reject": ({"Pending", "Processing"}, "Rejected"),
+    }
+
     @app.route("/admin/settlement/<request_id>/<action>", methods=["POST"])
     def resolve_driver_settlement(request_id, action):
         if not _admin_only():
@@ -752,33 +948,81 @@ def init_payment_admin(
             flash("Settlements aren't available right now.", "danger")
             return redirect(url_for("finance_management"))
 
-        try:
-            req_doc = transactions_collection.find_one({"_id": ObjectId(request_id)})
-        except Exception:
-            req_doc = None
+        rule = _SETTLEMENT_RULES.get(action)
+        if not rule:
+            flash("Unknown action.", "danger")
+            return redirect(url_for("finance_management"))
+        allowed_from, new_status = rule
 
-        if not req_doc:
+        try:
+            oid = ObjectId(request_id)
+        except Exception:
+            oid = None
+
+        req_doc = transactions_collection.find_one({"_id": oid}) if oid else None
+
+        # transactions_collection also holds other transaction types; only
+        # driver settlement requests can be resolved from here.
+        if not req_doc or req_doc.get("type") != "settlement":
             flash("Withdrawal request not found.", "danger")
             return redirect(url_for("finance_management"))
 
-        new_status = {
-            "approve": "Processing",
-            "complete": "Completed",
-            "reject": "Rejected"
-        }.get(action)
-
-        if not new_status:
-            flash("Unknown action.", "danger")
+        current_status = req_doc.get("status")
+        if current_status not in allowed_from:
+            flash(
+                f"This request is already {current_status}, so it can't be marked {new_status}. "
+                "No changes were made.",
+                "warning"
+            )
             return redirect(url_for("finance_management"))
 
-        transactions_collection.update_one(
-            {"_id": ObjectId(request_id)},
-            {"$set": {
-                "status": new_status,
-                "resolved_at": datetime.now(),
-                "resolved_by": session.get("admin_email", "admin")
-            }}
+        admin = session.get("admin_email", "admin")
+        now = datetime.now()
+        set_fields = {"status": new_status, "resolved_at": now, "resolved_by": admin}
+        ledger_extra = {}
+
+        if action == "complete":
+            # "Paid" must be backed by the reference of the real transfer.
+            bank_reference = request.form.get("bank_reference", "").strip().upper()
+
+            if REQUIRE_PAYOUT_REFERENCE or bank_reference:
+                if not _BANK_REF_RE.fullmatch(bank_reference):
+                    flash(
+                        "Enter the bank / UPI transaction reference of the transfer you made "
+                        "(6-40 letters, numbers, - _ /) before confirming payment.",
+                        "danger"
+                    )
+                    return redirect(url_for("finance_management"))
+
+                already_used = transactions_collection.find_one({
+                    "type": "settlement",
+                    "bank_reference": bank_reference,
+                    "_id": {"$ne": oid}
+                })
+                if already_used:
+                    flash(
+                        f"Reference {bank_reference} is already recorded against another payout. "
+                        "Check the reference and try again.",
+                        "danger"
+                    )
+                    return redirect(url_for("finance_management"))
+
+                set_fields.update({
+                    "bank_reference": bank_reference,
+                    "paid_at": now,
+                    "paid_by": admin
+                })
+                ledger_extra["bank_reference"] = bank_reference
+
+        # Compare-and-set: only succeeds if nobody changed the status since
+        # we read it a moment ago.
+        claimed = transactions_collection.update_one(
+            {"_id": oid, "status": current_status},
+            {"$set": set_fields}
         )
+        if claimed.matched_count == 0:
+            flash("This request was just processed in another session. No changes were made.", "warning")
+            return redirect(url_for("finance_management"))
 
         ledger_status = {
             "Processing": "Withdrawn",
@@ -789,7 +1033,8 @@ def init_payment_admin(
             payment_transactions_collection,
             req_doc.get("payment_transaction_id"),
             status=ledger_status or new_status,
-            admin_remarks=session.get("admin_email", "admin")
+            admin_remarks=admin,
+            **ledger_extra
         )
 
         if notifications_collection is not None:
@@ -806,7 +1051,7 @@ def init_payment_admin(
                 "status": status_copy[2],
                 "icon": status_copy[3],
                 "read": False,
-                "created_at": datetime.now()
+                "created_at": now
             })
 
         flash(f"Settlement request marked as {new_status}.", "success")
@@ -829,6 +1074,16 @@ def init_payment_admin(
             return redirect(url_for("finance_management"))
 
         new_status = "Approved" if action == "approve" else "Rejected"
+
+        driver = drivers_collection.find_one({"email": driver_email})
+        bank_on_file = (driver or {}).get("bank_details")
+        if not driver or not bank_on_file:
+            flash("No bank details on file for this driver.", "danger")
+            return redirect(url_for("finance_management"))
+
+        if bank_on_file.get("approval_status") == new_status:
+            flash(f"Driver bank details are already {new_status.lower()}. No changes were made.", "info")
+            return redirect(url_for("finance_management"))
 
         drivers_collection.update_one(
             {"email": driver_email},
@@ -896,11 +1151,14 @@ def init_payment_admin(
 
         req_doc["_id"] = str(req_doc["_id"])
 
+        driver_bank = ((driver or {}).get("bank_details")) or {}
+
         return render_template(
             "settlement_receipt.html",
             req=req_doc,
             driver=driver,
-            ledger_txn=ledger_txn
+            ledger_txn=ledger_txn,
+            account_masked=mask_account_number(driver_bank.get("account_number"))
         )
 
     return app
